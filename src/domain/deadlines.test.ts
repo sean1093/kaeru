@@ -61,7 +61,7 @@ describe('exportDeadlineOf (DR-031)', () => {
             effectiveTo: null,
             status: 'confirmed-official',
             source: 'fixture',
-            value: { exportWindowDays: 30 },
+            value: { exportWindowDays: 30, slackWarnDays: 3 },
           },
         ],
       },
@@ -111,7 +111,7 @@ describe('deadlineStatusOf (DR-031, DR-076)', () => {
     expect(status.expired).toBe(false);
   });
 
-  it('TC-DOM-062 flags a receipt whose deadline falls before departure', () => {
+  it('TC-DOM-062 reports a missed deadline when it falls before departure', () => {
     const longStay = aTrip({ departureDate: '2027-03-01' });
     const status = deadlineStatusOf(
       receipt,
@@ -120,7 +120,8 @@ describe('deadlineStatusOf (DR-031, DR-076)', () => {
       fixedClock('2026-11-02T09:00:00+09:00'),
     );
     expect(status.deadline).toBe('2027-01-30');
-    expect(status.atRisk).toBe(true);
+    expect(status.slackDays).toBe(-30);
+    expect(status.risk).toBe('missed');
   });
 
   it('TC-DOM-063 stays silent on a five-day trip, where nothing is close', () => {
@@ -131,17 +132,72 @@ describe('deadlineStatusOf (DR-031, DR-076)', () => {
       rules,
       fixedClock('2026-11-02T09:00:00+09:00'),
     );
-    expect(status.atRisk).toBe(false);
+    expect(status.risk).toBe('none');
+    expect(status.slackDays).toBe(85);
     expect(status.expired).toBe(false);
   });
 
-  it('does not flag a deadline that falls on the departure date itself', () => {
-    // The window is inclusive, so leaving that day meets it. DR-076 is strictly "before".
-    const exact = aTrip({ departureDate: '2027-01-30' });
-    const dayLater = aTrip({ departureDate: '2027-01-31' });
+  it('TC-DOM-062 separates "no margin" from "already lost" at the departure date', () => {
+    // DR-076a. A 90-day visa-free stay and a 90-day export window land on exactly zero
+    // slack, and the traveller who gets there cannot extend. Nothing is lost — the window
+    // is inclusive — but a flight moved one day later loses it, so the two states must
+    // never render as one.
     const clock = fixedClock('2026-11-02T09:00:00+09:00');
-    expect(deadlineStatusOf(receipt, exact, rules, clock).atRisk).toBe(false);
-    expect(deadlineStatusOf(receipt, dayLater, rules, clock).atRisk).toBe(true);
+    const riskOn = (departureDate: string) =>
+      deadlineStatusOf(receipt, aTrip({ departureDate }), rules, clock).risk;
+
+    // Deadline is 2027-01-30. Slack is deadline minus departure.
+    expect(riskOn('2027-01-31')).toBe('missed'); // they leave the day after it expires
+    expect(riskOn('2027-03-01')).toBe('missed');
+    expect(riskOn('2027-01-30')).toBe('no_margin'); // the deadline is their departure day
+    expect(riskOn('2027-01-27')).toBe('no_margin'); // three days of slack, the limit
+    expect(riskOn('2027-01-26')).toBe('none'); // four days, comfortable
+  });
+
+  it('reads the slack window from the rules document rather than knowing 3', () => {
+    const generous = resolveRules(
+      {
+        ...kaeruRules,
+        deadline: [
+          {
+            effectiveFrom: '2019-10-01',
+            effectiveTo: null,
+            status: 'confirmed-official',
+            source: 'fixture',
+            value: { exportWindowDays: 90, slackWarnDays: 10 },
+          },
+        ],
+      },
+      '2026-11-01',
+    );
+    const clock = fixedClock('2026-11-02T09:00:00+09:00');
+    const trip = aTrip({ departureDate: '2027-01-25' }); // five days of slack
+    expect(deadlineStatusOf(receipt, trip, rules, clock).risk).toBe('none');
+    expect(deadlineStatusOf(receipt, trip, generous, clock).risk).toBe('no_margin');
+  });
+
+  it('never says a deadline is fine for an old-system receipt, because it has none', () => {
+    // "We checked and there is room" and "there is nothing to check" look identical on a
+    // screen and license opposite conclusions (DR-003, DR-064).
+    const oldSystem = aReceipt({ purchaseDate: '2026-10-31' });
+    const status = deadlineStatusOf(
+      oldSystem,
+      aTrip({ departureDate: '2026-11-06' }),
+      resolveRules(kaeruRules, '2026-10-31'),
+      fixedClock('2026-11-02T09:00:00+09:00'),
+    );
+    expect(status.risk).toBe('not_applicable');
+    for (const departureDate of ['2026-11-06', '2027-01-29', '2027-01-30', '2027-03-01']) {
+      const anyTrip = aTrip({ departureDate });
+      expect(
+        deadlineStatusOf(
+          oldSystem,
+          anyTrip,
+          resolveRules(kaeruRules, '2026-10-31'),
+          fixedClock('2026-11-02T09:00:00+09:00'),
+        ).risk,
+      ).toBe('not_applicable');
+    }
   });
 
   it('TC-DOM-064 changes the countdown by exactly one across a Japanese midnight', () => {
@@ -212,7 +268,7 @@ describe('leaveForAirportBy (DR-032, UJ-022)', () => {
     // not know where he is sleeping and does not invent it: this is the auditable part of
     // the arithmetic, flightTime − checkInMinutes − airportBufferMinutes.
     const trip = aTrip({ flightTime: '07:45', checkInMinutes: 60, airportBufferMinutes: 60 });
-    expect(leaveForAirportBy(trip)).toEqual({ time: '05:45', explained: true });
+    expect(leaveForAirportBy(trip)).toEqual({ time: '05:45', dayOffset: 0, explained: true });
   });
 
   it('TC-DOM-074 @unconfirmed moves with the buffer, which is a per-trip setting', () => {
@@ -236,7 +292,8 @@ describe('leaveForAirportBy (DR-032, UJ-022)', () => {
 
   it('wraps to the previous evening for an early-morning flight', () => {
     const redEye = aTrip({ flightTime: '01:00', checkInMinutes: 60, airportBufferMinutes: 60 });
-    expect(leaveForAirportBy(redEye)).toEqual({ time: '23:00', explained: true });
+    expect(leaveForAirportBy(redEye)).toEqual({ time: '23:00', dayOffset: -1, explained: true });
+    // dayOffset is the whole point: "23:00" alone on a departure-day screen is 22 hours late.
   });
 
   it('pads the clock reading so it is never 9:5', () => {

@@ -188,7 +188,7 @@ describe('TC-DOM-045 the rate table is data, not code', () => {
         effectiveTo: null,
         status: 'confirmed-official',
         source: 'fixture',
-        value: { exportWindowDays: 7 },
+        value: { exportWindowDays: 7, slackWarnDays: 3 },
       },
     ],
     highValue: [

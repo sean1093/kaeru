@@ -31,15 +31,13 @@ export const leaveForAirportBy: LeaveForAirportBy = (trip) => {
   const departure = Number(hours) * MINUTES_PER_HOUR + Number(minutes);
   if (departure >= MINUTES_PER_DAY) return null;
 
-  // An early flight puts the leave-by time on the previous evening. Wrapping keeps the
-  // clock reading honest; the screen says which day it means, because this type carries a
-  // time and nothing else.
-  const leaveBy =
-    (((departure - trip.checkInMinutes - trip.airportBufferMinutes) % MINUTES_PER_DAY) +
-      MINUTES_PER_DAY) %
-    MINUTES_PER_DAY;
+  const target = departure - trip.checkInMinutes - trip.airportBufferMinutes;
+  // An early flight puts the leave-by time on the previous evening. The caller is told
+  // which day it is on, because "23:00" alone on a departure-day screen is 22 hours late.
+  const dayOffset = target < 0 ? -1 : 0;
+  const leaveBy = ((target % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
 
   const hh = String(Math.floor(leaveBy / MINUTES_PER_HOUR)).padStart(2, '0');
   const mm = String(leaveBy % MINUTES_PER_HOUR).padStart(2, '0');
-  return { time: `${hh}:${mm}`, explained: true };
+  return { time: `${hh}:${mm}`, dayOffset, explained: true };
 };
