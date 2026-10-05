@@ -1,5 +1,5 @@
 import type { JSX } from 'preact';
-import { hrefFor } from '../../app/router.ts';
+import { hrefFor, registeredRoutes } from '../../app/router.ts';
 import { pathTo, screenAttrs } from '../../app/screens.ts';
 import { getContent } from '../../content/index.ts';
 import { activeLocale, useMessages } from '../../i18n/index.ts';
@@ -22,6 +22,9 @@ import { messages } from './messages.ts';
 export function GuideScreen(): JSX.Element {
   const t = useMessages(messages);
   const bundle = getContent(activeLocale.value);
+  const explainerIsRegistered = registeredRoutes.value.some((route) =>
+    route.screenIds.includes('S05'),
+  );
 
   return (
     <div class={styles.screen} {...screenAttrs('S50')}>
@@ -49,6 +52,20 @@ export function GuideScreen(): JSX.Element {
           last
         />
       </List>
+
+      {/*
+        The 60-second explainer, re-openable from here (wireframe S50, UJ-001). Rendered
+        only once onboarding has registered S05: until #34 lands there is no route to send
+        anyone to, and a link to the not-found screen is worse than no link. It appears on
+        its own the moment that feature registers, with nothing to remember here.
+      */}
+      {explainerIsRegistered && (
+        <p class={styles.offline}>
+          <a href={hrefFor(pathTo('S05', { step: '1' }))} data-testid="guide-replay-explainer">
+            {t('guide.replayExplainer')}
+          </a>
+        </p>
+      )}
 
       <p class={styles.offline} data-testid="guide-offline">
         {t('guide.offline')}

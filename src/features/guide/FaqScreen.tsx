@@ -10,14 +10,15 @@ import { messages } from './messages.ts';
 /**
  * S54 — the FAQ.
  *
- * Every entry is on one page and open, rather than behind an accordion. Two reasons: the
- * questions are short, and the screens that link here link to a **specific** entry
- * (`pathTo('S54', { entryId: 'q11' })` from the fee warning on S2B), so an answer that
- * needed a tap to reveal would deep-link to a closed box.
+ * An accordion whose open entry is driven by the route (IA line 340). Native
+ * `<details>`/`<summary>`, so keyboard operation and the announced expanded state are the
+ * platform's rather than ours to re-implement and get subtly wrong.
  *
- * The entry named in the route is highlighted and scrolled to rather than isolated: a
- * traveller who arrived from the fee warning usually wants the two questions either side
- * of it as well.
+ * The entry named in the route opens; the rest stay collapsed. That is also the better
+ * answer to the deep-link case than rendering everything open: someone arriving from S2B's
+ * fee warning lands on **one open answer** rather than on one highlighted answer with six
+ * other full answers to scroll past, and the neighbouring questions are still right there
+ * as headings to open.
  */
 export function FaqScreen({ params }: { params: Readonly<Record<string, string>> }): JSX.Element {
   const t = useMessages(messages);
@@ -30,24 +31,23 @@ export function FaqScreen({ params }: { params: Readonly<Record<string, string>>
       <h1 class={styles.title}>{t('guide.faq.title')}</h1>
 
       {bundle.faq.map((entry) => (
-        <section
+        <details
           key={entry.id}
           id={entry.id}
           class={entry.id === wanted ? styles.faqHighlighted : styles.faq}
-          aria-labelledby={`${entry.id}-question`}
+          open={entry.id === wanted}
           data-testid={`faq-${entry.id}`}
-          data-highlighted={entry.id === wanted ? 'true' : undefined}
         >
-          <h2 id={`${entry.id}-question`} class={styles.question}>
-            {entry.question}
-          </h2>
+          <summary class={styles.question}>
+            <h2 class={styles.questionText}>{entry.question}</h2>
+          </summary>
           {/*
             An FAQ answer has no article to inherit from, so a block says its own standing
             or has none. Passing `undefined` is what makes "unmarked means confirmed"
             true here rather than silently inheriting someone else's caveat.
           */}
           <ContentBlocks blocks={entry.answer} articleStatus={undefined} />
-        </section>
+        </details>
       ))}
 
       <p class={styles.offline}>
