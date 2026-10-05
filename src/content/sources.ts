@@ -169,6 +169,61 @@ const SPECS: readonly SourceSpec[] = [
     contentLang: 'zh-TW',
     accessed: ACCESSED,
   },
+  {
+    id: 'ptt-pie-global-blue',
+    research: 'S18',
+    title: {
+      'zh-TW': 'PTT Japan_Travel 版，PIE VAT 與 Global Blue 旅客討論',
+      en: 'PTT Japan_Travel, PIE VAT and Global Blue traveler commentary',
+    },
+    url: 'https://www.ptt.cc/bbs/Japan_Travel/M.1781905642.A.DB5.html',
+    contentLang: 'zh-TW',
+    accessed: ACCESSED,
+  },
+  {
+    id: 'ptt-ocean-fee-update',
+    research: 'S20',
+    title: {
+      'zh-TW': 'PTT Japan_Travel 版，Ocean 2026 年 7 月 16 日新費率公告',
+      en: 'PTT Japan_Travel, Ocean fee schedule after the 2026-07-16 revision',
+    },
+    url: 'https://www.ptt.cc/bbs/Japan_Travel/M.1784200231.A.D78.html',
+    contentLang: 'zh-TW',
+    accessed: ACCESSED,
+  },
+  {
+    id: 'pie-vat-registration-news',
+    research: 'S11',
+    title: {
+      'zh-TW': 'Pie Systems Japan．資金移動業（第二種）登錄完成公告',
+      en: 'Pie Systems Japan, Type II funds-transfer business registration notice',
+    },
+    url: 'https://pievat.com/japan',
+    contentLang: 'ja',
+    accessed: ACCESSED,
+  },
+  {
+    id: 'smart-detax-site',
+    research: 'S22',
+    title: {
+      'zh-TW': 'Smart Detax．服務與資費說明',
+      en: 'Smart Detax, service and pricing',
+    },
+    url: 'https://smartdetax.com/',
+    contentLang: 'ja',
+    accessed: ACCESSED,
+  },
+  {
+    id: 'tourego-site',
+    research: 'S23',
+    title: {
+      'zh-TW': 'Tourego Japan．商家常見問題',
+      en: 'Tourego Japan, merchant FAQ',
+    },
+    url: 'https://www.tourego.com/en',
+    contentLang: 'en',
+    accessed: ACCESSED,
+  },
 ];
 
 function pick<T>(value: T | PerLocale<T>, locale: Locale): T {

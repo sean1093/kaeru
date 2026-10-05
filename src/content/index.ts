@@ -9,16 +9,24 @@
  * restating a threshold, so a number cannot drift between two namespaces (IA flow H).
  */
 import type { Locale } from '../i18n/index.ts';
+import { FAQ_ENTRIES as EN_FAQ } from './faq.en.ts';
+import { FAQ_ENTRIES as ZH_FAQ } from './faq.zh-TW.ts';
 import { GUIDE_ARTICLES as EN_ARTICLES } from './guide.en.ts';
 import { GUIDE_ARTICLES as ZH_ARTICLES } from './guide.zh-TW.ts';
+import { OPERATOR_NOTES as EN_OPERATOR_NOTES } from './operator-notes.en.ts';
+import { OPERATOR_NOTES as ZH_OPERATOR_NOTES } from './operator-notes.zh-TW.ts';
+import { buildOperatorDirectory } from './operators.ts';
 import type {
+  ContentBlock,
   ContentBundle,
   FaqEntry,
   GetArticle,
   GetContent,
   GetFaqEntry,
+  GetOperatorDirectory,
   GuideArticle,
   GuideSection,
+  OperatorDirectory,
   SourceRef,
 } from './schema.ts';
 import { type ArticleSeed, withSources } from './seeds.ts';
@@ -28,6 +36,17 @@ const SEEDS: Readonly<Record<Locale, readonly ArticleSeed[]>> = {
   'zh-TW': ZH_ARTICLES,
   en: EN_ARTICLES,
 };
+
+const FAQ: Readonly<Record<Locale, readonly FaqEntry[]>> = {
+  'zh-TW': ZH_FAQ,
+  en: EN_FAQ,
+};
+
+const OPERATOR_NOTES: Readonly<Record<Locale, Readonly<Record<string, readonly ContentBlock[]>>>> =
+  {
+    'zh-TW': ZH_OPERATOR_NOTES,
+    en: EN_OPERATOR_NOTES,
+  };
 
 interface LoadedBundle {
   readonly bundle: ContentBundle;
@@ -39,7 +58,7 @@ interface LoadedBundle {
 function load(locale: Locale): LoadedBundle {
   const sources = SOURCES[locale];
   const articles = SEEDS[locale].map((seed) => withSources(seed, sources));
-  const faq: readonly FaqEntry[] = [];
+  const faq = FAQ[locale];
 
   const sectionsById = new Map<string, GuideSection>();
   for (const article of articles) {
@@ -47,7 +66,7 @@ function load(locale: Locale): LoadedBundle {
   }
 
   return {
-    bundle: { locale, articles, faq, operatorNotes: {}, sources },
+    bundle: { locale, articles, faq, operatorNotes: OPERATOR_NOTES[locale], sources },
     articlesById: new Map(articles.map((article) => [article.id, article])),
     sectionsById,
     faqById: new Map(faq.map((entry) => [entry.id, entry])),
@@ -59,8 +78,13 @@ const LOADED: Readonly<Record<Locale, LoadedBundle>> = {
   en: load('en'),
 };
 
+const OPERATOR_DIRECTORY: OperatorDirectory = buildOperatorDirectory();
+
 /** Everything bundled for one language. */
 export const getContent: GetContent = (locale) => LOADED[locale].bundle;
+
+/** The operator directory. Locale-neutral: each `Operator.name`/`feeNote` is per-locale. */
+export const getOperatorDirectory: GetOperatorDirectory = () => OPERATOR_DIRECTORY;
 
 /** One guide article by its stable id, e.g. `guide.steps`. S51 routes on this. */
 export const getArticle: GetArticle = (locale, id) => LOADED[locale].articlesById.get(id);
