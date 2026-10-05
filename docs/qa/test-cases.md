@@ -127,7 +127,7 @@ Formula: `deadline = purchaseDate + 90 calendar days`, deadline day inclusive. O
 | TC-DOM-072 | Receipt with `packingLocation == checked_bag` on departure day | Prominent warning; raised in the packing plan and as the hard gate in Airport Mode | DR-032, DR-077, UJ-017, UJ-024 | R05 | U, E | P0 |
 | TC-DOM-073 | Receipt with `packingLocation == unknown` | Treated as at risk, same as `checked_bag`, not as safe | DR-032, UJ-017 | R05 | U | P0 |
 | TC-DOM-074 | Departure time recommendation and the buffer setting | `flightTime − airline check-in requirement − buffer`; buffer defaults to 60 minutes, is user-adjustable in settings, and is always labelled as Kaeru's recommendation, never an official figure | DR-032, UR-03, UJ-003, UJ-022 | — | U, C | P0 `@unconfirmed` |
-| TC-DOM-075 | Alex: 07:45 flight, 60-min check-in, 60-min buffer | "Leave by 04:50" (plus travel time as configured); arithmetic asserted exactly | UJ-022, DR-032 | — | U | P0 |
+| TC-DOM-075 | Alex: 07:45 flight, 60-min check-in, 60-min buffer | **05:45**, asserted exactly. `UJ-022`'s walkthrough says 04:50, which silently folds in his hotel-to-airport journey — Kaeru does not know where the traveller is sleeping, and a number with an invented travel estimate inside it is unauditable in exactly the way `DR-032` warns against. A screen may add travel time the user supplies; the domain returns `flightTime − checkInMinutes − airportBufferMinutes` and nothing else | UJ-022, DR-032 | — | U | P0 |
 | TC-DOM-076 | Connecting itinerary with a domestic leg | The procedure airport is the **final** airport of departure from Japan, named explicitly | DR-037, UJ-025 | R05 | U, C | P0 |
 | TC-DOM-077 | Guidance on terminal location | States international departure lobby, landside, **before** baggage drop — not after security, not at the gate | DR-033, UJ-025 | R05 | C | P0 |
 | TC-DOM-078 | Trip departing from Narita, Haneda, Kansai, Chubu, Fukuoka, New Chitose or Naha vs any other airport | Visit Japan Web is mentioned as an alternative only for those seven, with the before-security Wi-Fi-area constraint; never shown elsewhere | DR-033, UJ-028 | — | U, C | P0 |
@@ -269,7 +269,9 @@ Run against the production build with the service worker active. Airport Mode ha
 | TC-A11Y-013 | VoiceOver (iOS) and TalkBack pass on the core journey and Airport Mode | Sensible reading order, meaningful names, checklist state announced, no unlabeled images | — | R11 | M | P0 |
 | TC-A11Y-014 | Red-result screen under a screen reader | Reads as guidance, not as an error; no `role="alert"` panic framing | UJ-029 | R11 | M | P1 |
 | TC-A11Y-015 | **Every route, both locales, 320 px viewport:** measure `document.documentElement.scrollWidth <= clientWidth` | No horizontal overflow anywhere (WCAG 1.4.10). Asserted per route **per locale**, never as a spot check: the longest label decides and zh-TW and en wrap differently, so a route can pass in one language and fail in the other. One `evaluate` per route per locale | — | R11, R10 | E | P0 |
-| TC-A11Y-016 | A page taller than the viewport, with the sticky bottom navigation | The nav reserves its own height from content rather than a guessed constant, and isolates its stacking context, so it never paints over in-flow content. Checked on the receipt list and the guide index, the two routes that exceed a screen first | — | R11 | E | P0 |
+| TC-A11Y-016 | A page taller than the viewport, scrolled to the bottom | Content ends clear of the sticky bottom navigation rather than flush against or beneath it: the nav reserves its own height from content rather than a guessed constant, and isolates its stacking context. This is about the **end** of the scroll — a sticky bar covering content mid-scroll is what sticky positioning is for, and is not a defect | — | R11 | E | P0 |
+| TC-A11Y-017 | **Every interactive control, every route, both locales, 390 px viewport:** `scrollIntoView`, then measure | The control is completely clear of the persistent chrome. This is the authoritative check for WCAG 2.5.8 obscuring, and it is strictly stronger than an axe scan at one scroll offset — which sees only the controls visible at that offset and reports a true statement about a state the user is never stuck in. The property that matters is operability: a control the user can bring into the clear is operable. A control that **cannot** be cleared at any scroll position, typically on a page too short to scroll past the bar, fails — and that is the defect this replaces the noise with | — | R11 | E | P0 |
+| TC-A11Y-018 | **Tab through every control, every route, both locales, 390 px viewport** | Focus never lands underneath the persistent chrome (WCAG 2.2 SC 2.4.11, Focus Not Obscured). Separate from `TC-A11Y-017` and not implied by it: `scrollIntoView` and tabbing scroll by **different machinery**, so a control that can be scrolled clear may still receive focus underneath the bar. The keyboard path is made correct by `scroll-padding-block-end` on the scrolling root, which is one declaration and therefore one deletion away from regressing | — | R11 | E | P0 |
 
 ---
 
@@ -342,7 +344,7 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 | TC-UX-013 | Overdue nudge after the user's configured period | Surfaces the operator contact link plus purchase date, shop, amount and confirmation date; Kaeru contacts nobody and promises no outcome | UJ-035, DR-036, UR-11 | — | E | P1 |
 | TC-UX-014 | Trip summary | Tax paid, confirmed, received, lost — and why anything was lost | UJ-036 | — | E | P1 |
 | TC-UX-015 | Full P1 walkthrough (Yi-chun, Narita, two travelers, 14 receipts, one red result) | End-to-end journey passes in zh-TW on `pixel-chromium` | UJ-001–UJ-036 | R05 | E | P0 |
-| TC-UX-016 | Full P2 walkthrough (Alex, Kansai, high-value watch, single traveler, red result) | End-to-end journey passes in en on `iphone-webkit`, including the documents reminder and the 04:50 departure recommendation | UJ-001–UJ-036, DR-016 | R05 | E | P0 |
+| TC-UX-016 | Full P2 walkthrough (Alex, Kansai, high-value watch, single traveler, red result) | End-to-end journey passes in en on `iphone-webkit`, including the documents reminder and the leave-by recommendation shown with its arithmetic visible rather than as a bare time (`TC-DOM-075`) | UJ-001–UJ-036, DR-016 | R05 | E | P0 |
 | TC-UX-017 | Operator refund methods listed, including cash at the departure port | Cash is listed as a possible method and never promised; methods come from the operator catalog, not from code | DR-039, UR-06 | R19 | C | P1 `@unconfirmed` |
 | TC-UX-018 | Typing into the add-receipt form, then leaving by `x`, by browser back, or by following a link | No prompt of any kind. The draft is autosaved as it is typed and restored silently on reopening the screen — a prompt asking permission to restore is the same dialog wearing a different hat | UJ-005 | R09 | E | P0 |
 | TC-UX-019 | A draft that is never completed | Counted **nowhere** a `Receipt` is counted: not in a shop-day threshold group, not in trip totals or the pending-refund figure, not in any deadline check, and above all not in an Airport Mode checklist. A half-typed amount is not a claim about anything | DR-012, DR-030, DR-031, DR-076, UJ-016 | R01, R05 | U, E | P0 |
@@ -362,11 +364,11 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 | TC-DATA — storage and backup | 23 | 0 |
 | TC-AIR — airport, offline, service worker | 23 | 1 |
 | TC-I18N — localization | 15 | 0 |
-| TC-A11Y — accessibility | 16 | 0 |
+| TC-A11Y — accessibility | 18 | 0 |
 | TC-PWA — install and platform | 8 | 0 |
 | TC-SEC — privacy | 5 | 0 |
 | TC-UX — flows | 24 | 1 |
-| **Total** | **213** | **15** |
+| **Total** | **215** | **15** |
 
 **Requirement coverage.** Every `DR-0nn`, `UR-nn` and `UJ-0nn` ID published in `domain-rules.md` v1.0 and `user-journey.md` v1.0 is cited by at least one case above. This was checked mechanically against both documents on 2026-10-05 and is re-checked at each milestone exit.
 
