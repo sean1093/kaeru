@@ -61,6 +61,19 @@ export const migrations: readonly Migration[] = [
       photos.createIndex('by-receipt', 'receiptId');
     },
   },
+  {
+    /**
+     * `totalBytes()` needs to sum `byteSize` across every stored photo without reading a
+     * single blob. `IDBIndex.openKeyCursor` never materialises the record's value, so an
+     * index lets it iterate keys alone — `getAll` would deserialise every photo in the
+     * store to add up a number sitting beside each one (QA review, #76). `photos` is a new
+     * store in every database that reaches this version, so there is nothing to backfill.
+     */
+    version: 3,
+    upgrade(_db, tx) {
+      tx.objectStore('photos').createIndex('by-size', 'byteSize');
+    },
+  },
 ];
 
 /** The migrations an upgrade from `oldVersion` to `newVersion` must apply, in order. */

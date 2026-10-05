@@ -61,9 +61,20 @@ export const photoRepository: PhotoRepository = {
     await db.delete('photos', id);
   },
 
+  /**
+   * Sums over the `by-size` index's keys, never its values: `openKeyCursor` does not
+   * fetch the record, so this never deserialises a photo blob to read the number sitting
+   * beside it. This runs on the data/privacy screen a user opens specifically because
+   * they are near quota — the moment the device is least able to absorb reading megabytes
+   * of images into memory just to add them up (QA review, #76).
+   */
   async totalBytes(db) {
     let total = 0;
-    for (const photo of await db.getAll('photos')) total += photo.byteSize;
+    let cursor = await db.transaction('photos').store.index('by-size').openKeyCursor();
+    while (cursor) {
+      total += cursor.key;
+      cursor = await cursor.continue();
+    }
     return total;
   },
 };

@@ -43,8 +43,9 @@ function openAtV1(): Promise<KaeruDatabase> {
 
 describe('pendingMigrations', () => {
   it('selects only the steps between the old and the new version', () => {
-    expect(pendingMigrations(0, SCHEMA_VERSION).map((m) => m.version)).toEqual([1, 2]);
-    expect(pendingMigrations(1, SCHEMA_VERSION).map((m) => m.version)).toEqual([2]);
+    expect(pendingMigrations(0, SCHEMA_VERSION).map((m) => m.version)).toEqual([1, 2, 3]);
+    expect(pendingMigrations(1, SCHEMA_VERSION).map((m) => m.version)).toEqual([2, 3]);
+    expect(pendingMigrations(2, SCHEMA_VERSION).map((m) => m.version)).toEqual([3]);
     expect(pendingMigrations(SCHEMA_VERSION, SCHEMA_VERSION)).toEqual([]);
   });
 
@@ -78,7 +79,7 @@ describe('opening the database', () => {
     ]);
     expect([...tx.objectStore('travelers').indexNames].sort()).toEqual(['by-seq', 'by-trip']);
     expect([...tx.objectStore('registrations').indexNames]).toEqual(['by-trip']);
-    expect([...tx.objectStore('photos').indexNames]).toEqual(['by-receipt']);
+    expect([...tx.objectStore('photos').indexNames].sort()).toEqual(['by-receipt', 'by-size']);
     await tx.done;
     expect(await db.get('meta', META_KEY)).toEqual({
       schemaVersion: SCHEMA_VERSION,
@@ -95,7 +96,7 @@ describe('opening the database', () => {
     const db = await open();
     expect(await db.get('settings', 'app')).toEqual({ locale: 'zh-TW', theme: 'dark' });
     expect(await db.get('meta', META_KEY)).toEqual({
-      schemaVersion: 2,
+      schemaVersion: SCHEMA_VERSION,
       // An upgrade is not a creation: the date the database was first made survives it.
       createdAt: '2026-02-03T04:05:06.000Z',
     });

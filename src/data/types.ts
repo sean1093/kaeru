@@ -17,7 +17,7 @@ import type { StoredPhoto } from './repositories.ts';
 export const DB_NAME = 'kaeru';
 
 /** Bump together with a new entry in `migrations.ts`. Never reuse a version number. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
@@ -88,7 +88,7 @@ export interface KaeruDB extends DBSchema {
   photos: {
     key: PhotoId;
     value: StoredPhoto;
-    indexes: { 'by-receipt': ReceiptId };
+    indexes: { 'by-receipt': ReceiptId; 'by-size': number };
   };
 }
 
