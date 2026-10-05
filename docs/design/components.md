@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.3 (M0) |
+| Status | v1.4 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -43,6 +43,11 @@ A single-row header: optional back, title, optional single action.
 States: **default** flat; **scrolled** raised; **modal** variant replaces back with `x` (關閉 / Close).
 
 Transition between flat and raised is `--duration-fast` on `box-shadow` only, which is exempt from the no-shadow-animation rule because it is an opacity-equivalent 1 px change; if it causes jank, swap to a static border.
+
+
+**Shell header vs. this bar.** The persistent shell header — brand mark, tagline, language switcher, settings — renders only on `tabs` chrome. A `fullscreen` or `mode` screen carries no shell header at all, only this App bar, which the screen renders for itself. That is deliberate: a full-screen flow is a considered, focused task, not a place for brand chrome or a settings detour — see `information-architecture.md` section 2 on the bar hiding in full-screen flows, which this generalises to the shell header as well as the bottom navigation.
+
+The one carve-out is this bar's `action` slot during onboarding (S02, S05): it carries a language toggle there, because onboarding is the one `fullscreen` flow a user can enter before ever reaching a `tabs` screen, and therefore the one place a wrong auto-detected locale has no other way out. No other `fullscreen` screen needs it — by the time a user reaches add receipt (S21) or photo capture (S27), Settings has long been reachable from Home.
 
 ---
 
