@@ -162,8 +162,12 @@ export interface ShopDayGroup {
   shortfall: Jpy;
 }
 
-/** Normalise a shop name into a grouping key: trim, collapse space, NFKC, case-fold (DR-012a). */
-export type ShopKeyOf = (shopName: string) => string;
+/**
+ * Normalise a shop name into a grouping key: trim, collapse space, NFKC, case-fold
+ * (`DR-012a`). Null when nothing usable is left, because an empty key is not a weak
+ * identity — it is one that matches every other empty key and merges unrelated receipts.
+ */
+export type ShopKeyOf = (shopName: string) => string | null;
 
 export type GroupByShopDay = (
   receipts: readonly Receipt[],
