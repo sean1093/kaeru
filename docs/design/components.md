@@ -266,8 +266,11 @@ The core of Airport Mode step 1 and the packing plan.
 | Content | Shop name `--text-lg`, then date + amount `--text-base` `--color-text-muted` |
 | Pressed | Row background `--color-bg-sunken` |
 | Excluded | Rows routed to the human counter are not rendered as checkboxes; they are a separate panel with a link |
+| Warning | An optional third line, `--text-sm` `--color-attention` with a 16 px `circle-alert`, for a condition that applies to this row alone |
 
 The whole row toggles the checkbox — a 24 px target in a queue with luggage is not acceptable. Semantics: a real `<input type="checkbox">` with a `<label>` wrapping the row, so the native accessible name, state, and keyboard behaviour come for free. Groups are `<fieldset>` with a `<legend>` naming the traveler.
+
+**The warning line is not `secondary` text.** Two rows in the MVP carry one: a receipt still marked as checked luggage (`! 標記為託運` / "marked as checked") and a receipt that needs its certificate (`! 要帶保證書` / "bring the certificate"). Both appear in Airport Mode step 1 and in the packing plan, and both exist to make a traveler stop on that row rather than tick through it. Rendering them at `--color-text-muted` alongside the date and amount would remove exactly the emphasis they are for. The warning does not block the checkbox — the user may still have the goods — and it is included in the row's accessible name so it is not a visual-only cue.
 
 Unchecking a confirmed receipt is allowed and reversible; nothing in Airport Mode is a one-way door except the explicit "customs is done" confirmation.
 
@@ -348,7 +351,7 @@ For operator (10 options), traveler (4+), and airport.
 | Enter | Translate from 100 % to 0 over `--duration-normal`, `--ease-out`; scrim fades over `--duration-fast` |
 | Exit | `--duration-slow`, `--ease-in` |
 
-Behaviour: focus is trapped while open and restored to the trigger on close; `Escape`, scrim tap, swipe-down, and browser back all close it. `role="dialog" aria-modal="true"` with `aria-labelledby` pointing at the sheet heading. Background content gets `inert`. Sheet state is reflected in the route so back works naturally.
+Behaviour: focus is trapped while open and restored to the trigger on close; `Escape`, scrim tap, swipe-down, and browser back all close it. `role="dialog" aria-modal="true"` with `aria-labelledby` pointing at the sheet heading. Background content gets `inert`. Sheet state lives in the URL as `?sheet=<id>` on the current route, so back closes the sheet rather than leaving the screen, and a screen only honours sheet ids it declares — an unknown one opens nothing.
 
 ---
 
