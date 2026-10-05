@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.2 (M0) |
+| Status | v1.3 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -77,6 +77,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 └──────────────────────────────────────────────┘
 ```
 
+S01 carries no header at all, by design — the centred welcome content is the whole screen. If the auto-detected locale is wrong here, both buttons lead to a screen one tap away (S02 or S05) that has the language toggle described below, so the wrong-language window is one screen, not the whole flow.
+
 **S05** — Explainer, step 2 of 5
 
 ```
@@ -112,7 +114,7 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 ```
 
 
-**S05 Explainer, 5 steps (UJ-001).** The three counter-intuitive facts land first: you pay full price now (step 1), customs happens before bag drop (step 2), one missing item kills a whole receipt (step 3). Steps 4 and 5 cover operators and the 90-day window. Skippable at every step, re-openable from the Guide tab. Each step links to the matching `guide.steps.*` section rather than restating the rule.
+**S05 Explainer, 5 steps (UJ-001).** The three counter-intuitive facts land first: you pay full price now (step 1), customs happens before bag drop (step 2), one missing item kills a whole receipt (step 3). Steps 4 and 5 cover operators and the 90-day window. Skippable at every step, re-openable from the Guide tab. Each step links to the matching `guide.steps.*` section rather than restating the rule. Its app bar's one `action` slot (`components.md` section 1) is a language toggle, shared by every onboarding step (S02–S05) — the only `fullscreen` screens reachable before a user has ever seen a `tabs` screen, and therefore the only place a wrong locale has no other exit (section 6, decision 6).
 
 
 **S02** — Trip setup

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.1 (M0) |
+| Status | v1.2 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -406,6 +406,7 @@ Every journey step has a surface.
 | 3 | How do we show "estimated"? | By form, not colour: plain for actual tax, `~` prefix plus a permanent fee rider for estimates, plain with a derived fee line for amounts received. Only the estimate is hero-sized. |
 | 4 | Threshold indicator placement | In the logging flow, where it can still change behaviour, as behavioural advice about the *same transaction*. On the list, a combined-subtotal footer that states the shop's discretion and never promises qualification (`UR-02`). |
 | 5 | Does "will not claim" need a reason? | No. Optional radios plus "you do not have to pick one". |
+| 6 | Onboarding is `fullscreen` chrome with no shell header and no bottom nav — so if the auto-detected locale is wrong, how does a user get out before reaching a `tabs` screen? | S02 and S05's own app bar carries a language toggle in its one `action` slot, for onboarding only. Every other `fullscreen` screen (add receipt, photo capture) stays header-free, since Settings has long been reachable by the time a user reaches them. See `components.md` section 1. |
 
 ---
 
