@@ -26,7 +26,27 @@ export function unreadableRecordCounts(): Readonly<Record<UnreadableRecordStore,
   return { ...counts };
 }
 
+/**
+ * A receipt with one corrupt line is not withheld the way an undated receipt is — the rest
+ * of the receipt is real and the shop-day grouping and status still mean something — but
+ * dropping a money line silently changes the computed total the same way an invented
+ * purchase date would, including across the `DR-010` threshold. QA review on #69: track it
+ * the way a repaired trip field is tracked, so an amount built from a repaired receipt can
+ * one day be shown as possibly incomplete instead of simply wrong.
+ */
+let droppedReceiptLines = 0;
+
+/** Called when a receipt's stored `lines` entry existed but could not become a `ReceiptLine`. */
+export function recordDroppedLine(): void {
+  droppedReceiptLines += 1;
+}
+
+export function droppedLineCount(): number {
+  return droppedReceiptLines;
+}
+
 /** Test-only: specs share this module instance, so each one starts from zero. */
 export function resetUnreadableRecordCountsForTests(): void {
   for (const store of Object.keys(counts) as UnreadableRecordStore[]) counts[store] = 0;
+  droppedReceiptLines = 0;
 }
