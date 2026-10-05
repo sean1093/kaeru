@@ -2,12 +2,14 @@ import { fireEvent, render, screen } from '@testing-library/preact';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { setActiveLocale } from '../i18n/index.ts';
 import { App } from './App.tsx';
-import { currentLocation, startRouter } from './router.ts';
+import { routes } from './registry.ts';
+import { currentLocation, registerRoutes, startRouter } from './router.ts';
 
 let stop: (() => void) | undefined;
 
 beforeEach(() => {
   window.location.hash = '';
+  registerRoutes(routes);
   stop = startRouter();
   setActiveLocale('zh-TW');
 });
@@ -30,14 +32,14 @@ describe('app shell', () => {
       await screen.findByRole('heading', { level: 1, name: 'Bring your Japan tax refund home' }),
     ).toBeVisible();
     expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
-    expect(screen.getByRole('link', { name: /Settings/ })).toBeVisible();
     expect(document.documentElement.lang).toBe('en');
   });
 
-  it('builds the bottom navigation from the registered features, in order', () => {
+  it('builds the bottom navigation from the features that registered a tab', () => {
     render(<App />);
     const links = screen.getByTestId('bottom-nav').querySelectorAll('a');
-    expect([...links].map((link) => link.getAttribute('href'))).toEqual(['#/', '#/settings']);
+    // Settings is an app-bar route, not a fifth tab (IA section 2).
+    expect([...links].map((link) => link.getAttribute('href'))).toEqual(['#/']);
     expect(links[0]?.getAttribute('aria-current')).toBe('page');
   });
 
@@ -45,6 +47,15 @@ describe('app shell', () => {
     currentLocation.value = { path: '/settings', sheet: null };
     render(<App />);
     expect(screen.getByRole('heading', { level: 1, name: '設定' })).toBeVisible();
+  });
+
+  it('writes the live screen id into data-screen, so QA can assert which screen is on', () => {
+    render(<App />);
+    expect(document.querySelector('[data-screen]')?.getAttribute('data-screen')).toBe('S10');
+
+    currentLocation.value = { path: '/settings', sheet: null };
+    render(<App />);
+    expect(document.querySelector('[data-screen="S60"]')).not.toBeNull();
   });
 
   it('shows the not-found screen for an unknown route', () => {

@@ -113,18 +113,20 @@ test.describe('app shell', () => {
     );
   });
 
-  test('bottom navigation moves between registered features', async ({ page }) => {
+  test('the app bar opens settings, and the bottom navigation returns home', async ({ page }) => {
     await page.getByTestId('language-en').click();
-    await page.getByRole('link', { name: 'Settings' }).click();
+    // Settings is an app-bar action, not a fifth tab (IA section 2).
+    await page.getByTestId('app-bar-settings').click();
 
     await expect(page).toHaveURL(/#\/settings$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Settings');
-    await expect(page.getByTestId('nav-settings')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('[data-screen="S60"]')).toBeAttached();
 
     await page.getByRole('link', { name: 'Home' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Bring your Japan tax refund home',
     );
+    await expect(page.locator('[data-screen="S10"]')).toBeAttached();
   });
 
   test('an unknown route shows the not-found screen instead of a blank page', async ({ page }) => {
@@ -139,7 +141,7 @@ test.describe('app shell', () => {
     });
     await page.goto('./');
     await page.getByTestId('language-en').click();
-    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByTestId('app-bar-settings').click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Settings');
     await page.getByTestId('export-backup').click();
     await page.goto('./#/no-such-route');
@@ -202,7 +204,11 @@ test.describe('app shell', () => {
     expect(
       await isChromeOverlapAtOneScrollPosition(
         page,
-        violation(['a[data-testid="nav-home"]', 'a[href$="#/settings"]']),
+        // Two spellings of the same tab. Settings served as the second one until M1-5c
+        // made it an app-bar action rather than a tab, so it is no longer in the navigation
+        // at all — which the third assertion below now covers instead. A bare `a[href$="#/"]`
+        // would not do: the brand link in the app bar has the same href and resolves first.
+        violation(['a[data-testid="nav-home"]', '[data-testid="bottom-nav"] a']),
       ),
       'both selectors resolve inside the navigation, however axe chose to spell them',
     ).toBe(true);
@@ -210,6 +216,14 @@ test.describe('app shell', () => {
     expect(
       await isChromeOverlapAtOneScrollPosition(page, violation(['[data-testid="language-en"]'])),
       'a control outside the navigation is a real finding and must still fail the build',
+    ).toBe(false);
+
+    expect(
+      await isChromeOverlapAtOneScrollPosition(
+        page,
+        violation(['[data-testid="app-bar-settings"]']),
+      ),
+      'the app-bar settings action is not navigation chrome, so overlapping it is a real finding',
     ).toBe(false);
 
     expect(

@@ -72,3 +72,20 @@
     display: none;
   }
 }
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 0 0 auto;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--tap-min);
+  min-block-size: var(--tap-min);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+}

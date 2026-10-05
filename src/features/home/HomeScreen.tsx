@@ -1,4 +1,5 @@
 import type { JSX } from 'preact';
+import { screenAttrs } from '../../app/screens.ts';
 import { systemClock, systemStatus } from '../../domain/index.ts';
 import { activeLocale, formatDate, formatNumber, useMessages } from '../../i18n/index.ts';
 import { Card } from '../../ui/index.ts';
@@ -12,7 +13,7 @@ export function HomeScreen(): JSX.Element {
   const startDate = formatDate(locale, status.start);
 
   return (
-    <>
+    <div class={styles.screen} {...screenAttrs('S10')}>
       <section class={styles.hero}>
         <h1 class={styles.title}>{t('home.title')}</h1>
         <p class={styles.countdown} data-testid="system-countdown">
@@ -40,6 +41,6 @@ export function HomeScreen(): JSX.Element {
       <Card title={t('home.status.milestone')}>
         <p>{t('home.status.body')}</p>
       </Card>
-    </>
+    </div>
   );
 }

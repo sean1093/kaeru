@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ScreenRoute } from './navigation.ts';
-import { collectFeatures } from './registry.ts';
 import {
   appNavigator,
   currentPath,
@@ -276,20 +275,5 @@ describe('router', () => {
     expect(() =>
       registerRoutes([route('/receipts/new', { guard: () => 'draft.unsaved' })]),
     ).toThrow(/"\/receipts\/new" declares a guard but no leaveConfirm is registered/);
-  });
-});
-
-describe('collectFeatures', () => {
-  const stub = (id: string, path: string) =>
-    ({ id, path, messages: { 'zh-TW': {}, en: {} }, screen: noScreen }) as never;
-
-  it('refuses two features claiming the same route', () => {
-    expect(() => collectFeatures([stub('a', '/x'), stub('b', '/x')])).toThrow(
-      /claimed by both "a" and "b"/,
-    );
-  });
-
-  it('accepts distinct routes', () => {
-    expect(collectFeatures([stub('a', '/x'), stub('b', '/y')])).toHaveLength(2);
   });
 });

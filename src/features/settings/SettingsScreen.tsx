@@ -1,6 +1,7 @@
 import type { JSX } from 'preact';
 import { useRef, useState } from 'preact/hooks';
 import { LanguageSwitcher } from '../../app/LanguageSwitcher.tsx';
+import { screenAttrs } from '../../app/screens.ts';
 import { setTheme, settings } from '../../app/settings-store.ts';
 import {
   BackupError,
@@ -55,7 +56,7 @@ export function SettingsScreen(): JSX.Element {
   }
 
   return (
-    <>
+    <div class={styles.screen} {...screenAttrs('S60')}>
       <h1 class={styles.title}>{t('settings.title')}</h1>
 
       <Card title={t('settings.language.title')}>
@@ -113,6 +114,6 @@ export function SettingsScreen(): JSX.Element {
           {notice}
         </p>
       </Card>
-    </>
+    </div>
   );
 }

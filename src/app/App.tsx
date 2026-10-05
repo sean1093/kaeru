@@ -5,14 +5,13 @@ import { AppHeader } from './AppHeader.tsx';
 import { BottomNav } from './BottomNav.tsx';
 import { messages } from './messages.ts';
 import { NotFound } from './NotFound.tsx';
-import { featureForPath } from './registry.ts';
-import { currentPath } from './router.ts';
+import { currentRoute } from './router.ts';
 import { UpdatePrompt } from './UpdatePrompt.tsx';
 
 export function App(): JSX.Element {
   const t = useMessages(messages);
-  const feature = featureForPath(currentPath.value);
-  const Screen = feature?.screen;
+  const match = currentRoute.value;
+  const Screen = match?.route.screen;
 
   return (
     <div class={styles.app}>
@@ -22,8 +21,16 @@ export function App(): JSX.Element {
       </a>
       <AppHeader />
       <main id="main" tabIndex={-1} class={styles.main}>
-        <div class={styles.content}>{Screen ? <Screen /> : <NotFound />}</div>
+        <div class={styles.content}>
+          {Screen && match ? <Screen params={match.params} /> : <NotFound />}
+        </div>
       </main>
+      {/*
+        Chrome still comes from M0 here: every registered route is `tabs` today, so the bar
+        is unconditional. `ScreenRoute.chrome` is already carried on the match, and M1-5b
+        switches on it to hide the bar for `fullscreen` and `mode` without any feature
+        changing.
+      */}
       <BottomNav />
       <UpdatePrompt />
     </div>
