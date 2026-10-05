@@ -11,6 +11,7 @@
 import type { CalendarDate } from '../domain/dates.ts';
 import { isCalendarDate } from '../domain/dates.ts';
 import type { Traveler, Trip } from '../domain/model.ts';
+import { recordUnreadable } from './unreadable-records.ts';
 
 /**
  * At most the last 4 characters of a passport number may exist anywhere, in storage or in
@@ -78,13 +79,17 @@ export function normalizePassportRef(value: unknown): string | undefined {
 }
 
 export function normalizeTrip(value: unknown): Trip | null {
+  // `undefined` means there is no record at this key at all — not a corrupt one.
+  if (value === undefined) return null;
   const record = readRecord(value);
-  if (!record) return null;
-  const id = readId(record.id);
-  const departureDate = readCalendarDate(record.departureDate);
+  const id = record ? readId(record.id) : null;
+  const departureDate = record ? readCalendarDate(record.departureDate) : null;
   // An untyped trip or one with no usable departure date cannot drive a single deadline,
   // and inventing a date here would quietly invent a refund window.
-  if (id === null || departureDate === null) return null;
+  if (!record || id === null || departureDate === null) {
+    recordUnreadable('trips');
+    return null;
+  }
 
   const flightTime = typeof record.flightTime === 'string' ? record.flightTime : undefined;
   const trip: Trip = {
@@ -107,11 +112,14 @@ export function normalizeTrip(value: unknown): Trip | null {
 }
 
 export function normalizeTraveler(value: unknown): Traveler | null {
+  if (value === undefined) return null;
   const record = readRecord(value);
-  if (!record) return null;
-  const id = readId(record.id);
-  const tripId = readId(record.tripId);
-  if (id === null || tripId === null) return null;
+  const id = record ? readId(record.id) : null;
+  const tripId = record ? readId(record.tripId) : null;
+  if (!record || id === null || tripId === null) {
+    recordUnreadable('travelers');
+    return null;
+  }
 
   const passportRef = normalizePassportRef(record.passportRef);
   const traveler: Traveler = { id, tripId, displayName: readText(record.displayName, '') };

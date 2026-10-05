@@ -87,6 +87,15 @@ describe('tripRepository', () => {
     expect((await tripRepository.current(db))?.id).toBe('last-year');
   });
 
+  it('breaks a same-departure-date tie by the most recently added trip (Architect review, #67)', async () => {
+    await tripRepository.put(db, aTrip({ id: 'draft-a', departureDate: '2026-12-24' }));
+    await tripRepository.put(db, aTrip({ id: 'draft-b', departureDate: '2026-12-24' }));
+    expect((await tripRepository.current(db))?.id).toBe('draft-b');
+
+    await tripRepository.put(db, aTrip({ id: 'draft-c', departureDate: '2026-12-24' }));
+    expect((await tripRepository.current(db))?.id).toBe('draft-c');
+  });
+
   it('archiving keeps the trip readable and exportable, and is idempotent', async () => {
     await tripRepository.put(db, aTrip());
     await tripRepository.archive(db, 'trip-1', true);
