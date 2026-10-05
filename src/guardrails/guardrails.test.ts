@@ -40,12 +40,22 @@ function contentText(locale: Locale): string {
   return JSON.stringify([bundle.articles, bundle.faq, bundle.operatorNotes]);
 }
 
+/**
+ * Files matching `pattern` that are not allowed to.
+ *
+ * An allowlist key naming a file exempts that file. A key ending in `/` exempts a
+ * directory, which is reserved for the case where the whole directory is a different kind
+ * of thing — not as a way to silence several files at once.
+ */
 function offenders(
   pattern: RegExp,
   allowed: Readonly<Record<string, string>>,
   read: (file: (typeof SOURCES)[number]) => string = (file) => file.code,
 ): readonly string[] {
-  return SOURCES.filter((file) => !(file.name in allowed) && pattern.test(read(file))).map(
+  const exempt = (name: string): boolean =>
+    name in allowed ||
+    Object.keys(allowed).some((key) => key.endsWith('/') && name.startsWith(key));
+  return SOURCES.filter((file) => !exempt(file.name) && pattern.test(read(file))).map(
     (file) => file.name,
   );
 }
@@ -262,6 +272,12 @@ describe('guardrails: the router owns navigation (M1-5a)', () => {
     const allowed: Readonly<Record<string, string>> = {
       'app/router.ts': 'parses and formats hashes by definition',
       'app/screens.ts': 'the published inventory: this is where patterns are spelled',
+      // A directory exemption, and the only one. The gallery renders specimens of
+      // link-bearing components, so its hrefs are fixture data for a component under
+      // glass rather than navigation a traveller can follow: a dead one is a wrong
+      // specimen, not a wrong app. It is also `import.meta.env.DEV`-gated and absent
+      // from the production bundle, which `e2e/production-bundle.spec.ts` asserts.
+      'features/gallery/': 'specimen fixtures, dev-only, never reachable in production',
     };
     expect(offenders(/['"`]#\/[a-z]/i, allowed)).toEqual([]);
   });
@@ -285,33 +301,58 @@ describe('guardrails: the router owns navigation (M1-5a)', () => {
 describe('guardrails: no end-to-end case is left switched off by accident (M3-2)', () => {
   /**
    * `test.fixme` is how a case written ahead of its screen stays visible in every CI report
-   * rather than invisible on a branch. The risk is that one survives its feature: a skipped
+   * rather than invisible on a branch. The risk is that one survives its feature: a disabled
    * case reads as coverage while asserting nothing.
    *
-   * So the set is pinned rather than counted. Turning one on is a visible diff here; adding
-   * one without an owning issue fails. `M3-2` requires this list to be **empty** before
-   * release — `test-strategy.md` section 6.
+   * **Pinned by enabling issue, not by count.** A count would be the wrong unit: each
+   * `test.fixme(true, …)` here sits at the top of a `describe` and disables every case
+   * inside it, so "5 fixmes" is five *statements* covering far more than five cases, and the
+   * number would stay 5 while the cases beneath them doubled. The issue that turns each one
+   * on is the thing that must not change silently.
+   *
+   * `M3-2` requires this map to be **empty** before release — `test-strategy.md` section 6.
    */
-  const EXPECTED_FIXMES: Readonly<Record<string, number>> = {
-    'airport.spec.ts': 5,
+  const EXPECTED_FIXMES: Readonly<Record<string, readonly string[]>> = {
+    'airport.spec.ts': ['#48', '#48', '#49', '#50', '#51'],
   };
 
-  it('has a fixme only where an issue is named to turn it on', () => {
-    const actual: Record<string, number> = {};
+  function issuesIn(code: string): readonly string[] {
+    return [...code.matchAll(/\btest\.fixme\s*\(([^)]*)\)/g)]
+      .map((match) => match[1]?.match(/#\d+/)?.[0] ?? '(no issue named)')
+      .sort();
+  }
+
+  it('disables a case only where an issue is named to turn it on', () => {
+    const actual: Record<string, readonly string[]> = {};
     for (const spec of SPECS) {
-      const count = (spec.code.match(/\btest\.fixme\s*\(/g) ?? []).length;
-      if (count > 0) actual[spec.name] = count;
+      const issues = issuesIn(spec.code);
+      if (issues.length > 0) actual[spec.name] = issues;
     }
-    expect(actual).toEqual(EXPECTED_FIXMES);
+    expect(actual).toEqual(
+      Object.fromEntries(
+        Object.entries(EXPECTED_FIXMES).map(([file, issues]) => [file, [...issues].sort()]),
+      ),
+    );
   });
 
   it('names the enabling issue on every fixme, so turning it on is someones work', () => {
     const unexplained = SPECS.flatMap((spec) =>
-      [...spec.code.matchAll(/\btest\.fixme\s*\([^)]*\)/g)]
-        .map((match) => match[0])
-        .filter((call) => !/#\d+/.test(call))
-        .map((call) => `${spec.name}: ${call.slice(0, 60)}`),
+      issuesIn(spec.code)
+        .filter((issue) => issue === '(no issue named)')
+        .map(() => spec.name),
     );
     expect(unexplained).toEqual([]);
+  });
+
+  it('switches a case off through fixme alone, never through a quieter form', () => {
+    // `describe.fixme` and an unconditional `test.skip` disable cases too, and neither shows
+    // up in the pinned map above. A gate that watches one spelling of a thing teaches people
+    // the other spellings.
+    const quiet = SPECS.flatMap((spec) =>
+      [...spec.code.matchAll(/\b(?:test|describe)\.describe\.fixme|\.skip\s*\(\s*true\b/g)].map(
+        (match) => `${spec.name}: ${match[0]}`,
+      ),
+    );
+    expect(quiet).toEqual([]);
   });
 });
