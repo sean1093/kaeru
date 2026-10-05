@@ -1199,12 +1199,12 @@ Full-bleed, dark scrim regardless of theme so the photo is judged on its own. Th
 │ [ 一張一張確認  Check them > ]               │
 ├──────────────────────────────────────────────┤
 │ 要帶證明文件  Bring documents   (1)          │
-│ ● BIC CAMERA 11/03 · ¥ 1,280,000             │
-│   單價 100 萬以上，海關可能會要看            │
-│   鑑定書或保證書                             │
-│   Unit price over ¥1,000,000 —               │
-│   customs may ask for the                    │
-│   certificate or warranty        >           │
+│ [ ] BIC CAMERA 11/03 · ¥ 1,280,000           │
+│     單價 100 萬以上，海關可能會要看          │
+│     鑑定書或保證書                           │
+│     Unit price over ¥1,000,000 —             │
+│     customs may ask for the                  │
+│     certificate or warranty        >         │
 ├──────────────────────────────────────────────┤
 │ 期限檢查  Deadline check                     │
 │ 沒有收據的期限會早於出境日。                 │
@@ -1218,6 +1218,8 @@ Full-bleed, dark scrim regardless of theme so the photo is judged on its own. Th
 
 
 **S17 Packing plan (UJ-017 to UJ-022).** This is where the airport mistake is actually prevented, two hours before the airport. The deadline check reports its own emptiness rather than hiding — the user needs to know it was checked (`DR-076`). The documents reminder fires on `hasHighValueItem` (`DR-016`).
+
+**The documents row is a checkbox, not a navigate-to-detail row, and that's deliberate (`DR-078`).** Ticking it is the acknowledgment the rule asks for — `DR-078` needs a signal that the user has registered "I have this document in hand," and the packing plan already has exactly that signal in the must-be-with-you checklist above it. A new `Receipt` field to hold the same fact would duplicate state that already exists on screen. **Every tick on S17 persists across sessions, and none of them reset or expire.** Someone who ticks eight receipts at 22:00 opening the app again at 06:00 must see them still ticked — anything else re-creates the exact data-loss anxiety the autosave decision on S21 exists to remove, now in a screen that is read, not typed. No tick resets on a new day or a changed departure date either: a stale tick costs the user a moment's re-verification if circumstances changed, which is honest; an invisible silent reset would be worse, because it looks identical to a tick the user never made.
 
 ---
 
