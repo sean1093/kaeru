@@ -12,5 +12,24 @@ export {
   TAIWAN_TIME_ZONE,
   today,
 } from './dates.ts';
-export type { SystemPhase, SystemStatus } from './tax-system.ts';
-export { systemStatus, TAX_FREE_SYSTEM_START } from './tax-system.ts';
+export type { SystemPhase, SystemStatus } from './resolve-rules.ts';
+export {
+  RulesGapError,
+  resolveDated,
+  resolveRules,
+  resolveSystem,
+  rulesReviewAgeDays,
+  systemStatus,
+} from './resolve-rules.ts';
+export type {
+  Dated,
+  DeadlineRule,
+  FeeRule,
+  HighValueRule,
+  ResolvedRules,
+  RulesData,
+  SystemRule,
+  TaxRateOption,
+  ThresholdRule,
+} from './rules.ts';
+export { kaeruRules, RATE_LABEL_KEYS, RULES_REVIEW_MAX_AGE_DAYS } from './rules-data.ts';

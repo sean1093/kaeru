@@ -78,6 +78,17 @@ export interface RulesData {
 /** The rules in force on a given purchase date: the only shape the engine consumes. */
 export interface ResolvedRules {
   on: CalendarDate;
+  /**
+   * The system boundary, carried through unchanged so that downstream rules can answer
+   * "old or refund?" without a second lookup (`DR-001`, `DR-003`).
+   *
+   * Compare it against `receipt.purchaseDate`, never against `on`. One `ResolvedRules` is
+   * deliberately shared across a receipt set (`GroupByShopDay`, `TripTotalsOf`), so a
+   * comparison against `on` would classify every receipt in the set by whichever date
+   * happened to resolve the rules — a wrong-system bug with no symptom until someone's
+   * October receipt turns up in Airport Mode.
+   */
+  system: SystemRule;
   rates: readonly TaxRateOption[];
   threshold: ThresholdRule;
   deadline: DeadlineRule;
