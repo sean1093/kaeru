@@ -51,7 +51,24 @@
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   line-height: var(--leading-tight);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+/*
+ * Hidden rather than ellipsized, which is a content decision before it is a layout one.
+ * The honest word in both locales is the last one — "receipt keeper" / 收據管家 — so a
+ * clipped tagline reads "Japan tax refund" under our own logo, which claims to be the
+ * refund service the brief's non-goals and principles.md section 7 say we are not. A hidden
+ * tagline claims nothing; a clipped one makes a complete and wrong statement. It is also
+ * principle 4 exactly: 8 characters of Chinese against 32 of English, so ellipsizing the
+ * English to fit a Chinese-sized box is the failure that principle is written against.
+ *
+ * 374px is a pragmatic width, deliberately not a design-system breakpoint token: this
+ * header is M0 scaffold that the per-screen app bar replaces in M1-5b, and `AppBarProps`
+ * has no tagline slot by design, so this surface has a known replacement date rather than a
+ * long future that would justify minting a token for it. (UXDesigner's call, as the owner.)
+ */
+@media (max-width: 374px) {
+  .tagline {
+    display: none;
+  }
 }
