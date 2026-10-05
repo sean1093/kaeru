@@ -52,6 +52,93 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    # Published so the smoke targets the URL this deployment actually produced rather than
+    # one written down twice.
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Proof that what is on the live site is what we think it is. It observes and files: it
+  # never reverts and never redeploys. An automated revert turns every false positive into a
+  # real outage, and this runs against a CDN we do not control, so its failure modes include
+  # propagation lag and upstream incidents that a rollback would have to propagate through
+  # too. See docs/architecture/implementation-plan.md section 6.
+  smoke:
+    name: Production smoke
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Pages can answer before the new build has propagated, and a smoke that races the CDN
+      # files issues about nothing. One settle, then the retry the smoke config already does.
+      - name: Let the deployment propagate
+        run: sleep 30
+
+      - name: Run the smoke
+        id: smoke
+        continue-on-error: true
+        env:
+          KAERU_SMOKE_URL: ${{ needs.deploy.outputs.page_url || 'https://sean1093.github.io/kaeru/' }}
+        run: npm run e2e:smoke
+
+      # Reads the report rather than the exit code: a suite that matched zero tests exits 0,
+      # which is how a misconfigured filter becomes a permanently green smoke checking
+      # nothing. Also classifies the failure so the issue carries the right severity.
+      - name: Read the report
+        id: report
+        if: always()
+        run: node scripts/check-smoke-report.mjs test-results/smoke.json
+
+      - name: File a failure
+        if: always() && steps.report.outcome == 'failure'
+        uses: ./.github/actions/file-alert
+        with:
+          key: production-smoke
+          title: 'Production smoke failed against the live site'
+          severity: ${{ steps.report.outputs.severity || 'S2' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            The production smoke failed after a deploy.
+
+            ```
+            ${{ steps.report.outputs.summary }}
+            ```
+
+            - Target: ${{ needs.deploy.outputs.page_url || 'https://sean1093.github.io/kaeru/' }}
+            - Commit: ${{ github.event.workflow_run.head_sha || github.sha }}
+            - Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            `S1` means the failure is true of the build and a different CDN would not fix it.
+            `S2` means it looked like infrastructure — a non-2xx, a connection failure or a
+            timeout — and it was already retried once.
+
+            Nothing has been reverted or redeployed. Decide and act deliberately.
+
+      - name: Fail the job when the smoke failed
+        if: always() && steps.report.outcome == 'failure'
+        run: exit 1
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-smoke
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

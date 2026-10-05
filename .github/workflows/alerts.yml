@@ -1,0 +1,114 @@
+name: Alerts
+
+# Two jobs that both end in "a machine noticed something and filed an issue", which is why
+# they share one file: they share the deduplication rules in .github/actions/file-alert, and
+# two workflows filing issues independently would each get those subtly wrong.
+#
+# Neither job ever reverts, redeploys or mutates anything. They observe and file.
+
+on:
+  # A CI run that went red on main. `workflow_run` so this cannot be skipped by the failure
+  # it is reporting on.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  # The rules data going stale is a slow failure that no push will ever surface.
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  ci-failure:
+    name: Red CI on main
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Name the jobs that failed
+        id: failed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.actions.listJobsForWorkflowRun({
+              ...context.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            const failed = data.jobs.filter((job) => job.conclusion === 'failure');
+            // Naming the job turns "CI is red" into somewhere to look.
+            core.setOutput('names', failed.map((job) => `\`${job.name}\``).join(', ') || 'unknown');
+
+      - name: File it
+        uses: ./.github/actions/file-alert
+        with:
+          key: ci-main-failure
+          title: 'CI failed on main'
+          severity: S1
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            CI failed on `main`, so the commit it verified will not deploy (ADR 0009).
+
+            - Failing job(s): ${{ steps.failed.outputs.names }}
+            - Commit: ${{ github.event.workflow_run.head_sha }}
+            - Run: ${{ github.event.workflow_run.html_url }}
+
+            Deployment is gated on this run succeeding, so the live site is still the last
+            green build. Fix forward on `main`; nothing here has reverted or redeployed
+            anything.
+
+  rules-freshness:
+    name: Rules data freshness
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      # The check reads one source file; it needs no dependencies and no build.
+      - name: Check the review date and any pending rule
+        id: check
+        run: |
+          if output=$(node scripts/check-rules-review.mjs 2>&1); then
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+            echo "$output"
+          else
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            {
+              echo 'findings<<KAERU_EOF'
+              echo "$output"
+              echo 'KAERU_EOF'
+            } >> "$GITHUB_OUTPUT"
+            echo "$output"
+          fi
+
+      - name: File it
+        if: steps.check.outputs.stale == 'true'
+        uses: ./.github/actions/file-alert
+        with:
+          key: rules-review
+          title: 'Rules data needs a human review'
+          # Stale rules are wrong money and wrong dates shown as fact, which is the S1
+          # definition, but nothing is broken today — hence an issue, not a page.
+          severity: S1
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            The weekly rules check reported something that needs a person:
+
+            ```
+            ${{ steps.check.outputs.findings }}
+            ```
+
+            Re-read the sources in `docs/product/domain-rules.md`, update
+            `src/domain/rules-data.ts`, and move `lastReviewed` forward only once a human
+            has actually checked — moving the date without reading the sources turns this
+            alert off while leaving the risk it exists for in place.

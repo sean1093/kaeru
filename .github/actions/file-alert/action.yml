@@ -1,0 +1,95 @@
+name: File an alert issue
+description: >-
+  Opens, comments on or re-opens a single tracking issue for an automated alert. Shared by
+  every alerting job so the deduplication rules are written once.
+
+inputs:
+  key:
+    description: >-
+      Stable identity for this alert, e.g. `production-smoke` or `rules-review`. One open
+      issue exists per key; a recurrence comments on it rather than opening a second.
+    required: true
+  title:
+    description: Issue title. Must be stable for a given key so the search can find it.
+    required: true
+  body:
+    description: Issue body, or the comment body on a recurrence.
+    required: true
+  severity:
+    description: S1 or S2. Applied as a `severity: <value>` label.
+    required: true
+  token:
+    description: Token with issues:write.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.token }}
+        script: |
+          const key = ${{ toJSON(inputs.key) }};
+          const title = ${{ toJSON(inputs.title) }};
+          const body = ${{ toJSON(inputs.body) }};
+          const severity = ${{ toJSON(inputs.severity) }};
+          const marker = `<!-- kaeru-alert:${key} -->`;
+          const labels = ['bug', `severity: ${severity}`, 'needs: triage'];
+
+          // The marker, not the title, is the identity: a human may retitle an issue while
+          // the condition is still live, and a second issue for a live condition is noise
+          // that trains people to ignore the first.
+          const { data: found } = await github.rest.search.issuesAndPullRequests({
+            q: `repo:${context.repo.owner}/${context.repo.repo} is:issue in:body "${marker}"`,
+            sort: 'updated',
+            order: 'desc',
+            per_page: 20,
+          });
+          const issues = found.items.filter((issue) => !issue.pull_request);
+          const open = issues.find((issue) => issue.state === 'open');
+
+          if (open) {
+            // Recurrence while the condition is still open: comment, never open a second.
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: open.number,
+              body: `Still failing.\n\n${body}`,
+            });
+            core.notice(`Commented on existing alert #${open.number}.`);
+            return;
+          }
+
+          const DAY_MS = 24 * 60 * 60 * 1000;
+          const recentlyClosed = issues.find(
+            (issue) =>
+              issue.state === 'closed' &&
+              issue.closed_at &&
+              Date.now() - Date.parse(issue.closed_at) < DAY_MS,
+          );
+
+          if (recentlyClosed) {
+            // Closed within the day and already failing again: somebody believed this was
+            // fixed and it is not. Re-opening keeps that history on one thread rather than
+            // starting a fresh issue that hides the fact it is the second time.
+            await github.rest.issues.update({
+              ...context.repo,
+              issue_number: recentlyClosed.number,
+              state: 'open',
+              labels,
+            });
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: recentlyClosed.number,
+              body: `Re-opened: this closed less than 24 hours ago and is failing again.\n\n${body}`,
+            });
+            core.notice(`Re-opened alert #${recentlyClosed.number}.`);
+            return;
+          }
+
+          const { data: created } = await github.rest.issues.create({
+            ...context.repo,
+            title,
+            labels,
+            body: `${marker}\n\n${body}`,
+          });
+          core.notice(`Opened alert #${created.number}.`);
