@@ -11,6 +11,13 @@ import type { Result } from 'axe-core';
  * true about the moment it was taken and says nothing about whether the control is
  * operable, which is what SC 2.5.8 is about.
  *
+ * This filter exists only because something stronger replaces it, and that replacement has
+ * been watched failing: removing `scroll-padding-block-end` from the scrolling root makes
+ * TC-A11Y-017 name the five controls the bar obscures. Its first version could not fail at
+ * all — it scrolled each control to the *centre* of the viewport, which is clear of a bottom
+ * bar by definition, so it proved that `scrollIntoView` centres things. A compensating
+ * control is not a control until it has been watched failing (QAEngineer, #141).
+ *
  * This filter exists only because something stronger replaces it. TC-A11Y-017 — "every
  * interactive control can be brought clear of the persistent navigation" in
  * `smoke.spec.ts`, specified in `docs/qa/test-cases.md` and reasoned through in PR #91 —
