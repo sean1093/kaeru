@@ -7,10 +7,17 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  # Superseded pull request runs are cancelled, but a run on main never is: every commit
-  # on main must be verified, and the Pages deployment is gated on that run succeeding
-  # (ADR 0009), so a cancelled run would silently skip the deploy.
+  # Superseded pull request runs are cancelled; a run on main never is. Every commit on main
+  # must be verified, and the Pages deployment is gated on that run succeeding (ADR 0009),
+  # so a cancelled run silently skips the deploy.
+  #
+  # `cancel-in-progress: false` alone did not achieve that — main runs were being cancelled
+  # in practice, which is how six commits reached main unverified and undeployed. So main
+  # additionally gets a **group of its own per commit**: two runs on main can never share a
+  # concurrency group, and runs in different groups cannot cancel each other whatever the
+  # expression below evaluates to. The flag stays as the statement of intent; the group is
+  # what enforces it.
+  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || 'shared' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
