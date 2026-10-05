@@ -18,7 +18,7 @@ export function BrandMark({ size = 28 }: { size?: number }): JSX.Element {
       <path
         d="M24 34V17M16.5 24.5L24 16l7.5 8.5"
         fill="none"
-        stroke="var(--color-text-on-primary)"
+        stroke="var(--color-on-primary)"
         stroke-width="3.5"
         stroke-linecap="round"
         stroke-linejoin="round"
