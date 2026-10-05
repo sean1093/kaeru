@@ -53,6 +53,12 @@ rule shipped that way is an S1 defect. `workflow_run` gives the gate without the
   prompt (ADR 0007) is how that resolves.
 - The deployment runs with GitHub's OIDC token; no long-lived secret exists in the
   repository.
+- Because the deployment is gated on a CI *conclusion*, CI must be allowed to finish on
+  `main`. `ci.yml` therefore cancels superseded runs only on pull request branches
+  (`cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}`). Observed during the first
+  merge train: three CI runs on `main` were cancelled by concurrency and the deployment was
+  correctly skipped three times — the gate behaved as designed, but no commit should reach
+  `main` unverified.
 
 ## Alternatives considered
 
