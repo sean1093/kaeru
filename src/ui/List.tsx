@@ -73,7 +73,7 @@ export function ListRow({
   return (
     <li class={rowClass}>
       {href !== undefined ? (
-        <a class={styles.inner} href={href}>
+        <a class={styles.inner} href={href} aria-current={selected === true ? 'true' : undefined}>
           {content}
         </a>
       ) : onActivate !== undefined ? (

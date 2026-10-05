@@ -52,6 +52,17 @@ describe('ListRow', () => {
     expect(onActivate).toHaveBeenCalledOnce();
   });
 
+  it('exposes selected state on an href row via aria-current, not the check mark alone (1.4.1)', () => {
+    render(
+      <List>
+        <ListRow href="#/t/1" primary="Yi-chun" selected />
+        <ListRow href="#/t/2" primary="Chih-hao" selected={false} last />
+      </List>,
+    );
+    expect(screen.getByRole('link', { name: 'Yi-chun' })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('link', { name: 'Chih-hao' })).not.toHaveAttribute('aria-current');
+  });
+
   it('wraps a very long bilingual shop name instead of truncating it (TC-I18N-010)', () => {
     render(
       <List>
