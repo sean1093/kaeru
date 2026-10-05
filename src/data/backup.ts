@@ -90,26 +90,48 @@ function looksLikePassportNumber(value: string): boolean {
  * (`Traveler.passportRef`, already capped separately); everywhere else, in every entity,
  * is in scope (TC-DATA-018: "including an unknown extra field").
  */
-function findPassportLikeValues(
-  value: unknown,
-  path: string,
-  excludePaths: ReadonlySet<string>,
-): string[] {
-  if (excludePaths.has(path)) return [];
+function findPassportLikeValues(value: unknown, path: string): string[] {
   if (typeof value === 'string') {
     return looksLikePassportNumber(value) ? [path] : [];
   }
   if (Array.isArray(value)) {
-    return value.flatMap((entry, index) =>
-      findPassportLikeValues(entry, `${path}[${index}]`, excludePaths),
-    );
+    return value.flatMap((entry, index) => findPassportLikeValues(entry, `${path}[${index}]`));
   }
   if (typeof value === 'object' && value !== null) {
     return Object.entries(value).flatMap(([key, entry]) =>
-      findPassportLikeValues(entry, path === '' ? key : `${path}.${key}`, excludePaths),
+      findPassportLikeValues(entry, path === '' ? key : `${path}.${key}`),
     );
   }
   return [];
+}
+
+/**
+ * Scans one entity for a passport-like value, but only where it could plausibly be one
+ * (Architect review, #93). A blanket scan over every field false-positives on ordinary
+ * structured data: `shopKey` is a normalised identity with whitespace collapsed (DR-012a)
+ * — a Lawson branch keyed `lawson100`, a product code, any six-to-nine-character
+ * alphanumeric id — and a false positive there silently drops a real receipt on restore,
+ * having done nothing wrong. A known structured field is skipped entirely. A field the
+ * entity's own type names as free text (`shopName`, `displayName`) is scanned, because a
+ * user can paste anything into it. An **unrecognised** field — one no normaliser or this
+ * list knows about — is scanned in full: it is a field nobody has reasoned about, which is
+ * the actual case `TC-DATA-018` is about (a passport number in "an unknown extra field").
+ */
+function findPassportLikeValuesInEntity(
+  entry: unknown,
+  knownStructuredKeys: ReadonlySet<string>,
+  freeTextKeys: ReadonlySet<string>,
+): string[] {
+  if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) return [];
+  const findings: string[] = [];
+  for (const [key, value] of Object.entries(entry)) {
+    if (freeTextKeys.has(key)) {
+      findings.push(...findPassportLikeValues(value, key));
+    } else if (!knownStructuredKeys.has(key)) {
+      findings.push(...findPassportLikeValues(value, key));
+    }
+  }
+  return findings;
 }
 
 /**
@@ -174,7 +196,52 @@ interface ValidatedDocument {
   rejectedKeys: string[];
 }
 
-const TRAVELER_PASSPORT_REF_EXCLUDE = new Set(['passportRef']);
+const TRIP_KNOWN_KEYS = new Set([
+  'id',
+  'departureDate',
+  'departureAirport',
+  'flightTime',
+  'checkInMinutes',
+  'airportBufferMinutes',
+  'overdueThresholdDays',
+  'receivingChargeJpy',
+  'archived',
+]);
+const TRIP_FREE_TEXT_KEYS = new Set<string>();
+
+// `passportRef` is excluded here, not treated as free text: it is handled by its own
+// dedicated length check below, which is the more precise rule for that specific field.
+const TRAVELER_KNOWN_KEYS = new Set(['id', 'tripId', 'passportRef']);
+const TRAVELER_FREE_TEXT_KEYS = new Set(['displayName']);
+
+const RECEIPT_KNOWN_KEYS = new Set([
+  'id',
+  'tripId',
+  'travelerId',
+  'shopKey',
+  'purchaseDate',
+  'lines',
+  'operatorId',
+  'status',
+  'packingLocation',
+  'allItemsPresent',
+  'willUseInJapan',
+  'hasHighValueItem',
+  'amountReceived',
+  'notClaimingReason',
+  'photoRef',
+  'statusChangedAt',
+]);
+const RECEIPT_FREE_TEXT_KEYS = new Set(['shopName']);
+
+const REGISTRATION_KNOWN_KEYS = new Set([
+  'tripId',
+  'operatorId',
+  'registeredAt',
+  'refundMethod',
+  'feeOverride',
+]);
+const REGISTRATION_FREE_TEXT_KEYS = new Set<string>();
 
 function validateTravelers(raw: unknown, rejectedKeys: string[]): Traveler[] {
   if (!Array.isArray(raw)) return [];
@@ -198,7 +265,11 @@ function validateTravelers(raw: unknown, rejectedKeys: string[]): Traveler[] {
       );
       continue;
     }
-    const findings = findPassportLikeValues(entry, '', TRAVELER_PASSPORT_REF_EXCLUDE);
+    const findings = findPassportLikeValuesInEntity(
+      entry,
+      TRAVELER_KNOWN_KEYS,
+      TRAVELER_FREE_TEXT_KEYS,
+    );
     if (findings.length > 0) {
       rejectedKeys.push(`traveler:${traveler.id} (passport-like value in ${findings.join(', ')})`);
       continue;
@@ -212,6 +283,8 @@ function validateEntities<T extends { id: string }>(
   raw: unknown,
   normalize: (value: unknown) => T | null,
   kind: string,
+  knownStructuredKeys: ReadonlySet<string>,
+  freeTextKeys: ReadonlySet<string>,
   rejectedKeys: string[],
 ): T[] {
   if (!Array.isArray(raw)) return [];
@@ -222,7 +295,7 @@ function validateEntities<T extends { id: string }>(
       rejectedKeys.push(`${kind}:${rawIdOf(entry) ?? 'unknown'} (unreadable)`);
       continue;
     }
-    const findings = findPassportLikeValues(entry, '', new Set());
+    const findings = findPassportLikeValuesInEntity(entry, knownStructuredKeys, freeTextKeys);
     if (findings.length > 0) {
       rejectedKeys.push(`${kind}:${entity.id} (passport-like value in ${findings.join(', ')})`);
       continue;
@@ -245,7 +318,11 @@ function validateRegistrations(raw: unknown, rejectedKeys: string[]): OperatorRe
       );
       continue;
     }
-    const findings = findPassportLikeValues(entry, '', new Set());
+    const findings = findPassportLikeValuesInEntity(
+      entry,
+      REGISTRATION_KNOWN_KEYS,
+      REGISTRATION_FREE_TEXT_KEYS,
+    );
     if (findings.length > 0) {
       rejectedKeys.push(
         `registration:${registration.tripId}/${registration.operatorId} (passport-like value in ${findings.join(', ')})`,
@@ -278,9 +355,23 @@ function validateDocument(doc: RawDocument): ValidatedDocument {
     schemaVersion: doc.schemaVersion as number,
     exportedAt: typeof doc.exportedAt === 'string' ? doc.exportedAt : '',
     settings: normalizeSettings(doc.settings, DEFAULT_SETTINGS),
-    trips: validateEntities(doc.trips, normalizeTrip, 'trip', rejectedKeys),
+    trips: validateEntities(
+      doc.trips,
+      normalizeTrip,
+      'trip',
+      TRIP_KNOWN_KEYS,
+      TRIP_FREE_TEXT_KEYS,
+      rejectedKeys,
+    ),
     travelers: validateTravelers(doc.travelers, rejectedKeys),
-    receipts: validateEntities(doc.receipts, normalizeReceipt, 'receipt', rejectedKeys),
+    receipts: validateEntities(
+      doc.receipts,
+      normalizeReceipt,
+      'receipt',
+      RECEIPT_KNOWN_KEYS,
+      RECEIPT_FREE_TEXT_KEYS,
+      rejectedKeys,
+    ),
     registrations: validateRegistrations(doc.registrations, rejectedKeys),
     photos: validatePhotos(doc.photos),
     rejectedKeys,
@@ -303,14 +394,17 @@ async function countConflicts(db: KaeruDatabase, validated: ValidatedDocument): 
   return conflicts;
 }
 
-function toPreview(validated: ValidatedDocument): ImportPreview {
+/** `conflicts` is a parameter, not a default a caller is trusted to overwrite — a function
+ * that returns a value it knows is wrong is a trap for the next caller (Architect review,
+ * #93). */
+function toPreview(validated: ValidatedDocument, conflicts: number): ImportPreview {
   return {
     schemaVersion: validated.schemaVersion,
     exportedAt: validated.exportedAt,
     trips: validated.trips.length,
     receipts: validated.receipts.length,
     photos: validated.photos.length,
-    conflicts: 0,
+    conflicts,
     rejectedKeys: validated.rejectedKeys,
   };
 }
@@ -430,7 +524,7 @@ export const backupService: BackupService = {
 
   async preview(db, text) {
     const validated = validateDocument(parseDocument(text));
-    return { ...toPreview(validated), conflicts: await countConflicts(db, validated) };
+    return toPreview(validated, await countConflicts(db, validated));
   },
 
   /**
@@ -448,12 +542,15 @@ export const backupService: BackupService = {
 
     for (const photo of validated.photos) {
       try {
+        const blob = dataUrlToBlob(photo.data, photo.mimeType);
         await photoRepository.put(db, {
           id: photo.id,
           receiptId: photo.receiptId,
           mimeType: photo.mimeType,
-          blob: dataUrlToBlob(photo.data, photo.mimeType),
-          byteSize: 0,
+          blob,
+          // `photoRepository.put` recomputes this from `blob.size` regardless (#76), but
+          // the field name here should not read as wrong on inspection (Architect review).
+          byteSize: blob.size,
           createdAt: validated.exportedAt || new Date().toISOString(),
         });
       } catch {
@@ -465,7 +562,7 @@ export const backupService: BackupService = {
       }
     }
 
-    return { ...toPreview(validated), conflicts };
+    return toPreview(validated, conflicts);
   },
 
   /** The only destructive action in the app. Clears every v2 store; `meta` is untouched. */

@@ -121,6 +121,34 @@ describe('TC-DATA-012: photos opted in or out', () => {
     });
     expect(withPhotos).toBeGreaterThan(without);
   });
+
+  it('Architect review, #93: an imported photo carries its real byteSize, not 0', async () => {
+    const bytes = 'x'.repeat(4096);
+    const document = JSON.stringify({
+      format: 'kaeru.backup',
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: '2026-11-01T00:00:00.000Z',
+      settings: {},
+      trips: [aTrip()],
+      travelers: [aTraveler()],
+      receipts: [{ ...aReceipt(), photoRef: 'photo-1' }],
+      registrations: [],
+      photos: [
+        {
+          id: 'photo-1',
+          receiptId: 'receipt-1',
+          mimeType: 'image/jpeg',
+          data: `data:image/jpeg;base64,${btoa(bytes)}`,
+        },
+      ],
+    });
+
+    await backupService.import(db, document, 'merge');
+
+    // totalBytes sums an index over byteSize (#76) — if the import had written 0, this
+    // would read 0 regardless of the blob actually stored.
+    expect(await photoRepository.totalBytes(db)).toBeGreaterThan(0);
+  });
 });
 
 describe('TC-DATA-013: export round trip', () => {
@@ -307,6 +335,29 @@ describe('TC-DATA-018: adversarial import — a full passport number in any fiel
       ),
     ).toBe(true);
     expect(await db.get('receipts', 'receipt-1')).toBeUndefined();
+  });
+
+  it('Architect review, #93: does not reject a receipt over an ordinary shopKey, an id, or a status', async () => {
+    // A normalised shopKey, a trip id, and a status are exactly the kind of six-to-nine
+    // character alphanumeric-plus-digit values the heuristic would otherwise flag — DR-012a
+    // collapses "Lawson 100" to something shaped like "lawson100". None of these are free
+    // text and none of them should ever be scanned.
+    const document = JSON.stringify({
+      format: 'kaeru.backup',
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: '2026-11-01T00:00:00.000Z',
+      settings: {},
+      trips: [aTrip({ id: 'trip789x' })],
+      travelers: [aTraveler()],
+      receipts: [{ ...aReceipt(), shopKey: 'lawson100' }],
+      registrations: [],
+    });
+
+    const preview = await backupService.import(db, document, 'merge');
+
+    expect(preview.rejectedKeys).toEqual([]);
+    expect(await db.get('trips', 'trip789x')).toBeDefined();
+    expect((await db.get('receipts', 'receipt-1'))?.shopKey).toBe('lawson100');
   });
 });
 
