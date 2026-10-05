@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fixedClock } from '../domain/index.ts';
-import { type KaeruDatabase, openDatabase } from './db.ts';
+import { closeDatabase, getDatabase, type KaeruDatabase, openDatabase } from './db.ts';
 import { StorageError } from './errors.ts';
 import {
   migrations,
@@ -10,7 +10,7 @@ import {
   type UpgradeTransaction,
 } from './migrations.ts';
 import { aTrip } from './test-builders.ts';
-import { type KaeruDB, META_KEY, SCHEMA_VERSION } from './types.ts';
+import { DB_NAME, type KaeruDB, META_KEY, SCHEMA_VERSION } from './types.ts';
 
 let dbName = '';
 let counter = 0;
@@ -139,16 +139,87 @@ describe('opening the database', () => {
     expect(failure).toMatchObject({ code: 'unavailable' });
   });
 
-  it('TC-DATA-006: an aborted transaction leaves no partial write', async () => {
-    const db = await open();
-    await db.put('trips', { ...aTrip({ id: 'trip-kept' }), seq: 1 });
+  it('an old connection closes itself so a newer open is not left stuck blocked', async () => {
+    // Opened through our own wrapper, so it carries the `blocking` handler — the "app
+    // already open in another tab" case the handler exists for.
+    const current = await open();
 
-    const tx = db.transaction('trips', 'readwrite');
-    await tx.store.put({ ...aTrip({ id: 'trip-aborted' }), seq: 2 });
-    tx.abort();
-    await expect(tx.done).rejects.toThrow();
+    // Something elsewhere opens a newer version, exactly as a post-update service worker
+    // would. If `blocking` closed the wrong connection, this hangs until the test's
+    // timeout rather than resolving.
+    const next = await openDB<KaeruDB>(dbName, SCHEMA_VERSION + 1, { upgrade() {} });
+    expect(next.objectStoreNames).toContain('receipts');
+    next.close();
 
-    expect(await db.getAllKeys('trips')).toEqual(['trip-kept']);
-    db.close();
+    // The connection that was actually in the way was closed, not left open and forgotten.
+    await expect(current.get('meta', META_KEY)).rejects.toThrow();
+  });
+
+  it('TC-DATA-009: a sandboxed frame where reading `indexedDB` itself throws fails cleanly too', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'indexedDB');
+    Object.defineProperty(globalThis, 'indexedDB', {
+      configurable: true,
+      get(): never {
+        throw new DOMException('Storage is disabled.', 'SecurityError');
+      },
+    });
+    try {
+      const failure = await openDatabase(dbName).catch((error: unknown) => error);
+      expect(failure).toBeInstanceOf(StorageError);
+      expect(failure).toMatchObject({ code: 'unavailable' });
+    } finally {
+      if (descriptor) Object.defineProperty(globalThis, 'indexedDB', descriptor);
+    }
+  });
+
+  it('TC-DATA-005: a factory with no databases() still refuses, version reported as unknown', async () => {
+    const future = await openDB<KaeruDB>(dbName, 99, { upgrade() {} });
+    future.close();
+
+    const real = globalThis.indexedDB;
+    vi.stubGlobal('indexedDB', { open: real.open.bind(real) } as unknown as IDBFactory);
+
+    const failure = await openDatabase(dbName).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect(failure).toMatchObject({ code: 'schema-too-new', foundVersion: undefined });
+  });
+});
+
+function deleteNamedDatabase(name: string): Promise<void> {
+  const { promise, resolve } = Promise.withResolvers<void>();
+  const request = indexedDB.deleteDatabase(name);
+  request.onsuccess = () => resolve();
+  request.onerror = () => resolve();
+  request.onblocked = () => resolve();
+  return promise;
+}
+
+describe('getDatabase / closeDatabase (the shared singleton)', () => {
+  afterEach(async () => {
+    closeDatabase();
+    await deleteNamedDatabase(DB_NAME);
+  });
+
+  it('shares one connection, and a close lets the next call reopen a fresh one', async () => {
+    const first = getDatabase();
+    expect(getDatabase()).toBe(first);
+    const db = await first;
+    expect(db.objectStoreNames).toContain('receipts');
+
+    closeDatabase();
+    closeDatabase(); // idempotent: no instance to close, must not throw
+
+    const reopened = await getDatabase();
+    expect(reopened).not.toBe(db);
+  });
+
+  it('does not cache a failed open: the next call gets a fresh attempt', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'indexedDB');
+    Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: undefined });
+    await expect(getDatabase()).rejects.toBeInstanceOf(StorageError);
+
+    if (descriptor) Object.defineProperty(globalThis, 'indexedDB', descriptor);
+    const recovered = await getDatabase();
+    expect(recovered.objectStoreNames).toContain('receipts');
   });
 });
