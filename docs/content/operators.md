@@ -43,7 +43,7 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | Refund methods | Credit card, QR-code payment, bank account, cash |
 | Fee | Not published |
 | Terminals supported | Smartphone/tablet, POS, PC, dedicated terminal |
-| Status | `reported-media` for the traveler flow (described on the company's own site) |
+| Status | `C-operator` — the registration flow, the QR-on-receipt mechanic and the refund methods are all described on the company's own 免税手続きの流れ page |
 
 ### `pie-vat` — PIE VAT
 
@@ -98,6 +98,7 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | Registration | Smartphone; scan passport or QR code; advertised as 5 steps in 30 seconds |
 | Refund methods | Not itemised publicly |
 | Fee | **1.5% of the tax-free sales amount, "in principle paid by the tourist"** (a merchant-pays option exists) |
+| Fee basis | **Purchase.** "Of the tax-free sales amount" is the operator's own wording, and 免税売上 is the sale, not the refund. On a ¥10,000 tax-excluded purchase that is ¥150 against a ¥1,000 refund — 15% of the money coming back (`DR-026a`) |
 | Notes | Singapore-origin; National Tax Agency approved transmitting operator. Its site is the clearest of the ten about who pays the fee |
 | Status | `C-operator` |
 
@@ -111,7 +112,8 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | URL | <https://ocean.inc/> (service: <https://service.ocean.inc/tax-system>) |
 | Registration | QR code on the receipt → web only, no app install. Name, phone, email, passport photo |
 | Refund methods | PayPal, bank transfer; **credit card added 2026-07-16 (Visa and UnionPay only — not JCB)**; currencies include TWD and JPY |
-| Fee | ~2.2% handling fee reported 2026-06. From 2026-07-16: PayPal route 0.33% + from ¥40; credit-card route 0.5% of the tax-excluded price, minimum ¥180 |
+| Fee | **Credit-card route, from 2026-07-16: 0.5% of the tax-excluded price, minimum ¥180.** That is the only percentage here with a confirmed basis, so it is the only one shown as one. **PayPal route: a flat ¥40-and-up component, plus a percentage we do not show** — the percentage's basis is unconfirmed, and a yen amount carries no basis risk. The earlier **~2.2%** figure is superseded and its basis is unconfirmed; it survives as narrative in Notes, not as a number anyone can compute with (`DR-026a`) |
+| Fee basis | **Credit-card route: purchase** — "未稅價格的 0.5%" is explicit. **PayPal route: unknown**; described as an overseas remittance fee, which suggests the remitted refund, but the wording does not settle it. **The 2.2% figure: unknown basis and superseded** — both a purchase basis and a refund basis fit the two reported cases once the receiving bank's charge is allowed for, so it must not be shipped as a number (`DR-026a`) |
 | Notes | **The cautionary tale.** Deployed early at animate, Miki House and Sneaker Dunk. With only PayPal/bank transfer at launch, Taiwanese travelers hit inbound foreign-remittance charges of NT$200–400+ from their own banks: one documented case turned ¥19,805 of purchases (≈¥1,980 tax) into **NT$77**, another turned ¥1,100 of tax into **nothing**. The company offered ¥2,000 compensation in virtual-card or gift-card form and then added credit-card refunds. Shows how fast operator terms move and why fee data needs an observation date |
 | Status | Fee and methods `reported-media` (first-hand traveler accounts with screenshots) |
 
@@ -123,7 +125,7 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | en | Japan Tax Free |
 | zh-TW | 日本免稅 |
 | URL | <https://jptaxfree.com/> |
-| Registration | POS, tablet or dedicated terminal |
+| Registration | **Not itemised publicly.** The association list records only the shop's equipment (POS, tablet, dedicated terminal), which says nothing about what a traveller does |
 | Refund methods | Not published |
 | Fee | Not published |
 | Status | Listed on the association's refund-capable list only |
@@ -136,7 +138,7 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | en | WAmazing |
 | zh-TW | WAmazing |
 | URL | <https://corp.wamazing.com/> |
-| Registration | App or dedicated terminal |
+| Registration | **Not itemised publicly.** The association list records only the shop's equipment (app, dedicated terminal), which says nothing about what a traveller does |
 | Refund methods | Not published |
 | Fee | Not published |
 | Notes | The only one of the ten that declared support for just one of the three refund delegation patterns |
@@ -150,7 +152,7 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | en | Global Tax Free |
 | zh-TW | Global Tax Free |
 | URL | <https://www.global-taxfree.jp/> |
-| Registration | POS, tablet or PC |
+| Registration | **Not itemised publicly.** The association list records only the shop's equipment (POS, tablet, PC), which says nothing about what a traveller does |
 | Refund methods | Not published |
 | Fee | Not published |
 | Status | Listed on the association's refund-capable list only |
@@ -163,7 +165,7 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | en | Intasect (InTaxFree Refund) |
 | zh-TW | Intasect（InTaxFree） |
 | URL | <https://intapay-payment.intasect.com/intaxfree-refund> |
-| Registration | POS, tablet or PC |
+| Registration | **Not itemised publicly.** The association list records only the shop's equipment (POS, tablet, PC), which says nothing about what a traveller does |
 | Refund methods | Not published |
 | Fee | Not published |
 | Status | Listed on the association's refund-capable list only |
@@ -171,10 +173,12 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 ## Rules for maintaining this file
 
 1. **Never write a fee we have not seen published or reported first-hand.** "Not published" is a legitimate value and the only honest one for five of these ten. Rendering `null` as `0%` would be a lie that costs users money.
-2. **Every fee carries its observation date.** Ocean's terms changed materially within four weeks. Consumption Tax Act rules do not govern refund procedures at all, so operators may change fees, methods and currencies at any time with no notice.
-3. **Never imply endorsement.** Neither the association, the National Tax Agency, nor Kaeru vouches for any operator.
-4. **Do not promise airport cash.** Cash at the departure port is a method the authorities list as possible. No operator has announced staffed airport cash counters for 2026-11-01.
-5. **The traveler usually cannot choose.** The operator is a property of the shop. Present this catalog as a reference for decoding a receipt, not as a menu.
+2. **A percentage without a basis is not a fee, it is a guess.** A percentage may be charged on the refund or on the tax-excluded purchase, and the refund is roughly a tenth of the purchase, so the wrong choice is a tenfold error in the user's money. Record the basis from the operator's own wording or record no number at all (`DR-026a`). Only two bases are established today: Tourego (purchase) and Ocean's credit-card route (purchase).
+3. **The association list describes the shop's equipment, not the traveller's path.** Its columns (スマートフォン・タブレット / POSレジ / パソコン / その他) record what hardware a shop runs the tax-free system on. That is a merchant procurement fact and must never be written into a Registration row, where a reader will take "PC" to mean there is a website they can register on.
+4. **Every fee carries its observation date.** Ocean's terms changed materially within four weeks. Consumption Tax Act rules do not govern refund procedures at all, so operators may change fees, methods and currencies at any time with no notice.
+5. **Never imply endorsement.** Neither the association, the National Tax Agency, nor Kaeru vouches for any operator.
+6. **Do not promise airport cash.** Cash at the departure port is a method the authorities list as possible. No operator has announced staffed airport cash counters for 2026-11-01.
+7. **The traveler usually cannot choose.** The operator is a property of the shop. Present this catalog as a reference for decoding a receipt, not as a menu.
 
 ## Sources
 
