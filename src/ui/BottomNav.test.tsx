@@ -38,13 +38,29 @@ describe('BottomNav', () => {
         label="Main"
         items={[
           item({
-            badge: { kind: 'count', value: 3, accessibleName: 'Receipts, 3 need action' },
+            badge: { kind: 'count', value: 3, accessibleName: '3 need action' },
           }),
         ]}
       />,
     );
     expect(screen.getByRole('link', { name: 'Receipts, 3 need action' })).toBeVisible();
     expect(screen.queryByRole('link', { name: '3' })).toBeNull();
+  });
+
+  it('composes the accessible name as label + badge meaning, so the visible text is always a prefix (WCAG 2.5.3)', () => {
+    render(
+      <BottomNav
+        label="主要導覽"
+        items={[
+          item({
+            label: '收據',
+            badge: { kind: 'count', value: 3, accessibleName: '3 項待處理' },
+          }),
+        ]}
+      />,
+    );
+    const link = screen.getByRole('link', { name: '收據, 3 項待處理' });
+    expect(link).toHaveAttribute('aria-label', expect.stringMatching(/^收據/));
   });
 
   it('renders the nav with its label as the accessible name', () => {

@@ -36,8 +36,11 @@ export interface BottomNavItem {
   icon: Icon;
   active: boolean;
   /**
-   * A dot has no number; a count must be folded into the accessible name
-   * ("Receipts, 3 need action") rather than announced on its own.
+   * A dot has no number and adds nothing to the accessible name. A count's
+   * `accessibleName` is only the badge's own meaning ("3 need action") — the component
+   * composes it with `label` as "Receipts, 3 need action" itself, so the visible text is
+   * always a prefix of the spoken name (WCAG 2.5.3, Label in Name) and no caller can get
+   * the word order or the visible label's exact text wrong.
    */
   badge?: { kind: 'dot' } | { kind: 'count'; value: number; accessibleName: string };
 }
