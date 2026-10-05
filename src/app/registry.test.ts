@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defineMessages } from '../i18n/index.ts';
-import { type Feature, defineFeature } from './feature.ts';
+import { defineFeature, type Feature } from './feature.ts';
 import { featuresFromModules } from './registry.ts';
 
 const messages = defineMessages({
