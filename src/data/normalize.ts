@@ -283,5 +283,9 @@ export function normalizeRegistration(value: unknown): OperatorRegistration | nu
     operatorId,
     registeredAt: typeof record.registeredAt === 'string' ? record.registeredAt : null,
     refundMethod: readMember(REFUND_METHODS, record.refundMethod, null),
+    // The traveller's own correction to the catalogue fee (DR-051). Not read back from a
+    // record yet — FrontendEngB owns the reader — but defaulted rather than left absent,
+    // because an unreadable override must mean "use the shipped figure", never zero.
+    feeOverride: null,
   };
 }

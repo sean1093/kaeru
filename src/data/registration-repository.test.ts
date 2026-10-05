@@ -31,8 +31,15 @@ describe('registrationRepository', () => {
         operatorId: 'global-tax-free',
         registeredAt: '2026-11-15T09:30:00.000Z',
         refundMethod: 'bank_transfer',
+        feeOverride: null,
       },
-      { tripId: 'trip-1', operatorId: 'tourist-pay', registeredAt: null, refundMethod: null },
+      {
+        tripId: 'trip-1',
+        operatorId: 'tourist-pay',
+        registeredAt: null,
+        refundMethod: null,
+        feeOverride: null,
+      },
     ]);
   });
 
@@ -41,7 +48,13 @@ describe('registrationRepository', () => {
     await registrationRepository.put(db, aRegistration({ tripId: 'trip-2' }));
 
     expect(await registrationRepository.listByTrip(db, 'trip-2')).toEqual([
-      { tripId: 'trip-2', operatorId: 'global-tax-free', registeredAt: null, refundMethod: null },
+      {
+        tripId: 'trip-2',
+        operatorId: 'global-tax-free',
+        registeredAt: null,
+        refundMethod: null,
+        feeOverride: null,
+      },
     ]);
   });
 
