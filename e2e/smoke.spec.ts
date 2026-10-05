@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
+import type { Result } from 'axe-core';
 
 const ROUTES = ['./', './#/settings'] as const;
 const LOCALES = ['zh-TW', 'en'] as const;
@@ -18,20 +19,39 @@ const LOCALES = ['zh-TW', 'en'] as const;
  * filter loses its justification; they are meant to fail together.
  *
  * Deliberately narrow: only `target-size`, and only when every node blamed for the
- * obstruction is the navigation itself. Anything else covering a control is a real
- * finding and still fails the build.
+ * obstruction resolves to an element inside the navigation. Anything else covering a
+ * control is a real finding and still fails the build.
+ *
+ * It asks the DOM rather than reading axe's selector text. The first version of this
+ * matched `selector.includes('bottom-nav')` and silently matched nothing: axe generates
+ * whatever selector it finds shortest, which for these nodes is `a[data-testid="nav-home"]`
+ * and `a[href$="#/settings"]`, and it changed strategy the moment `aria-current` appeared.
+ * The selector string is an implementation detail axe never promised; "is this element
+ * inside the nav" is a question only the document can answer.
  */
-function isChromeOverlapAtOneScrollPosition(violation: {
-  id: string;
-  nodes: readonly unknown[];
-}): boolean {
-  if (violation.id !== 'target-size') return false;
-  const blamed = (violation.nodes as { relatedNodes?: { target?: string[] }[] }[]).flatMap(
-    (node) => node.relatedNodes ?? [],
+function nodesBlamedForObstruction(violation: Result): readonly string[] {
+  const related = violation.nodes.flatMap((node) =>
+    [...node.all, ...node.any, ...node.none].flatMap((check) => check.relatedNodes ?? []),
   );
-  return (
-    blamed.length > 0 &&
-    blamed.every((node) => (node.target ?? []).some((selector) => selector.includes('bottom-nav')))
+  // `target` is one selector per frame; these pages have no cross-frame content, so the
+  // last entry is the one that resolves in the main document.
+  return related.map((node) => {
+    const last = (node.target as unknown as (string | readonly string[])[]).at(-1);
+    return Array.isArray(last) ? (last.at(-1) ?? '') : ((last as string) ?? '');
+  });
+}
+
+async function isChromeOverlapAtOneScrollPosition(page: Page, violation: Result): Promise<boolean> {
+  if (violation.id !== 'target-size') return false;
+  const selectors = nodesBlamedForObstruction(violation);
+  if (selectors.length === 0) return false;
+  return page.evaluate(
+    (list) =>
+      list.every(
+        (selector) =>
+          document.querySelector(selector)?.closest('[data-testid="bottom-nav"]') != null,
+      ),
+    selectors as string[],
   );
 }
 
@@ -135,14 +155,70 @@ test.describe('app shell', () => {
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
         .analyze();
-      const blocking = results.violations
-        .filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''))
-        .filter((violation) => !isChromeOverlapAtOneScrollPosition(violation));
+      const serious = results.violations.filter((violation) =>
+        ['serious', 'critical'].includes(violation.impact ?? ''),
+      );
+      const blocking: Result[] = [];
+      for (const violation of serious) {
+        if (!(await isChromeOverlapAtOneScrollPosition(page, violation))) {
+          blocking.push(violation);
+        }
+      }
       expect(
         blocking,
         `${testInfo.project.name} ${route}: ${JSON.stringify(blocking, null, 2)}`,
       ).toEqual([]);
     }
+  });
+
+  /**
+   * The filter above only runs when a `target-size` finding exists, which `main` does not
+   * currently produce — so its first version matched nothing, passed every build and
+   * protected nothing. A branch meant to be rare still needs one run where it is not.
+   *
+   * The two selectors below are the ones axe actually generated for the navigation links
+   * when this was measured on a built preview. Neither contains the string "bottom-nav",
+   * which is exactly how the first version failed; one of them is an `href` selector that
+   * only appeared after `aria-current` was added, which is how a selector-text match fails
+   * again later. Both must resolve to the navigation, and a control outside it must not.
+   */
+  test('the navigation-overlap filter resolves nodes rather than matching selector text', async ({
+    page,
+  }) => {
+    await page.goto('./#/settings');
+
+    const violation = (selectors: string[]): Result =>
+      ({
+        id: 'target-size',
+        nodes: [
+          {
+            all: [],
+            none: [],
+            any: [{ relatedNodes: selectors.map((target) => ({ target: [target] })) }],
+          },
+        ],
+      }) as unknown as Result;
+
+    expect(
+      await isChromeOverlapAtOneScrollPosition(
+        page,
+        violation(['a[data-testid="nav-home"]', 'a[href$="#/settings"]']),
+      ),
+      'both selectors resolve inside the navigation, however axe chose to spell them',
+    ).toBe(true);
+
+    expect(
+      await isChromeOverlapAtOneScrollPosition(page, violation(['[data-testid="language-en"]'])),
+      'a control outside the navigation is a real finding and must still fail the build',
+    ).toBe(false);
+
+    expect(
+      await isChromeOverlapAtOneScrollPosition(page, {
+        ...violation(['a[data-testid="nav-home"]']),
+        id: 'color-contrast',
+      } as Result),
+      'the filter is scoped to target-size and drops nothing else',
+    ).toBe(false);
   });
 
   /**
