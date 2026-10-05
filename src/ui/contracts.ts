@@ -37,10 +37,12 @@ export interface BottomNavItem {
   active: boolean;
   /**
    * A dot has no number and adds nothing to the accessible name. A count's
-   * `accessibleName` is only the badge's own meaning ("3 need action") — the component
-   * composes it with `label` as "Receipts, 3 need action" itself, so the visible text is
-   * always a prefix of the spoken name (WCAG 2.5.3, Label in Name) and no caller can get
-   * the word order or the visible label's exact text wrong.
+   * `accessibleName` is concatenated directly after `label` with no separator the kit
+   * owns — the fragment must carry its own leading connector, already correct for the
+   * caller's locale: `，3 項待處理` (zh-TW) or `, 3 need action` (en), composing to `收據，3
+   * 項待處理` / `Receipts, 3 need action`. Because there is no separator slot, the visible
+   * label is structurally always a prefix of the spoken name (WCAG 2.5.3, Label in
+   * Name) — the kit cannot put the badge first even by accident.
    */
   badge?: { kind: 'dot' } | { kind: 'count'; value: number; accessibleName: string };
 }

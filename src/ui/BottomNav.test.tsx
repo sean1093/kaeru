@@ -32,35 +32,40 @@ describe('BottomNav', () => {
     expect(screen.getByRole('link', { name: 'Receipts' })).toBeVisible();
   });
 
-  it('folds a count badge into the accessible name instead of announcing a bare number', () => {
+  it('concatenates a count badge fragment onto the label, not a bare number', () => {
     render(
       <BottomNav
         label="Main"
         items={[
           item({
-            badge: { kind: 'count', value: 3, accessibleName: '3 need action' },
+            badge: { kind: 'count', value: 3, accessibleName: ', 3 need action' },
           }),
         ]}
       />,
     );
-    expect(screen.getByRole('link', { name: 'Receipts, 3 need action' })).toBeVisible();
-    expect(screen.queryByRole('link', { name: '3' })).toBeNull();
+    const link = screen.getByTestId('nav-receipts');
+    expect(link).toHaveAttribute('aria-label', 'Receipts, 3 need action');
+    expect(screen.queryByRole('link', { name: '3', exact: true })).toBeNull();
   });
 
-  it('composes the accessible name as label + badge meaning, so the visible text is always a prefix (WCAG 2.5.3)', () => {
+  it('owns no separator: the caller\u2019s fragment carries its own locale-correct leading connector', () => {
     render(
       <BottomNav
         label="主要導覽"
         items={[
           item({
             label: '收據',
-            badge: { kind: 'count', value: 3, accessibleName: '3 項待處理' },
+            badge: { kind: 'count', value: 3, accessibleName: '，3 項待處理' },
           }),
         ]}
       />,
     );
-    const link = screen.getByRole('link', { name: '收據, 3 項待處理' });
-    expect(link).toHaveAttribute('aria-label', expect.stringMatching(/^收據/));
+    const link = screen.getByTestId('nav-receipts');
+    // Exact, not a substring match: pins the full-width 「，」 specifically, so a trim,
+    // a collapse, or a lint rule stripping the connector fails this rather than an
+    // ASCII-comma assertion that would pass either way.
+    expect(link).toHaveAttribute('aria-label', '收據，3 項待處理');
+    expect(link.getAttribute('aria-label')).toMatch(/^收據/);
   });
 
   it('renders the nav with its label as the accessible name', () => {

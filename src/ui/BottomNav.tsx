@@ -7,10 +7,13 @@ import type { BottomNavItem, BottomNavProps } from './contracts.ts';
  *
  * A dot badge has no number and adds nothing to the accessible name — it is `aria-hidden`
  * decoration. A count badge is never announced as a bare number next to the label: this
- * component composes `item.label` with the badge's own `accessibleName` ("Receipts" + "3
- * need action" → "Receipts, 3 need action"), so the visible text is always a prefix of
- * the spoken name (WCAG 2.5.3, Label in Name) and a caller cannot get the word order or
- * the exact visible label wrong by supplying the whole string itself.
+ * component concatenates `item.label` with the badge's own `accessibleName` verbatim,
+ * with no separator of its own ("Receipts" + ", 3 need action" → "Receipts, 3 need
+ * action"). The kit owns no punctuation — `accessibleName` is the fragment *including*
+ * its leading connector, already correct for whichever locale the caller is rendering,
+ * same as every other string this kit takes. Because concatenation has no separator slot
+ * for a caller to exploit, the visible label is structurally always a prefix of the
+ * spoken name (WCAG 2.5.3, Label in Name) — not by convention, by construction.
  */
 function Badge({ badge }: { badge: NonNullable<BottomNavItem['badge']> }): JSX.Element {
   if (badge.kind === 'dot') {
@@ -30,7 +33,7 @@ export function BottomNav({ label, items }: BottomNavProps): JSX.Element {
         {items.map((item) => {
           const Icon = item.icon;
           const accessibleName =
-            item.badge?.kind === 'count' ? `${item.label}, ${item.badge.accessibleName}` : null;
+            item.badge?.kind === 'count' ? `${item.label}${item.badge.accessibleName}` : null;
           return (
             <li key={item.id} class={styles.item}>
               <a

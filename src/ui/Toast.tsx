@@ -25,7 +25,11 @@ export function Toast({ message, action, durationMs, onDismiss }: ToastProps): J
     // `onDismiss` identity across re-renders must not restart a countdown the user is
     // already watching, which is why it is read through a ref rather than listed here.
     const timer = window.setTimeout(() => onDismissRef.current(), duration);
-    return () => window.clearTimeout(timer);
+    // Guards a torn-down global, not just a test artefact: the same unmount-after-
+    // `window`-is-gone ordering can happen for real during a page's own teardown.
+    return () => {
+      if (typeof window !== 'undefined') window.clearTimeout(timer);
+    };
   }, [message, duration]);
 
   return (
