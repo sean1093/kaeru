@@ -8,7 +8,10 @@ on:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseded pull request runs are cancelled, but a run on main never is: every commit
+  # on main must be verified, and the Pages deployment is gated on that run succeeding
+  # (ADR 0009), so a cancelled run would silently skip the deploy.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
