@@ -222,7 +222,7 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 └──────────────────────────────────────────────┘
 ```
 
-**When a flight time was given in S02, a leave-by line appears right after the buffer control** — same format as S61 and S13: 建議 14:40 從飯店出發 / Leave your hotel by 14:40, with the arithmetic available on tap. It is the immediate payoff for the buffer choice the user just made, so it sits directly below that control rather than waiting for S61. When no flight time was given, nothing renders in its place — not a dash, not a placeholder; there is nothing to compute yet, and the field stays correctable later in S61 (`CountdownProps`: omit the whole component when there is no flight time, same rule extended here).
+**When a flight time was given in S02, a leave-by line appears right after the buffer control** — same format as S61 and S13: 建議 14:40 到機場 / Be at the airport by 14:40, with the arithmetic available on tap. It is the immediate payoff for the buffer choice the user just made, so it sits directly below that control rather than waiting for S61. When no flight time was given, nothing renders in its place — not a dash, not a placeholder; there is nothing to compute yet, and the field stays correctable later in S61 (`CountdownProps`: omit the whole component when there is no flight time, same rule extended here).
 
 
 ### Onboarding microcopy
@@ -376,8 +376,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │=== 先過海關，再託運行李。                    │
 │=== Customs first, bag drop second.           │
 ├──────────────────────────────────────────────┤
-│ 建議 14:40 從飯店出發                        │
-│ Leave your hotel by 14:40                    │
+│ 建議 14:40 到機場                            │
+│ Be at the airport by 14:40                   │
 │ 班機 18:40 − 報到 60 分 − 退稅 60 分         │
 │ Flight 18:40, check-in 60 min,               │
 │ tax-free 60 min. Kaeru 的建議，              │
@@ -526,7 +526,7 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 | Per-operator registration | 一家業者登錄一次就好，之後的收據會自動跟著。 | Register once per operator; later receipts attach automatically. |
 | Empty headline | 還沒有收據 | No receipts yet |
 | Departure banner | 今天出境。先過海關，再託運行李。 | You leave today. Customs first, bag drop second. |
-| Leave-by | 建議 14:40 從飯店出發 | Leave your hotel by 14:40 |
+| Leave-by | 建議 14:40 到機場 | Be at the airport by 14:40 |
 | Leave-by caveat | Kaeru 的建議，不是官方規定。 | Our suggestion, not an official figure. |
 | Checked-bag item | 5 張收據的東西還在託運行李 — 過海關前要拿出來 | 5 receipts: goods in checked bags — take them out before customs |
 | Documents item | 1 張收據要帶證明文件 | 1 receipt needs its documents |
@@ -1210,9 +1210,9 @@ Full-bleed, dark scrim regardless of theme so the photo is judged on its own. Th
 │ 沒有收據的期限會早於出境日。                 │
 │ No receipt expires before you leave.         │
 ├──────────────────────────────────────────────┤
-│ 幾點出發  When to leave                      │
-│ 建議 14:40 從飯店出發                        │
-│ Leave your hotel by 14:40        >           │
+│ 機場要幾點到  Be at the airport by           │
+│  建議 14:40 到機場                           │
+│  Be at the airport by 14:40        >         │
 └──────────────────────────────────────────────┘
 ```
 
@@ -2064,8 +2064,8 @@ Every operator detail carries the `DR-053` non-endorsement line and the fee obse
 │  official figure.                            │
 ├──────────────────────────────────────────────┤
 │ 算出來  Which gives you                      │
-│ 建議 14:40 從飯店出發                        │
-│ Leave your hotel by 14:40                    │
+│ 建議 14:40 到機場                            │
+│ Be at the airport by 14:40                   │
 ├──────────────────────────────────────────────┤
 │ 旅客  Travelers                              │
 │ > o 宜君 · 7431 · 7 張收據      >            │
