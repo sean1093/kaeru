@@ -7,6 +7,8 @@ export { isStorageError, StorageError } from './errors.ts';
 export type { Migration } from './migrations.ts';
 export { migrations, pendingMigrations, runMigrations } from './migrations.ts';
 export { normalizePassportRef, PASSPORT_REF_MAX_LENGTH } from './normalize.ts';
+export { receiptRepository } from './receipt-repository.ts';
+export { registrationRepository } from './registration-repository.ts';
 export type {
   BackupDocumentV2,
   BackupOptions,

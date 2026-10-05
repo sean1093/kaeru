@@ -10,7 +10,17 @@
 
 import type { CalendarDate } from '../domain/dates.ts';
 import { isCalendarDate } from '../domain/dates.ts';
-import type { Traveler, Trip } from '../domain/model.ts';
+import type {
+  NotClaimingReason,
+  OperatorRegistration,
+  PackingLocation,
+  Receipt,
+  ReceiptLine,
+  ReceiptStatus,
+  RefundMethod,
+  Traveler,
+  Trip,
+} from '../domain/model.ts';
 import { recordUnreadable } from './unreadable-records.ts';
 
 /**
@@ -124,4 +134,139 @@ export function normalizeTraveler(value: unknown): Traveler | null {
   const passportRef = normalizePassportRef(record.passportRef);
   const traveler: Traveler = { id, tripId, displayName: readText(record.displayName, '') };
   return passportRef === undefined ? traveler : { ...traveler, passportRef };
+}
+
+/**
+ * Closed sets as exhaustive lookup tables: adding a member to a union in `model.ts`
+ * without listing it here is a type error, which is the point — a status we silently did
+ * not recognise would be rewritten to `logged` and lose the user's assertion.
+ */
+const RECEIPT_STATUSES: Record<ReceiptStatus, true> = {
+  logged: true,
+  registered: true,
+  customs_confirmed: true,
+  refund_pending: true,
+  refunded: true,
+  rejected: true,
+  refund_disputed: true,
+  not_claiming: true,
+};
+
+const PACKING_LOCATIONS: Record<PackingLocation, true> = {
+  with_me: true,
+  checked_bag: true,
+  unknown: true,
+};
+
+const NOT_CLAIMING_REASONS: Record<NotClaimingReason, true> = {
+  consumed: true,
+  missing: true,
+  fee_not_worth_it: true,
+  old_system: true,
+  other: true,
+};
+
+const REFUND_METHODS: Record<RefundMethod, true> = {
+  credit_card: true,
+  bank_transfer: true,
+  qr_payment: true,
+  cash: true,
+  paypal: true,
+  points: true,
+};
+
+function readMember<T extends string, F>(
+  table: Record<T, true>,
+  value: unknown,
+  fallback: F,
+): T | F {
+  return typeof value === 'string' && Object.hasOwn(table, value) ? (value as T) : fallback;
+}
+
+/**
+ * A line with no amount at all cannot be part of any total (DR-070), and a line with no
+ * rate cannot be taxed, so neither reaches the domain. The record itself stays on disk.
+ */
+export function normalizeLine(value: unknown): ReceiptLine | null {
+  const record = readRecord(value);
+  if (!record) return null;
+  const taxRate = record.taxRate;
+  if (typeof taxRate !== 'number' || !Number.isFinite(taxRate) || taxRate < 0) return null;
+
+  const taxExcludedAmount = readJpy(record.taxExcludedAmount);
+  const taxIncludedAmount = readJpy(record.taxIncludedAmount);
+  if (taxExcludedAmount === null && taxIncludedAmount === null) return null;
+
+  return {
+    taxRate,
+    taxExcludedAmount,
+    taxIncludedAmount,
+    maxUnitPriceTaxExcluded: readJpy(record.maxUnitPriceTaxExcluded),
+    amountsAreDerived: record.amountsAreDerived === true,
+  };
+}
+
+export function normalizeReceipt(value: unknown): Receipt | null {
+  if (value === undefined) return null;
+  const record = readRecord(value);
+  const id = record ? readId(record.id) : null;
+  const tripId = record ? readId(record.tripId) : null;
+  const travelerId = record ? readId(record.travelerId) : null;
+  const purchaseDate = record ? readCalendarDate(record.purchaseDate) : null;
+  // The purchase date decides which tax-free system applies (DR-002); a receipt without a
+  // usable one cannot be shown as either, and guessing would guess at someone's refund.
+  if (!record || id === null || tripId === null || travelerId === null || purchaseDate === null) {
+    recordUnreadable('receipts');
+    return null;
+  }
+
+  const shopName = readText(record.shopName, '');
+  const lines: ReceiptLine[] = [];
+  if (Array.isArray(record.lines)) {
+    for (const entry of record.lines) {
+      const line = normalizeLine(entry);
+      if (line) lines.push(line);
+    }
+  }
+  const photoRef = readId(record.photoRef);
+
+  const receipt: Receipt = {
+    id,
+    tripId,
+    travelerId,
+    shopName,
+    // Deriving a key is the domain's job (DR-012a); falling back to the raw name keeps a
+    // repaired record grouping with itself rather than with everything else.
+    shopKey: readText(record.shopKey, shopName),
+    purchaseDate,
+    lines,
+    operatorId: readId(record.operatorId),
+    status: readMember(RECEIPT_STATUSES, record.status, 'logged'),
+    packingLocation: readMember(PACKING_LOCATIONS, record.packingLocation, 'with_me'),
+    allItemsPresent: readFlag(record.allItemsPresent),
+    willUseInJapan: readFlag(record.willUseInJapan),
+    hasHighValueItem: readFlag(record.hasHighValueItem),
+    amountReceived: readJpy(record.amountReceived),
+    notClaimingReason: readMember(NOT_CLAIMING_REASONS, record.notClaimingReason, null),
+    statusChangedAt: readText(record.statusChangedAt, ''),
+  };
+  return photoRef === null ? receipt : { ...receipt, photoRef };
+}
+
+export function normalizeRegistration(value: unknown): OperatorRegistration | null {
+  if (value === undefined) return null;
+  const record = readRecord(value);
+  const tripId = record ? readId(record.tripId) : null;
+  const operatorId = record ? readId(record.operatorId) : null;
+  if (!record || tripId === null || operatorId === null) {
+    recordUnreadable('registrations');
+    return null;
+  }
+
+  return {
+    tripId,
+    operatorId,
+    registeredAt: typeof record.registeredAt === 'string' ? record.registeredAt : null,
+    refundMethod: readMember(REFUND_METHODS, record.refundMethod, null),
+  };
 }
