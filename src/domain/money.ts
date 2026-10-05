@@ -42,8 +42,8 @@ const BASIS_POINTS = 10_000;
 
 export const lineAmountsOf: LineAmountsOf = (line): LineAmounts => {
   const rate = Math.round(line.taxRate * BASIS_POINTS);
-  const excluded = line.taxExcludedAmount;
-  const included = line.taxIncludedAmount;
+  const excluded = line.taxExcludedAmount === null ? null : Math.max(0, line.taxExcludedAmount);
+  const included = line.taxIncludedAmount === null ? null : Math.max(0, line.taxIncludedAmount);
 
   // Both sides present: the receipt's own figures win over anything we could compute
   // (DR-022). Whether they are estimates is the form's answer, not ours.
@@ -51,7 +51,12 @@ export const lineAmountsOf: LineAmountsOf = (line): LineAmounts => {
     return {
       taxExcluded: excluded,
       taxIncluded: included,
-      tax: included - excluded,
+      // An inverted pair is not a tax figure to defer to, it is two numbers that cannot
+      // both be true, and it is reachable from a hand-edited backup or a v1 import. Left
+      // unfloored it would make one receipt *subtract* from the trip's pending refund —
+      // the traveller logs a purchase and the home total goes down. Validation blocks the
+      // pair (DR-071); this is the last line, not the first.
+      tax: Math.max(0, included - excluded),
       derived: line.amountsAreDerived,
     };
   }
@@ -171,7 +176,12 @@ function estimate(
     receivingCharge,
     net,
     refundMethodKnown: registration?.refundMethod != null,
-    feeWarning: net !== null && net < rules.fee.warnBelowJpy,
+    // Every deduction is non-negative, so `net <= gross` always — which means a gross
+    // already under the floor is under it whatever the fee turns out to be. Requiring a
+    // known net would switch the warning off exactly where it is needed: `operatorId` is
+    // null by default (DR-050), and the receipts nobody bothers to resolve an operator for
+    // are the small ones. No guess at a fee, and no false positive.
+    feeWarning: (net ?? gross) < rules.fee.warnBelowJpy,
   };
 }
 
