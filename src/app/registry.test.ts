@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { defineMessages } from '../i18n/index.ts';
-import { defineFeature } from './feature.ts';
-import { type FeatureModule, featuresFromModules } from './registry.ts';
+import { type Feature, defineFeature } from './feature.ts';
+import { featuresFromModules } from './registry.ts';
 
 const messages = defineMessages({
   'zh-TW': { 'test.nav': '測試' },
   en: { 'test.nav': 'Test' },
 });
 
-function moduleFor(id: string, path: string): FeatureModule {
+function moduleFor(id: string, path: string): { feature: Feature } {
   return {
     feature: defineFeature({ id, path, messages, screen: () => null }),
   };

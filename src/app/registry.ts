@@ -1,7 +1,11 @@
 import type { Feature } from './feature.ts';
 
-/** A feature module may export nothing — see `featuresFromModules`. */
-export interface FeatureModule {
+/**
+ * A feature module may export nothing — see `featuresFromModules`. Local on purpose:
+ * `navigation.ts` publishes the v2 shape of the same idea, and two exported types with
+ * one name would let the wrong one be auto-imported.
+ */
+interface FeatureModule {
   feature?: Feature;
 }
 
