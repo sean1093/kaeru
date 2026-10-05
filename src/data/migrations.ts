@@ -1,9 +1,9 @@
-import type { IDBPDatabase, IDBPTransaction } from 'idb';
+import type { IDBPDatabase, IDBPTransaction, StoreNames } from 'idb';
 import type { KaeruDB } from './types.ts';
 
 export type UpgradeTransaction = IDBPTransaction<
   KaeruDB,
-  readonly ('meta' | 'settings')[],
+  readonly StoreNames<KaeruDB>[],
   'versionchange'
 >;
 
@@ -26,6 +26,39 @@ export const migrations: readonly Migration[] = [
     upgrade(db) {
       db.createObjectStore('meta');
       db.createObjectStore('settings');
+    },
+  },
+  {
+    /**
+     * The real model. Every store is new, so this step only creates — it reads nothing and
+     * rewrites nothing, which is why a populated v1 device upgrades without risk.
+     */
+    version: 2,
+    upgrade(db) {
+      const trips = db.createObjectStore('trips', { keyPath: 'id' });
+      trips.createIndex('by-seq', 'seq');
+
+      const travelers = db.createObjectStore('travelers', { keyPath: 'id' });
+      travelers.createIndex('by-trip', 'tripId');
+      travelers.createIndex('by-seq', 'seq');
+
+      const receipts = db.createObjectStore('receipts', { keyPath: 'id' });
+      receipts.createIndex('by-trip', 'tripId');
+      // The compound indexes are what let the list screen and the airport flow read one
+      // traveller, one shop or one day without scanning the trip.
+      receipts.createIndex('by-trip-traveler', ['tripId', 'travelerId']);
+      receipts.createIndex('by-trip-date', ['tripId', 'purchaseDate']);
+      receipts.createIndex('by-trip-shop', ['tripId', 'shopKey']);
+      receipts.createIndex('by-seq', 'seq');
+
+      // Registration is per operator per trip (UJ-013, DR-050), so that pair is the key.
+      const registrations = db.createObjectStore('registrations', {
+        keyPath: ['tripId', 'operatorId'],
+      });
+      registrations.createIndex('by-trip', 'tripId');
+
+      const photos = db.createObjectStore('photos', { keyPath: 'id' });
+      photos.createIndex('by-receipt', 'receiptId');
     },
   },
 ];
