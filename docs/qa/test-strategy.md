@@ -38,11 +38,11 @@ Likelihood and Impact on a 1–5 scale. **Risk score = L × I.** Scores ≥ 15 a
 
 | ID | Risk | L | I | Score | Mitigation / test response | Owner |
 |---|---|---|---|---|---|---|
-| R01 | **Wrong refund estimate** — tax extracted from a tax-inclusive price with the wrong rate, wrong rounding, or mixed 10%/8% lines in one receipt | 4 | 5 | **20** | Pure domain functions; boundary + property tests (TC-DOM-01x); rounding rule written in domain-rules and asserted; estimates always labelled as estimates in UI | QA + Engineers |
-| R02 | **Wrong eligibility verdict at the purchase threshold** — off-by-one at the minimum amount, tax-included vs tax-excluded confusion | 4 | 5 | **20** | Boundary tests at threshold−1 / threshold / threshold+1 on the exact basis defined in domain-rules; same-shop same-day aggregation tests (TC-DOM-00x) | QA |
-| R03 | **Wrong deadline** — 90-day export window computed off by a day, or with the wrong timezone/calendar | 4 | 5 | **20** | Injected clock, never `new Date()` in domain; JST vs Asia/Taipei tests; DST-free but month-length and leap-year cases; Playwright `timezoneId` matrix (TC-DOM-02x) | QA |
-| R04 | **Data loss / corruption in IndexedDB** — failed schema migration, aborted transaction, quota exceeded, concurrent tabs | 3 | 5 | **15** | `fake-indexeddb` unit tests for every migration path (old → new, and new → old guard); transaction-abort test; quota-exceeded simulation; E2E reload-persistence; never destructive upgrade without export prompt | QA + Architect |
-| R05 | **Offline failure at the airport** — airport mode needs a network call, SW did not precache a route, deep link cold-starts offline | 3 | 5 | **15** | Playwright offline suite: `context.setOffline(true)` cold start, deep link to airport mode, language switch offline, image/photo render offline (TC-AIR-0xx) | QA |
+| R01 | **Wrong refund estimate** — wrong rate for the purchase date, wrong rounding direction, mixed 10%/8% lines treated as one blended rate, or an unknown operator fee treated as zero | 4 | 5 | **20** | Pure domain functions; the `domain-rules.md` §4 worked examples asserted verbatim; floor-rounding asserted (`DR-024`); property test `taxExcluded + tax == taxIncluded`; derived figures always labelled as estimates (`DR-022`); gross never shown as the payout (`DR-025`). TC-DOM-031…051 | QA + Engineers |
+| R02 | **Wrong eligibility verdict at the ¥5,000 threshold** — off-by-one, or tax-included confused with tax-excluded | 4 | 5 | **20** | Boundary tests at ¥4,999 / ¥5,000 / ¥5,001 on the tax-excluded basis (`DR-010`, `DR-011`); same-shop same-day grouping by `(shop, day, traveler)` (`DR-012`); the tax-included ¥5,000 misconception pinned as a test. TC-DOM-011…020 | QA |
+| R03 | **Wrong deadline** — the 90-day window off by a day, or shifted by the device timezone | 4 | 5 | **20** | Injected `Clock`, no `new Date()` under `src/domain`; the official vector 2026-11-01 → 2027-01-30 asserted (`DR-031`); inclusive-deadline-day cases; month-length, year-boundary and leap-day cases; Playwright `timezoneId` matrix. TC-DOM-055…066 | QA |
+| R04 | **Data loss / corruption in IndexedDB** — failed schema migration, aborted transaction, quota exceeded, concurrent tabs | 3 | 5 | **15** | `fake-indexeddb` tests for every migration path including the newer-database downgrade guard; transaction-abort test; quota-exceeded simulation; E2E reload persistence; never a destructive upgrade without an export prompt. TC-DATA-001…010 | QA + Architect |
+| R05 | **Offline failure at the airport** — Airport Mode needs a network call, the SW did not precache a route, or a deep link cold-starts offline. This is also where the hard gate (`UJ-024`, `UJ-026`) must hold, because checked bags cannot be retrieved (`DR-032`) | 3 | 5 | **15** | Playwright offline suite against the production build: cold start, deep link, full UJ-024→UJ-031 sequence, receipt logging, language switch, photo render, recovery online; run on `iphone-webkit` as well as Chromium. TC-AIR-001…023 | QA |
 | R06 | **Stale app served by the service worker** — user keeps an old build with a wrong tax rule or a fixed bug | 3 | 5 | **15** | SW update E2E (load v1 → deploy v2 → reload → assert new build); versioned precache; visible "update available" affordance tested; rules shipped as versioned data with the build | QA + Architect |
 | R07 | **iOS Safari storage eviction** — 7-day eviction of unused origins / Low Power or Private mode wiping IndexedDB | 3 | 5 | **15** | Persistent storage request tested; export reminder behavior tested; documented user guidance; manual iOS device pass each milestone (TC-DATA-0xx) | QA |
 | R08 | **Failed import / corrupt export file** — hand-edited JSON, wrong version, truncated file silently wiping existing data | 3 | 5 | **15** | Import is validated and non-destructive by default; round-trip property test; malformed/old-version/empty/huge-file fixtures; "import never deletes without confirmation" assertion (TC-DATA-01x) | QA |
@@ -56,7 +56,7 @@ Likelihood and Impact on a 1–5 scale. **Risk score = L × I.** Scores ≥ 15 a
 | R16 | **Multi-traveler mix-ups** — a receipt attributed to the wrong passport, totals aggregated across travelers | 2 | 4 | 8 | Domain aggregation tests per traveler; E2E two-traveler scenario | QA |
 | R17 | **Privacy leak** — a third-party font/analytics request, a passport number persisted, data in URL/history | 2 | 5 | 10 | E2E asserts no cross-origin requests; storage snapshot asserts no field matching a full passport pattern; no PII in query strings | QA + Architect |
 | R18 | **GitHub Pages base-path breakage** — app works locally but 404s on `/kaeru/`, SW scope wrong | 3 | 4 | 12 | Production smoke suite runs against the deployed URL after each deploy to `main`; base-path asserted in build output | QA + Architect |
-| R19 | **Rules change before 2026-11-01** and the shipped data is stale | 3 | 4 | 12 | Rules live as versioned data with a `lastReviewed` date; a test asserts the review date is within 180 days of build; guide pages cite sources | QA + Travel expert |
+| R19 | **Rules change and the shipped data is stale** — the 1% food rate for 2027-04-01 to 2029-03-31 is a cabinet decision whose bill has not passed (`UR-08`), and twelve rules are unsettled (`UR-01`…`UR-12`). Likely, but the blast radius is bounded because the values are dated data | 4 | 3 | 12 | Rules live as versioned, dated data resolved by `purchaseDate`; no rate, threshold or deadline constant appears in a conditional under `src/domain`; a test asserts the data's `lastReviewed` date is within 180 days of the build; `@unconfirmed` tests pin behavior to the data file so a rule change is a data change | QA + Travel expert |
 | R20 | **Flaky test suite erodes trust** | 3 | 3 | 9 | No arbitrary `waitForTimeout`; role-based locators; one retry in CI only; a test that fails twice without a product cause is quarantined with an issue, never silently skipped | QA |
 
 ### Top 5 by score
@@ -121,7 +121,8 @@ Automation-first. Manual effort is reserved for what machines are bad at: real i
 ## 4. Test data strategy
 
 - **Builders over fixtures.** `tests/support/builders.ts` exposes `aReceipt()`, `aTrip()`, `aTraveler()` with sensible defaults and fluent overrides (`aReceipt().inShop('BIC Camera').yen(5000).reducedRate()`). Tests state only the fields they care about, so adding a field does not break 200 tests.
-- **Named scenario fixtures** for the recurring shapes, built from the builders: `emptyTrip`, `singleEligibleReceipt`, `thresholdEdgeTrip`, `multiTravelerFamilyTrip`, `mixedRateReceipt`, `expiringTomorrowTrip`, `expiredTrip`.
+- **Named scenario fixtures** for the recurring shapes, built from the builders: `emptyTrip`, `singleEligibleReceipt`, `thresholdEdgeTrip` (¥4,999 / ¥5,000 / ¥5,001), `mixedRateReceipt` (8% + 10% on one receipt), `oldSystemTrip` (purchases on 2026-10-31), `expiringTomorrowTrip`, `expiredTrip`.
+- **Persona fixtures** mirroring `user-journey.md`, because they are the shapes that actually break things: `linFamilyTrip` (P1 — 14 receipts, 3-4 operators, 2 travelers, mixed rates, Narita, checked-bag goods, one consumed-item receipt) and `alexTrip` (P2 — 5 receipts, one ¥1,280,000 tax-excluded watch triggering `DR-016`, Kansai, 07:45 departure).
 - **Golden files** (`tests/support/fixtures/`) only where the format is the contract: export v1 JSON, a corrupted export, a previous-schema export, an oversized photo, a HEIC photo, a 300-receipt trip for performance.
 - **Longest-string fixtures** per locale for layout risk (R10): the longest real shop name, a 40-character traveler name, a 7-figure total.
 - **Deterministic by construction:** fixed seed for property tests, injected clock pinned to `2026-11-15T10:00:00+09:00` as the canonical "now", no network, no real device locale. A test that reads the machine clock, the machine timezone, or the machine locale is defective.
@@ -206,9 +207,11 @@ Requirements carry stable IDs; tests cite them. Nothing is tested because it is 
 
 | Source | ID format | Example |
 |---|---|---|
-| `docs/product/domain-rules.md` | `DR-NN` | `DR-03` minimum purchase threshold |
-| `docs/product/user-journey.md` | `UJ-NN` | `UJ-07` customs confirmation at the airport |
-| `docs/qa/test-cases.md` | `TC-<AREA>-NNN` | `TC-DOM-001` |
+| `docs/product/domain-rules.md` — rules | `DR-0nn` | `DR-010` the ¥5,000 tax-excluded threshold |
+| `docs/product/domain-rules.md` §9 — uncertainties | `UR-nn` | `UR-08` the 1% food rate from 2027-04-01 |
+| `docs/product/user-journey.md` | `UJ-0nn` | `UJ-026` do customs before check-in |
+| `docs/research/traveler-pain-points.md` | `PP-nn` | `PP-01` goods checked in before customs |
+| `docs/qa/test-cases.md` | `TC-<AREA>-nnn` | `TC-DOM-011` |
 
 Areas: `DOM` domain rules and arithmetic · `AIR` airport and offline · `DATA` storage, export/import, migration · `I18N` localization and parity · `A11Y` accessibility · `PWA` install, service worker, update · `UX` flows and layout · `SEC` privacy.
 
@@ -216,8 +219,8 @@ Rules:
 
 - Every test case in `test-cases.md` names the requirement ID(s) it covers.
 - Every automated test's title starts with its `TC-` ID, so a CI failure maps straight back to a requirement.
-- Coverage of requirements is reviewed at each milestone exit: a requirement with no test is either tested or explicitly accepted as untested by the PM, in writing.
-- A requirement marked `status: unconfirmed` in `domain-rules.md` gets a test tagged `@unconfirmed`, which runs but does not block the merge; it becomes blocking when the source is confirmed.
+- Coverage of requirements is reviewed at each milestone exit: a requirement with no test is either tested or explicitly accepted as untested by the PM, in writing. Every `DR-`, `UR-` and `UJ-` ID in the v1.0 documents is currently cited by at least one case.
+- A rule whose status in `domain-rules.md` is not `confirmed-official` (`pending-legislation`, `reported-media`, `unconfirmed`, or any `UR-nn` entry) gets a test tagged `@unconfirmed`. It runs but does not block a merge, and it must assert behavior driven by **rules data** rather than a hard-coded constant, so that settling the uncertainty changes data and not code. The tag is removed when the source is confirmed.
 
 ---
 
