@@ -21,6 +21,31 @@
  * **When one of these fires on something legitimate**: name the value in the rules
  * document, or add it to the allowlist below with a reason. Never loosen a pattern. A
  * guard relaxed on first contact protects nothing.
+ *
+ * ---
+ *
+ * ## What this suite does not cover
+ *
+ * Two lists, deliberately separate, because they decay differently. Collapsed into one,
+ * the un-checkable rules make the gap look permanent and the gap makes the un-checkable
+ * rules look like laziness — and in six months nobody can tell which is which.
+ *
+ * ### List A — not machine-checkable, and never will be. Checked in review instead.
+ *
+ * | Rule | Why | Where it is checked |
+ * |---|---|---|
+ * | `UR-04` never state or imply a red-result probability | the violation is a sentence, not a token: "most travellers get green" contains nothing greppable | content review, QA manual pass |
+ * | `UR-06` never promise airport cash | needs reading: the gap between "cash may be available" and "you can get cash" is tone | content review |
+ * | `UR-10` a traveller may decline to claim without being nagged | behavioural, and nagging is a pattern across screens rather than a string | UX review, QA journey pass |
+ *
+ * ### List B — checkable, just not written yet. A gap someone can close.
+ *
+ * | Rule | The scan |
+ * |---|---|
+ * | `DR-008` Kaeru never verifies eligibility | same shape as the `DR-080` assertion here: no blocking finding may cite `DR-005`–`DR-008` |
+ *
+ * Membership of list A is a claim about the world and not a fact: a rule moves to list B
+ * the moment someone sees a scan for it. `DR-008` moved that way during review.
  */
 import { describe, expect, it } from 'vitest';
 import { SCREEN_IDS } from '../app/screens.ts';
@@ -60,6 +85,66 @@ function offenders(
   );
 }
 
+/**
+ * The pattern tables, at module scope so the positive controls below test **the same
+ * objects** the guardrails use. A control that re-declares a copy of the pattern proves
+ * only that the copy works, which is the drift this suite exists to prevent.
+ */
+const NETWORK = [
+  { api: 'fetch', pattern: /\bfetch\s*\(/, fixture: 'await fetch(url)' },
+  { api: 'XMLHttpRequest', pattern: /\bXMLHttpRequest\b/, fixture: 'new XMLHttpRequest()' },
+  { api: 'WebSocket', pattern: /\bnew\s+WebSocket\b/, fixture: 'new WebSocket(url)' },
+  { api: 'sendBeacon', pattern: /\bsendBeacon\s*\(/, fixture: 'navigator.sendBeacon(u, d)' },
+  { api: 'EventSource', pattern: /\bnew\s+EventSource\b/, fixture: 'new EventSource(url)' },
+] as const;
+
+const CREDENTIAL = {
+  pattern: /\b(password|apiKey|accessToken|refreshToken|secret|credential)s?\b/i,
+  fixture: 'interface Session { accessToken: string }',
+} as const;
+
+const PASSPORT = {
+  pattern: /passportNumber|fullPassport/i,
+  fixture: 'interface Traveler { passportNumber: string }',
+} as const;
+
+const DIALOGS = [
+  { api: 'window.confirm', pattern: /\bconfirm\s*\(/, fixture: 'if (confirm("sure?"))' },
+  { api: 'window.alert', pattern: /(?<![.\w])alert\s*\(/, fixture: 'alert("saved")' },
+  { api: 'window.prompt', pattern: /(?<![.\w])prompt\s*\(/, fixture: 'prompt("name?")' },
+  {
+    api: 'beforeunload',
+    pattern: /\bbeforeunload\b/,
+    fixture: "addEventListener('beforeunload', warn)",
+  },
+] as const;
+
+const ROUTER = [
+  {
+    what: 'a hash assignment',
+    pattern: /location\.hash\s*=/,
+    fixture: "window.location.hash = '#/receipts';",
+  },
+  { what: 'an internal link literal', pattern: /['"`]#\/[a-z]/i, fixture: 'href="#/receipts"' },
+] as const;
+
+const ABOLISHED_PROSE = ['一般物品', '消耗品', 'general goods', 'consumables'] as const;
+
+const ABOLISHED_IDENTIFIERS = [
+  /\bgoodsCategory\b/,
+  /\bGoodsCategory\b/,
+  /\bgeneralGoods\b/,
+  /\bconsumableGoods\b/,
+  /['"`]consumable['"`]/,
+] as const;
+
+const ELIGIBILITY_RULES = ['DR-005', 'DR-006', 'DR-007'] as const;
+
+const BLOCKING_ADVISORY = {
+  pattern: (rule: string) => new RegExp(`'${rule}',\\s*'block'`),
+  fixture: "finding('DR-076a', 'block', 'x')",
+} as const;
+
 describe('guardrails: the suite can see the code it guards', () => {
   it('reads every product module under src', () => {
     expect(SOURCES.length).toBeGreaterThan(30);
@@ -73,6 +158,87 @@ describe('guardrails: the suite can see the code it guards', () => {
 
   it('reads the end-to-end specs, for the fixme gate', () => {
     expect(SPECS.length).toBeGreaterThan(0);
+  });
+});
+
+describe('guardrails: every matcher is demonstrated to fire (positive controls)', () => {
+  /**
+   * **A pattern that matches nothing is indistinguishable from a codebase that is clean.**
+   *
+   * Every assertion below this block says "no file matched". That sentence is worthless
+   * unless the matcher is capable of matching, and nothing about a green run distinguishes
+   * *the rule is honoured* from *the rule was never expressible*. This suite's own first
+   * draft of `DR-013` was CJK-only and would have passed for ever against a codebase that
+   * modelled the abolished split in English.
+   *
+   * So each prohibition is run against a fixture that must be caught. These are string
+   * literals rather than files on disk: the matchers are pure, and a fixture file would add
+   * a thing someone has to remember not to delete.
+   *
+   * This is the same rule the suite applies to the product — a check that can only pass is
+   * the same defect as a constant that never changes — turned on the suite itself. Without
+   * it the guardrails are the reassuring default applied to the thing whose entire job is
+   * to prevent the reassuring default: green, plausible, and silent about whether they are
+   * capable of being otherwise.
+   */
+  /** A known violation per rule constant, which its pattern must catch. */
+  const FIXTURES: Readonly<Record<string, string>> = {
+    'DR-010': 'if (total >= 5000) claim();',
+    'DR-016': 'const highValue = 1_000_000;',
+    'DR-027': 'const feeFloor = 2000;',
+    'DR-031': 'addDays(purchase, 90)',
+    'DR-023': 'const rate = 0.1;',
+    'DR-001': "const start = '2026-11-01';",
+  };
+
+  const CONTROLS: readonly { rule: string; pattern: RegExp; fixture: string }[] = [
+    ...FORBIDDEN_CONSTANTS.map((entry) => ({
+      rule: entry.rule,
+      pattern: entry.pattern,
+      fixture: FIXTURES[entry.rule] ?? '',
+    })),
+    ...NETWORK.map((entry) => ({ rule: `DR-040 ${entry.api}`, ...entry })),
+    { rule: 'DR-044', ...CREDENTIAL },
+    { rule: 'DR-041', ...PASSPORT },
+    ...DIALOGS.map((entry) => ({ rule: `TC-I18N-015 ${entry.api}`, ...entry })),
+    ...ROUTER.map((entry) => ({ rule: `M1-5a ${entry.what}`, ...entry })),
+  ];
+
+  it('has a fixture for every constant in the shared list', () => {
+    // A new FORBIDDEN_CONSTANTS entry without a fixture would be an unproven matcher
+    // arriving with the appearance of coverage.
+    expect(
+      FORBIDDEN_CONSTANTS.map((entry) => entry.rule).filter((rule) => !(rule in FIXTURES)),
+    ).toEqual([]);
+  });
+
+  for (const { rule, pattern, fixture } of CONTROLS) {
+    it(`${rule}: the matcher catches ${fixture}`, () => {
+      expect(
+        pattern.test(fixture),
+        `${rule}'s pattern does not match a known violation, so "no offenders" means nothing`,
+      ).toBe(true);
+    });
+  }
+
+  it('DR-013: the matchers catch both the prose and the type that never spells it out', () => {
+    expect(ABOLISHED_PROSE.some((word) => 'const label = "general goods";'.includes(word))).toBe(
+      true,
+    );
+    // The likeliest real violation, which the prose list alone misses entirely: a model of
+    // the dead distinction that never writes either phrase out.
+    const asType = "type GoodsCategory = 'general' | 'consumable';";
+    expect(ABOLISHED_PROSE.some((word) => asType.includes(word))).toBe(false);
+    expect(ABOLISHED_IDENTIFIERS.some((pattern) => pattern.test(asType))).toBe(true);
+  });
+
+  it('DR-008: the matcher catches an eligibility rule cited in a finding', () => {
+    const fixture = "finding('DR-005', 'warn', 'validation.looksIneligible')";
+    expect(ELIGIBILITY_RULES.some((rule) => new RegExp(`'${rule}'`).test(fixture))).toBe(true);
+  });
+
+  it('DR-080: the matcher catches an advisory rule raised as a blocker', () => {
+    expect(/'DR-076a',\s*'block'/.test("finding('DR-076a', 'block', 'x')")).toBe(true);
   });
 });
 
@@ -155,14 +321,30 @@ describe('guardrails: the content and the rules data cannot drift (R19)', () => 
 });
 
 describe('guardrails: the abolished category vocabulary does not exist (DR-013)', () => {
-  // From 2026-11-01 there is one combined total. The words may appear only where the
-  // content says the distinction is gone.
-  const ABOLISHED = ['一般物品', '消耗品', 'general goods', 'consumables'];
-
+  /**
+   * From 2026-11-01 there is one combined total. The words may appear only where the
+   * content says the distinction is gone.
+   *
+   * **Prose forms and identifier forms are both banned, because they fail differently.**
+   * The first draft of this scan was CJK-only and would have passed green against a
+   * codebase that modelled the abolished split in English throughout; the prose forms
+   * added next still miss the most probable violation in a TypeScript file, which is
+   * `type GoodsCategory = 'general' | 'consumable'` — a model of the dead distinction
+   * that never writes either phrase out. A scan that cannot see the likeliest shape of
+   * the violation is the reassuring default pointed at our own guardrails.
+   */
   it('DR-013 keeps the general-goods / consumables split out of every module', () => {
     const found = SOURCES.filter(
       (file) =>
-        !file.name.startsWith('content/') && ABOLISHED.some((word) => file.raw.includes(word)),
+        !file.name.startsWith('content/') &&
+        ABOLISHED_PROSE.some((word) => file.raw.includes(word)),
+    ).map((file) => file.name);
+    expect(found).toEqual([]);
+  });
+
+  it('DR-013 keeps the split out of the type system too, where it would not be spelled out', () => {
+    const found = SOURCES.filter((file) =>
+      ABOLISHED_IDENTIFIERS.some((pattern) => pattern.test(file.code)),
     ).map((file) => file.name);
     expect(found).toEqual([]);
   });
@@ -171,7 +353,7 @@ describe('guardrails: the abolished category vocabulary does not exist (DR-013)'
     const saysAbolished = ['取消', 'is gone', 'are gone', 'no longer', 'abolished', '不再'];
     for (const locale of LOCALES) {
       const text = contentText(locale);
-      for (const word of ABOLISHED) {
+      for (const word of ABOLISHED_PROSE) {
         if (!text.includes(word)) continue;
         expect(
           saysAbolished.some((phrase) => text.includes(phrase)),
@@ -183,14 +365,6 @@ describe('guardrails: the abolished category vocabulary does not exist (DR-013)'
 });
 
 describe('guardrails: the app talks to nobody (DR-040, DR-044, DR-052)', () => {
-  const NETWORK = [
-    { api: 'fetch', pattern: /\bfetch\s*\(/ },
-    { api: 'XMLHttpRequest', pattern: /\bXMLHttpRequest\b/ },
-    { api: 'WebSocket', pattern: /\bnew\s+WebSocket\b/ },
-    { api: 'sendBeacon', pattern: /\bsendBeacon\s*\(/ },
-    { api: 'EventSource', pattern: /\bnew\s+EventSource\b/ },
-  ];
-
   const ALLOWED: Readonly<Record<string, string>> = {
     'app/update-state.ts':
       'registers the service worker, which fetches our own build and nothing else',
@@ -203,19 +377,31 @@ describe('guardrails: the app talks to nobody (DR-040, DR-044, DR-052)', () => {
   }
 
   it('DR-044 declares no credential field on any entity', () => {
-    const CREDENTIAL = /\b(password|apiKey|accessToken|refreshToken|secret|credential)s?\b/i;
-    expect(offenders(CREDENTIAL, {})).toEqual([]);
+    expect(offenders(CREDENTIAL.pattern, {})).toEqual([]);
   });
 });
 
 describe('guardrails: validation informs rather than blocks (DR-075, DR-078, DR-080)', () => {
   const NEVER_BLOCKS = ['DR-073', 'DR-074', 'DR-075', 'DR-076', 'DR-076a', 'DR-077', 'DR-078'];
 
+  it('raises no finding at all for an eligibility rule (DR-008)', () => {
+    // DR-008: "Kaeru does not verify eligibility. It informs; the shop decides." Not merely
+    // "never blocks" — a warning that a traveller looks ineligible is still Kaeru deciding,
+    // and the shop is the only party that can. So the ban is on the rule appearing in a
+    // finding at any severity, which is stronger than the DR-080 check below.
+    const validation = SOURCES.filter((file) => file.name.startsWith('domain/validation'));
+    expect(validation.length).toBeGreaterThan(0);
+    const cited = ELIGIBILITY_RULES.filter((rule) =>
+      validation.some((file) => new RegExp(`'${rule}'`).test(file.code)),
+    );
+    expect(cited, 'DR-008: Kaeru informs, the shop decides').toEqual([]);
+  });
+
   it('raises no blocking finding for an advisory rule', () => {
     const validation = SOURCES.filter((file) => file.name.startsWith('domain/validation'));
     expect(validation.length).toBeGreaterThan(0);
     const blocking = NEVER_BLOCKS.filter((rule) =>
-      validation.some((file) => new RegExp(`'${rule}',\\s*'block'`).test(file.code)),
+      validation.some((file) => BLOCKING_ADVISORY.pattern(rule).test(file.code)),
     );
     expect(blocking, 'DR-080: validation informs, it never blocks what the law permits').toEqual(
       [],
@@ -230,7 +416,7 @@ describe('guardrails: no entity can hold a passport number (DR-041)', () => {
   };
 
   it('DR-041 names no full passport anywhere a record could carry one', () => {
-    expect(offenders(/passportNumber|fullPassport/i, ALLOWED)).toEqual([]);
+    expect(offenders(PASSPORT.pattern, ALLOWED)).toEqual([]);
   });
 });
 
@@ -243,13 +429,6 @@ describe('guardrails: no native browser dialog (TC-I18N-015)', () => {
    * Scanned over `code` rather than `raw`, so `router.ts`'s two comments explaining why
    * `window.confirm` is absent do not become the first false positive.
    */
-  const DIALOGS = [
-    { api: 'window.confirm', pattern: /\bconfirm\s*\(/ },
-    { api: 'window.alert', pattern: /(?<![.\w])alert\s*\(/ },
-    { api: 'window.prompt', pattern: /(?<![.\w])prompt\s*\(/ },
-    { api: 'beforeunload', pattern: /\bbeforeunload\b/ },
-  ];
-
   for (const { api, pattern } of DIALOGS) {
     it(`uses no ${api}: its buttons are in the OS language, not the app's`, () => {
       expect(offenders(pattern, {})).toEqual([]);
@@ -263,7 +442,7 @@ describe('guardrails: the router owns navigation (M1-5a)', () => {
   };
 
   it('assigns window.location.hash nowhere but the router', () => {
-    expect(offenders(/location\.hash\s*=/, ROUTER_ONLY)).toEqual([]);
+    expect(offenders(ROUTER[0].pattern, ROUTER_ONLY)).toEqual([]);
   });
 
   it('builds internal links with pathTo, never a hash string literal', () => {
@@ -279,7 +458,7 @@ describe('guardrails: the router owns navigation (M1-5a)', () => {
       // from the production bundle, which `e2e/production-bundle.spec.ts` asserts.
       'features/gallery/': 'specimen fixtures, dev-only, never reachable in production',
     };
-    expect(offenders(/['"`]#\/[a-z]/i, allowed)).toEqual([]);
+    expect(offenders(ROUTER[1].pattern, allowed)).toEqual([]);
   });
 
   it('writes data-screen only through screenAttrs, with a published id', () => {
