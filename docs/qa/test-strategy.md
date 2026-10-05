@@ -103,8 +103,8 @@ Automation-first. Manual effort is reserved for what machines are bad at: real i
 
 - **Projects:** `iphone-webkit` (iPhone 14, WebKit), `pixel-chromium` (Pixel 7, Chromium), `desktop-chromium`. Locale is a parameter; critical journeys run in both `zh-TW` and `en`.
 - E2E runs against the **production build** (`npm run build` + `npm run preview`), never the dev server — the service worker is part of the system under test.
-- **Offline:** `await context.setOffline(true)` after the SW is confirmed active (`navigator.serviceWorker.ready`). We test: cold start offline, deep link offline, data entry offline, airport checklist offline, and recovery when the network returns.
-- **Service-worker update:** load build A, swap the served build to B, reload, assert the new asset hash and that stored data survived.
+- **Offline:** the worker is registered with `registerType: 'prompt'` and `clientsClaim: false` (ADR 0007), so **the first page load is deliberately uncontrolled**. Every offline test must therefore let the worker install, reload once so the page is controlled, and only then `await context.setOffline(true)`. Going offline on the first load tests nothing and will fail for the wrong reason. We cover: cold start offline, deep link offline, data entry offline, the full airport sequence offline, and recovery when the network returns.
+- **Service-worker update:** load build A, swap the served build to B, reload, assert the new asset hash, that the update prompt appeared, and that stored data survived.
 - Default `timezoneId: 'Asia/Tokyo'`; a dedicated project/test group overrides it to `Asia/Taipei`, `UTC`, and `Pacific/Kiritimati`.
 - No `waitForTimeout`. Wait for a state, not for a duration.
 - **Artifacts:** `trace: 'on-first-retry'`, `screenshot: 'only-on-failure'`, `video: 'retain-on-failure'`. CI uploads `playwright-report/` and `test-results/`. Reporters: `list` + `html` locally; `junit` + `github` added in CI.

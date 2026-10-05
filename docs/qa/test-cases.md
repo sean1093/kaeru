@@ -191,6 +191,8 @@ Formula: `deadline = purchaseDate + 90 calendar days`, deadline day inclusive. O
 
 Run against the production build with the service worker active. Airport Mode has **no network call on its critical path**.
 
+**Shared precondition for every offline case below:** the worker is registered with `registerType: 'prompt'` and `clientsClaim: false` (ADR 0007), so the first load is uncontrolled by design. Each test installs the worker, reloads once so the page is controlled, and only then goes offline.
+
 | ID | Scenario | Expected | Req | Risk | Level | Pri |
 |---|---|---|---|---|---|---|
 | TC-AIR-001 | Installed, offline (`context.setOffline(true)`), cold start | App shell loads fully; no network error screen | UJ-023 | R05 | E | P0 |
