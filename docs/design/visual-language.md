@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.0 (M0) |
+| Status | v1.1 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -288,7 +288,7 @@ In dark theme both shadows are near-invisible, so the same elements additionally
 ## 5. Iconography
 
 - **Style:** stroke only, 1.75 px at 24 px, round caps and joins, `currentColor`. No filled icons, no two-tone, no gradients.
-- **Sizes:** 20 px inside list rows and chips, 24 px in the app bar and bottom nav, 32 px in empty states, 48 px in Airport Mode step headers.
+- **Sizes:** every glyph is drawn on a 24 px viewBox but rendered at `1em`, so it scales with the type token of whatever it sits beside rather than carrying a fixed px of its own — `--text-base` (16 px) in a status chip, `--text-lg` (20 px) in a list row, `--text-xl` (24 px) in the app bar and bottom nav, larger still in an empty state or an Airport Mode step header. This is what keeps an icon in step with its label at 200% browser text zoom instead of staying a stubborn fixed size next to text that has visibly grown.
 - **Source:** [Lucide](https://lucide.dev) (ISC licence) as the base set, which matches the stroke style and is permissive enough for a public repo. Icons are inlined as SVG in the component that uses them — no sprite fetch, no icon font, no network request. Only the ~18 icons the MVP uses are included.
 - **Starting set:** `receipt`, `plus`, `home`, `plane-takeoff`, `book-open`, `settings`, `check`, `check-circle`, `circle-alert`, `clock`, `luggage`, `backpack`, `scan-line`, `camera`, `chevron-right`, `chevron-left`, `x`, `wifi-off`, `download`, `trash-2`, `user`, `yen`.
 - **Accessibility:** decorative icons get `aria-hidden="true"` and `focusable="false"`. An icon that is the only content of a control gets an `aria-label` on the control, never on the `<svg>`.
