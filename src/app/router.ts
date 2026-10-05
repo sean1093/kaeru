@@ -254,6 +254,12 @@ function sync(): void {
   }
   if (!guardCleared && !mayLeave(next)) {
     // The address bar has already moved, so put it back without adding a history entry.
+    // Latent, harmless while no route uses `guard`: when `next` arrived via browser back,
+    // the popped entry is gone and replaceState rewrites the one the user landed on rather
+    // than restoring the consumed entry, so the stack ends one shorter than the user's
+    // mental model and a second back skips a screen. Fixing it means distinguishing
+    // "declined a back" from "declined an in-app link" and is deferred until a real guard
+    // exists to drive the fix (QALead review of #77).
     const current = currentLocation.value;
     window.history.replaceState(null, '', hrefFor(withSheet(current.path, current.sheet)));
     return;
