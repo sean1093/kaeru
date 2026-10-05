@@ -13,7 +13,7 @@ export type StorageErrorCode =
   | 'schema-too-new'
   /** A value the repository refuses to write, because storing it would lose information. */
   | 'invalid-record'
-  /** Deleting a traveller who still owns receipts without saying where they go. */
+  /** Deleting a traveler who still owns receipts without saying where they go. */
   | 'reassignment-required'
   /** The write target is gone — a stale id from another tab or a deleted parent. */
   | 'not-found';

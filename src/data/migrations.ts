@@ -45,7 +45,7 @@ export const migrations: readonly Migration[] = [
       const receipts = db.createObjectStore('receipts', { keyPath: 'id' });
       receipts.createIndex('by-trip', 'tripId');
       // The compound indexes are what let the list screen and the airport flow read one
-      // traveller, one shop or one day without scanning the trip.
+      // traveler, one shop or one day without scanning the trip.
       receipts.createIndex('by-trip-traveler', ['tripId', 'travelerId']);
       receipts.createIndex('by-trip-date', ['tripId', 'purchaseDate']);
       receipts.createIndex('by-trip-shop', ['tripId', 'shopKey']);

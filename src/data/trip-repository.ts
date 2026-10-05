@@ -7,7 +7,7 @@ import { nextSequence } from './transaction.ts';
 import { type StoredTrip, TRIP_OWNED_STORES } from './types.ts';
 
 /**
- * Most recent trip first. Departure date is what the traveller thinks of as "which trip",
+ * Most recent trip first. Departure date is what the traveler thinks of as "which trip",
  * and `seq` breaks a tie between two trips leaving the same day in favour of the one
  * added later — the one they were just setting up.
  */
@@ -45,7 +45,7 @@ export const tripRepository: TripRepository = {
   },
 
   /**
-   * The current trip is the live one with the latest departure: a traveller plans the next
+   * The current trip is the live one with the latest departure: a traveler plans the next
    * trip while the last is still on file, and archiving the old one is optional. Null until
    * onboarding has created a trip.
    */

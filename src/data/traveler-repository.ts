@@ -21,7 +21,7 @@ export const travelerRepository: TravelerRepository = {
     if (!next) {
       throw new StorageError(
         'invalid-record',
-        'A traveller needs an id and a trip before they can be stored.',
+        'A traveler needs an id and a trip before they can be stored.',
       );
     }
     const tx = db.transaction('travelers', 'readwrite');
@@ -34,7 +34,7 @@ export const travelerRepository: TravelerRepository = {
   },
 
   /**
-   * Deleting a traveller never orphans a receipt: either they own none, or the caller says
+   * Deleting a traveler never orphans a receipt: either they own none, or the caller says
    * who takes them over. Everything is read and checked before anything is written, so a
    * refusal writes nothing at all.
    */
@@ -55,19 +55,19 @@ export const travelerRepository: TravelerRepository = {
         await abortTransaction(tx);
         throw new StorageError(
           'reassignment-required',
-          `Traveller ${id} still owns ${owned.length} receipt(s); say who they move to.`,
+          `Traveler ${id} still owns ${owned.length} receipt(s); say who they move to.`,
         );
       }
       if (reassignTo === id) {
         await abortTransaction(tx);
-        throw new StorageError('invalid-record', 'A traveller cannot inherit their own receipts.');
+        throw new StorageError('invalid-record', 'A traveler cannot inherit their own receipts.');
       }
       const target = await travelers.get(reassignTo);
       if (!target || target.tripId !== existing.tripId) {
         await abortTransaction(tx);
         throw new StorageError(
           'not-found',
-          `Traveller ${reassignTo} is not on trip ${existing.tripId}.`,
+          `Traveler ${reassignTo} is not on trip ${existing.tripId}.`,
         );
       }
       for (const receiptId of owned) {

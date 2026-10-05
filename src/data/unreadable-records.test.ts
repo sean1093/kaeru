@@ -63,7 +63,7 @@ describe('unreadableRecordCounts', () => {
     expect(unreadableRecordCounts().trips).toBe(2);
   });
 
-  it('counts a traveller the repository could not address, read through the real path', async () => {
+  it('counts a traveler the repository could not address, read through the real path', async () => {
     // Indexed correctly by `tripId` so the query finds it; `id` is what fails to normalise.
     await db.put('travelers', { ...aTraveler(), id: '   ', seq: 1 });
 

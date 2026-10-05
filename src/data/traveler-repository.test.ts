@@ -19,7 +19,7 @@ async function seedReceipt(id: string, travelerId: string, tripId = 'trip-1'): P
 }
 
 describe('travelerRepository', () => {
-  it('lists the travellers of one trip in the order they were added', async () => {
+  it('lists the travelers of one trip in the order they were added', async () => {
     await travelerRepository.put(db, aTraveler({ id: 'b', displayName: '阿明' }));
     await travelerRepository.put(db, aTraveler({ id: 'a', displayName: '小雨' }));
     await travelerRepository.put(db, aTraveler({ id: 'other', tripId: 'trip-2' }));
@@ -50,14 +50,14 @@ describe('travelerRepository', () => {
     expect(saved).not.toHaveProperty('passportRef');
   });
 
-  it('refuses a traveller with no trip and writes nothing', async () => {
+  it('refuses a traveler with no trip and writes nothing', async () => {
     await expect(travelerRepository.put(db, aTraveler({ tripId: '' }))).rejects.toBeInstanceOf(
       StorageError,
     );
     expect(await db.count('travelers')).toBe(0);
   });
 
-  it('deletes a traveller who owns no receipts', async () => {
+  it('deletes a traveler who owns no receipts', async () => {
     await travelerRepository.put(db, aTraveler());
     await travelerRepository.remove(db, 'traveler-1', null);
 
@@ -78,7 +78,7 @@ describe('travelerRepository', () => {
     expect((await db.get('receipts', 'r1'))?.travelerId).toBe('traveler-1');
   });
 
-  it('moves every receipt to the named traveller before deleting', async () => {
+  it('moves every receipt to the named traveler before deleting', async () => {
     await travelerRepository.put(db, aTraveler({ id: 'parent' }));
     await travelerRepository.put(db, aTraveler({ id: 'child' }));
     await seedReceipt('r1', 'child');
@@ -106,7 +106,7 @@ describe('travelerRepository', () => {
     expect(await db.count('travelers')).toBe(2);
   });
 
-  it('refuses to hand a traveller their own receipts', async () => {
+  it('refuses to hand a traveler their own receipts', async () => {
     await travelerRepository.put(db, aTraveler());
     await seedReceipt('r1', 'traveler-1');
 
@@ -116,7 +116,7 @@ describe('travelerRepository', () => {
     expect(await db.count('travelers')).toBe(1);
   });
 
-  it('is a no-op for a traveller who is already gone', async () => {
+  it('is a no-op for a traveler who is already gone', async () => {
     await expect(travelerRepository.remove(db, 'ghost', null)).resolves.toBeUndefined();
   });
 });
