@@ -1,0 +1,41 @@
+/* components.md section 13. Swaps --color-text and --color-bg so it inverts correctly in
+   both themes without extra tokens. */
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-inline-size: var(--content-max);
+  margin-inline: auto;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--color-text);
+  color: var(--color-bg);
+  box-shadow: var(--shadow-sheet);
+}
+
+.message {
+  flex: 1;
+  min-inline-size: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.action {
+  flex: none;
+  min-block-size: var(--tap-min);
+  padding-inline: var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--color-bg);
+  font: inherit;
+  font-weight: var(--weight-medium);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--color-bg);
+  outline-offset: var(--space-1);
+}

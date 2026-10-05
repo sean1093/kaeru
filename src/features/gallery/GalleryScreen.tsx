@@ -3,6 +3,7 @@ import { useMessages } from '../../i18n/index.ts';
 import { galleryCopy } from './copy.ts';
 import styles from './Gallery.module.css';
 import { CoreSection } from './sections/core.tsx';
+import { NavigationSection } from './sections/navigation.tsx';
 
 /**
  * A string that exists nowhere else in the app. The production-bundle test greps the
@@ -26,6 +27,7 @@ export function GalleryScreen(): JSX.Element {
       <h1>{t('gallery.title')}</h1>
       <p class={styles.intro}>{t('gallery.intro')}</p>
       <CoreSection />
+      <NavigationSection />
     </div>
   );
 }

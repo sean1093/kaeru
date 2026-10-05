@@ -15,6 +15,14 @@ import { describe, expect, it } from 'vitest';
  * `visual-language.md` describes only as "1 px") are exempt: the token set has no
  * `--border-width` scale, matching the existing M0 components (`Card.module.css`,
  * `Button.module.css`, `VisuallyHidden.module.css`). Anything above 2px must be a token.
+ *
+ * `6px`, `8px` and `10px` are exempt in the same way, for the three sizes
+ * `components.md` section 8 states as literal pixels with no token equivalent: the
+ * progress bar track ("Height | 6 px"), the step dots ("8 px"), and the current step
+ * dot ("10 px"). The same two sizes cover the bottom-nav badge (section 2, "8 px dot").
+ *
+ * `3px` is exempt for the same reason: `components.md` section 13 states the banner's
+ * accent-colour left border as "3 px" directly, like the other hairline widths above.
  */
 const CSS_DIR = join(import.meta.dirname, '.');
 
@@ -25,7 +33,11 @@ function cssFiles(): readonly string[] {
 }
 
 const HEX = /#[0-9a-fA-F]{3,8}\b/g;
-const RAW_PX = /(?<![\w-])-?(?!1px\b|2px\b)\d*\.?\d+px/g;
+const EXEMPT_PX = ['1px', '2px', '3px', '6px', '8px', '10px'];
+const RAW_PX = new RegExp(
+  `(?<![\\w-])-?(?!${EXEMPT_PX.map((v) => `${v}\\b`).join('|')})\\d*\\.?\\d+px`,
+  'g',
+);
 const RAW_MS = /(?<![\w-])-?\d*\.?\d+m?s(?![a-zA-Z])/g;
 
 describe('UI kit stylesheets reference tokens only (components.md, "every value is a token")', () => {
