@@ -13,8 +13,11 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
-    // Disjoint from Playwright: Vitest owns src/**, Playwright owns e2e/**.
-    include: ['src/**/*.test.{ts,tsx}'],
+    // Disjoint from Playwright: Vitest owns src/** and scripts/**, Playwright owns e2e/**.
+    // `scripts/` holds the logic CI acts on — whether a smoke report means anything, whether
+    // the live site is the current main. That logic had no test home at all, which is the
+    // same placement problem as a check living inside the thing it watches (#130).
+    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
     exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
     restoreMocks: true,
     coverage: {
