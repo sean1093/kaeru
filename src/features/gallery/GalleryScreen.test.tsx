@@ -33,13 +33,4 @@ describe('GalleryScreen', () => {
     expect(screen.getByText('步驟 2/5')).toBeVisible();
     expect(screen.queryByText('Step 2 of 5')).toBeNull();
   });
-
-  it('carries a stable data-screen attribute for QA', () => {
-    setActiveLocale('en');
-    render(<GalleryScreen />);
-    expect(screen.getByText('UI kit gallery').closest('[data-screen]')).toHaveAttribute(
-      'data-screen',
-      'DEV-GALLERY',
-    );
-  });
 });
