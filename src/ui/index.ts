@@ -27,6 +27,7 @@ export {
   CircleSlashIcon,
   ClockIcon,
   CloseIcon,
+  FlagIcon,
   FrogMarkIcon,
   InfoIcon,
   ReceiptIcon,

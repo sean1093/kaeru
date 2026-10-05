@@ -35,11 +35,10 @@ describe('AppBar', () => {
     expect(onActivate).toHaveBeenCalledOnce();
   });
 
-  it('does not truncate a two-line bilingual title with an ellipsis', () => {
-    render(
-      <AppBar title="松本清藥粧店新宿東口駅前店的收據明細與退稅狀態 — full receipt detail and refund status" />,
-    );
-    const heading = screen.getByRole('heading', { level: 1 });
-    expect(heading.className).not.toMatch(/truncate|ellipsis/i);
+  it('renders the longest bilingual title in full, with no character dropped', () => {
+    const longest =
+      '松本清藥粧店新宿東口駅前店的收據明細與退稅狀態 — full receipt detail and refund status';
+    render(<AppBar title={longest} />);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(longest);
   });
 });

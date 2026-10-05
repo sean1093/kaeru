@@ -90,6 +90,14 @@ export const CircleSlashIcon: Icon = () => (
   </Glyph>
 );
 
+/** "Needs you" — flagged for the traveller to do something, distinct from an alert. */
+export const FlagIcon: Icon = () => (
+  <Glyph>
+    <path d="M6 20V4" />
+    <path d="M6 4.8h11l-3 4 3 4H6" />
+  </Glyph>
+);
+
 export const InfoIcon: Icon = () => (
   <Glyph>
     <circle cx="12" cy="12" r="8.5" />

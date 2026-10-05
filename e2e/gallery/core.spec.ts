@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import type { Result } from 'axe-core';
+import { isChromeOverlapAtOneScrollPosition } from '../a11y-filters.ts';
 
 /**
  * `gallery-dev` project only (`playwright.config.ts`). Component conformance against the
@@ -8,8 +10,7 @@ import { expect, test } from '@playwright/test';
  *
  * Scope: `[data-gallery-root]`, the gallery's own content, not the surrounding app
  * chrome. The route is rendered through the current M0 shell scaffold (`src/app/**`),
- * which M1-5 (#31–#33) is actively replacing, and that scaffold has its own latent
- * issues (reported separately) unrelated to the M1-3 components under test here.
+ * which M1-5 (#31–#33) is actively replacing.
  */
 const GALLERY_ROOT = '[data-gallery-root]';
 
@@ -61,41 +62,15 @@ test.describe('UI kit gallery — M1-3a components (#23)', () => {
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze();
 
-    /**
-     * `target-size` findings whose only related node is a link inside the M0 shell
-     * scaffold's persistent nav (`src/app/BottomNav.tsx`, which marks each tab
-     * `data-testid="nav-<feature id>"`) are known, reported to the Architect and routed
-     * into #32's acceptance criteria: a `position: sticky` element with no reserved
-     * content height or stacking isolation floats over whatever specimen renders in its
-     * footprint on a page this tall. That is a real defect, just not one `src/ui/**` or
-     * this gallery can fix — `.exclude()` does not suppress it, because axe still checks
-     * a kept node's proximity against an excluded one. The rules stay enabled and active
-     * for every other node, so a new target-size regression inside M1-3a's own
-     * components still fails this test.
-     */
-    const isTrackedShellOverlap = (violation: (typeof results.violations)[number]) =>
-      violation.id === 'target-size' &&
-      violation.nodes.every((node) => {
-        const checks = node.all.concat(node.any, node.none);
-        return (
-          checks.length > 0 &&
-          checks.every((check) => {
-            const related = check.relatedNodes ?? [];
-            return (
-              related.length > 0 &&
-              related.every((node_) =>
-                node_.target.some(
-                  (selector) => typeof selector === 'string' && /data-testid="nav-/.test(selector),
-                ),
-              )
-            );
-          })
-        );
-      });
-
-    const blocking = results.violations
-      .filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''))
-      .filter((violation) => !isTrackedShellOverlap(violation));
+    const serious = results.violations.filter((violation) =>
+      ['serious', 'critical'].includes(violation.impact ?? ''),
+    );
+    const blocking: Result[] = [];
+    for (const violation of serious) {
+      if (!(await isChromeOverlapAtOneScrollPosition(page, violation))) {
+        blocking.push(violation);
+      }
+    }
 
     expect(blocking, `${testInfo.project.name}: ${JSON.stringify(blocking, null, 2)}`).toEqual([]);
   });

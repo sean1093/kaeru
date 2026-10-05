@@ -78,7 +78,7 @@ export const galleryCopy = defineMessages({
     'gallery.button.guide': 'See how this works',
     'gallery.button.deleteAll': 'Delete all data',
     'gallery.button.next': 'Next step',
-    'gallery.button.inactiveReason': 'Choose a traveller first to continue.',
+    'gallery.button.inactiveReason': 'Choose a traveler first to continue.',
     'gallery.card.title': 'This trip',
     'gallery.card.body': '11 receipts · leaving 28 Oct',
     'gallery.card.linkTitle': 'Packing plan',

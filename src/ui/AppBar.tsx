@@ -8,6 +8,13 @@ import { ChevronLeftIcon, CloseIcon } from './icons.tsx';
  * most one icon action. More than one action belongs in an overflow menu, which the MVP
  * does not have, which is the point.
  *
+ * **`AppBar` owns the page's one `<h1>`.** A screen that renders an `AppBar` passes its
+ * title here and renders no other top-level heading of its own — two `<h1>`s on one
+ * screen is exactly the heading-order bug `components.md`'s accessibility checklist
+ * item 13 exists to catch. The gallery is the one deliberate exception: it demonstrates
+ * many `AppBar` specimens on a single page for review, which is a gallery concern, not a
+ * screen's.
+ *
  * `elevated` is the scrolled state. The shell decides when content has scrolled under the
  * bar; the bar itself has no scroll listener, so it stays usable in a test and in a sheet.
  */

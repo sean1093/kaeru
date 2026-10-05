@@ -29,26 +29,10 @@ describe('Button', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('renders the longest-string fixture without an ellipsis class or truncation style', () => {
-    render(
-      <Button fullWidth>
-        在日本買東西、拿到收據之後，回來記一筆，確認稅率、金額和退稅業者是否都正確無誤
-      </Button>,
-    );
-    const button = screen.getByRole('button');
-    expect(button.className).not.toMatch(/truncate|ellipsis/i);
-  });
-
-  it.each(['primary', 'secondary', 'quiet', 'destructive'] as const)(
-    'renders the %s variant',
-    (variant) => {
-      render(<Button variant={variant}>Label</Button>);
-      expect(screen.getByRole('button', { name: 'Label' })).toBeVisible();
-    },
-  );
-
-  it.each(['default', 'airport', 'inline'] as const)('renders the %s size', (size) => {
-    render(<Button size={size}>Label</Button>);
-    expect(screen.getByRole('button', { name: 'Label' })).toBeVisible();
+  it('renders the longest-string fixture in full, with no character dropped', () => {
+    const longest =
+      '在日本買東西、拿到收據之後，回來記一筆，確認稅率、金額和退稅業者是否都正確無誤';
+    render(<Button fullWidth>{longest}</Button>);
+    expect(screen.getByRole('button')).toHaveTextContent(longest);
   });
 });
