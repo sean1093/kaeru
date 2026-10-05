@@ -24,7 +24,7 @@ Ordered. When two goals conflict, the higher one wins.
 | G2 | **No data loss** | A logged receipt survives reload, app update, offline use, and export/import round-trip | Storage tests with `fake-indexeddb`; E2E persistence and update scenarios; export/import round-trip property test |
 | G3 | **Works offline, at the airport, on the phone the traveler actually owns** | Airport mode is fully usable with the radio off, on iOS Safari | Playwright offline projects on iPhone WebKit + Pixel Chromium |
 | G4 | **Bilingual parity** | Every string exists and fits in zh-TW and en; nothing falls back silently | Locale key-parity unit test; E2E run in both locales; long-text layout checks |
-| G5 | **Accessible (WCAG 2.2 AA)** | Usable with a screen reader, keyboard, 200% text, and in bright sunlight | `@axe-core/playwright` gate; manual VoiceOver/TalkBack pass per milestone |
+| G5 | **Accessible (WCAG 2.2 AA)** | Usable with a screen reader, keyboard, 200% text, and in bright sunlight | `@axe-core/playwright` gate; accessibility-tree snapshots of every screen in both locales; keyboard-only traversal. **No screen reader has been run** — see §3.1 |
 | G6 | **Privacy by construction** | No network calls to anything but our own origin; no full passport numbers in storage or exports | E2E network assertion; storage inspection test |
 | G7 | **Fast and calm** | App shell interactive quickly on a mid-range phone over a poor network | Lighthouse budget check in the production smoke |
 
@@ -80,7 +80,8 @@ Automation-first. Manual effort is reserved for what machines are bad at: real i
 | **E2E** | Playwright | User journeys, offline, service-worker update, persistence, install, locale switch | Every PR |
 | **Accessibility** | `@axe-core/playwright` | Every E2E route and key dialog state | Every PR |
 | **Production smoke** | Playwright against `https://sean1093.github.io/kaeru/` | Deployed build loads, base path, SW registers, manifest, one critical journey | After every deploy to `main` |
-| **Manual / exploratory** | Real devices, VoiceOver, TalkBack | iOS Safari quirks, screen readers, visual review, charter-based exploration | Per milestone and before release |
+| **Accessibility tree** | Playwright a11y snapshot | What a screen reader is handed, per screen, per locale: roles, names, states, reading order | Every PR |
+| **Exploratory** | Emulated devices, charter-based | Visual review, odd paths, anything a scripted test would not think to try | Per milestone |
 
 ### Unit test conventions
 
@@ -112,10 +113,11 @@ These get **guardrail tests**: a small suite that reads the source tree and the 
 - **No wall-clock assertions.** A guardrail that fails because a CI runner was busy is a flaky test, and under R20 a flaky test gets quarantined — which is exactly what must not happen to a guardrail. Keep the suite fast; do not assert that it is fast.
 - Where a guardrail needs exceptions, they live in an **explicit, documented allowlist** in the test file. Adding to the allowlist must be a visible diff that a reviewer can argue with. A guardrail with an implicit escape hatch protects nothing.
 
-### What the suite currently cannot prove
+### 3.1 What the suite cannot prove
 
 Written down because a known limit is cheaper than rediscovering it under pressure, and because both of these have already produced a defect.
 
+- **No real device has run this app, and no screen reader has read it.** This team has no iPhone, no Android handset, no VoiceOver and no TalkBack. Emulation reproduces a viewport, a user agent and an engine; it does not reproduce iOS Safari's storage eviction, PWA install behaviour, camera and HEIC file input, safe-area insets on real hardware, or memory pressure. An accessibility-tree snapshot shows what a screen reader is *handed* — it cannot show what it announces, how gestures navigate, or whether a live region is heard at the moment it matters. `setOffline` is a network emulation, not a radio. `R07` (genuine quota and eviction) and `R14` (iOS install quirks) are therefore **open residual risks carried into launch**, and `R06` has no automated coverage on WebKit at all because Playwright's WebKit does not expose the worker lifecycle. None of this is a reason to withhold the release; it is a reason the release report must say so rather than let a green suite imply otherwise.
 - **A conditional branch is unverified until it has run in the condition it exists for.** Green tests are evidence about the paths those tests take. A branch that exists for a rare case — a filter, a fallback, an error path — is exercised by nothing in a normal run, so an always-false predicate and a working one are indistinguishable in every build we have ever seen. This is not hypothetical: the axe obstruction filter shipped in #91 matched nothing, passed every build, and protected nothing, because `main` produces no `target-size` finding. A rare branch needs a test that **manufactures** the rare case, not a green suite around it.
 - **We cannot reproduce a genuine quota or eviction failure.** We *can* inject a mid-write failure — patching `IDBObjectStore.prototype.put` to throw for one store drives the abort path precisely, and #93 uses it to prove the import rolls back — so an atomicity claim about a multi-write path **is** falsifiable by a test, and a review that makes one should ask for that test rather than accept control-flow reasoning. What remains out of reach is the real condition: `fake-indexeddb` has no quota, so `TC-DATA-006` and `TC-DATA-007` exercise our handling of a simulated error rather than the browser's behaviour when a device actually fills up. `R07` therefore still depends on the manual iOS pass, and no green suite is evidence about what happens at a real storage ceiling.
 
@@ -136,7 +138,7 @@ Written down because a known limit is cheaper than rediscovering it under pressu
 - Suppressions require a comment with a reason and a linked issue. A naked `.disableRules()` fails review.
 - **Obscured-target findings are measured where the user can be.** A sticky bottom navigation covers whatever is beneath it at a given scroll offset — that is what sticky positioning is for, and what every mobile tab bar does. An axe scan evaluates at one scroll position, so it reports a true statement (*this target is obscured at scroll 0*) about a state the user is never stuck in. The property WCAG 2.5.8 protects is **operability**, so that is what we assert: `TC-A11Y-017` scrolls **every** interactive control on every route into view and requires it to land completely clear of the persistent chrome. That is strictly stronger than the axe scan it replaces for this one rule — it checks every control rather than only those visible at one offset — and it still fails the build, on the real 390 px viewport, when a control genuinely cannot be cleared.
 - **What that is not.** It is not a suppression: no rule is disabled and no selector is scoped out. It is also not "scan at a taller viewport" — inflating the viewport until a finding disappears is a suppression wearing a costume, and it would leave the scan structurally blind to every scroll-dependent problem on the only viewport the product ships to. Nor is it "scan after scrolling to the bottom", which is as arbitrary a single position as scroll 0. Same reasoning as the offline rule above: a test run in a state the user cannot reach tests nothing and fails for the wrong reason.
-- Automated checks catch roughly a third of real barriers. The manual pass per milestone covers: VoiceOver on iOS (reading order, button names, live-region announcements for totals), keyboard-only traversal, 200% text / 320 px reflow, focus visibility, and target size ≥ 24 px (WCAG 2.2 AA, 2.5.8).
+- Automated checks catch roughly a third of real barriers. We cover as much of the rest as emulation allows: accessibility-tree snapshots per screen per locale, keyboard-only traversal, visible focus, 200% text and 320 px reflow, and target size ≥ 24 px (WCAG 2.2 AA, 2.5.8). What that leaves uncovered is in §3.1 and it is not small.
 
 ---
 
@@ -160,7 +162,7 @@ Written down because a known limit is cheaper than rediscovering it under pressu
 | **CI — pull request** | GitHub Actions, Node 24, `npm ci` | typecheck, lint, unit + coverage, build, full E2E matrix, axe | **Blocking** — merge requires green |
 | **CI — main** | Same plus deploy | Everything above, then build + `actions/deploy-pages` | **Blocking** — a red main is fixed or reverted immediately |
 | **Production smoke** | `https://sean1093.github.io/kaeru/` after deploy | Smoke project: loads under the `/kaeru/` base path, SW registers, manifest valid, one critical journey in each locale, axe on the home route | **Blocking for release sign-off**; failure opens an S1 |
-| **Real devices (manual)** | iPhone (Safari, current iOS), Android (Chrome), one low-end device | iOS quirks charter, screen readers, install, camera, offline with the radio actually off | **Blocking for M3** |
+| **Real devices (NOT AVAILABLE)** | — | iOS/Android hardware, VoiceOver, TalkBack, airplane mode with a real radio | **Not performed.** This team has no physical device and no screen reader. Recorded as an open gap in the release report, not as a pass — see §3.1 |
 
 Minimum device/browser support matrix: iOS Safari (latest and latest−1), Android Chrome (latest), desktop Chrome/Edge, desktop Safari, desktop Firefox (best effort — not an E2E project, covered by exploratory checks).
 
@@ -175,7 +177,7 @@ Minimum device/browser support matrix: iOS Safari (latest and latest−1), Andro
 | **M0 — Discovery & Design** | Research, UX, architecture, and this strategy merged. Risk register reviewed by the team. Tooling agreed with the Architect (#4). Issue and PR templates live. Initial test cases drafted and traced to requirement IDs. |
 | **M1 — Foundation** | Domain rules implemented as pure functions with **≥ 90% line and branch coverage on `src/domain`**, every boundary in `domain-rules.md` covered by a test, storage migrations tested with `fake-indexeddb`, i18n key-parity test green, CI running all levels, E2E skeleton green on all three projects, axe green on the app shell. Zero open S1/S2. |
 | **M2 — MVP Features** | Every MVP journey has an E2E test in both locales; offline suite green (cold start, deep link, airport checklist, recovery); SW update test green; export/import round-trip green; axe zero serious/critical on every route; screenshots in both locales attached to every UI PR. Zero open S1/S2; S3 count agreed with the PM. |
-| **M3 — Launch** | **Zero `test.fixme` remain anywhere in the suite** — a case written ahead of its screen and never turned on reads as coverage in a report while asserting nothing, so the release pass counts them and a non-zero count blocks. Full release checklist (§10) passed on the live site; manual iOS + Android device pass done; manual screen-reader pass done; production smoke green; QA sign-off comment on the release issue. Zero open S1/S2, no unresolved S3 in a critical journey. |
+| **M3 — Launch** | **Zero `test.fixme` remain anywhere in the suite** — a case written ahead of its screen and never turned on reads as coverage in a report while asserting nothing, so the release pass counts them and a non-zero count blocks. Full release checklist (§10) passed on the live site; the release report states plainly that the real-device and real-screen-reader passes were **not performed**, and names them as the first work a human tester should do; production smoke green; QA sign-off comment on the release issue. Zero open S1/S2, no unresolved S3 in a critical journey. |
 
 **Stop-the-line rule:** any defect that can cause a traveler to lose a refund (wrong amount, wrong eligibility, wrong deadline, lost data, airport mode unusable offline) is S1 by definition and blocks the next merge to `main` until fixed or reverted.
 
@@ -272,7 +274,7 @@ Run before every release to `main` that users will see. Matrix: **2 languages ×
 
 **Accessibility**
 - [ ] axe: zero serious/critical on every route.
-- [ ] VoiceOver pass on the critical journey; TalkBack spot check.
+- [ ] Accessibility-tree snapshot reviewed for every screen in both locales. **State in the report that no screen reader was run**, and that a VoiceOver and TalkBack pass is the first thing a human tester should do.
 - [ ] Keyboard-only traversal; visible focus everywhere; target size ≥ 24 px.
 - [ ] Contrast verified against the final palette, including disabled and error states.
 

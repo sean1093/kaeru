@@ -221,8 +221,9 @@ Run against the production build with the service worker active. Airport Mode ha
 | TC-AIR-017 | Old-system receipt (purchased ≤ 2026-10-31) | Absent from every Airport Mode checklist, labelled as old-system elsewhere | DR-003 | R01 | E | P0 |
 | TC-AIR-018 | Expired receipt in Airport Mode | Marked expired and excluded from the amount the traveler expects | DR-031 | R03 | E | P0 |
 | TC-AIR-019 | Countdown to the "leave for check-in" time | Updates offline; when short, states honestly that abandoning an inspection counts as no confirmation and that a missed flight is not compensated. The app never decides what to drop | UJ-032, DR-032 | — | E | P0 |
-| TC-AIR-020 | Service worker update: load build A, serve build B, reload | New build active (asset hash changed); stored data intact | — | R06 | E | P0 |
-| TC-AIR-021 | Update available while the app is open | Non-intrusive affordance; accepting reloads into the new build; declining does not break the session | — | R06 | E | P0 |
+| TC-AIR-020 | Load build A, deploy build B, accept the update **through the product's own button** | The live page shows build B seconds after the tap, and stored data is intact. Driven through `applyUpdate` rather than by posting `SKIP_WAITING` by hand: the real path also registers the `controllerchange` listener that reloads once the new worker takes control, and a hand-rolled version that skips it observes an update that never arrives. The code under test must be the code that runs | — | R06 | E | P0 |
+| TC-AIR-021 | Update available while the app is open | Non-intrusive affordance; accepting reloads into the new build; declining does not break the session **and leaves the update waiting to accept later** | — | R06 | E | P0 |
+| TC-AIR-022a | A second tab open on the same origin when another tab accepts an update | The bystander tab reloads too — `skipWaiting()` claims every client of the registration. Not a defect and not changeable without weakening the update, but it means an unsaved form in that tab is lost, so the draft autosave (`TC-UX-018`) is what makes it survivable. Reachable in a browser tab; an installed PWA is a single client, so the person who tapped Update is the only one affected there | — | R06, R04 | E | P1 |
 | TC-AIR-022 | A rules-data change shipped in a new build (e.g. the 1% rate) | Reaches an already-installed client after one update cycle; no stale rate is applied to a new purchase date | DR-023, UR-08 | R06, R19 | E | P0 `@unconfirmed` |
 | TC-AIR-023 | Offline on `iphone-webkit` specifically | Full offline suite passes on WebKit, not only on Chromium | — | R05 | E | P0 |
 
@@ -362,13 +363,13 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 |---|---|---|
 | TC-DOM — domain rules | 99 | 13 |
 | TC-DATA — storage and backup | 23 | 0 |
-| TC-AIR — airport, offline, service worker | 23 | 1 |
+| TC-AIR — airport, offline, service worker | 24 | 1 |
 | TC-I18N — localization | 15 | 0 |
 | TC-A11Y — accessibility | 18 | 0 |
 | TC-PWA — install and platform | 8 | 0 |
 | TC-SEC — privacy | 5 | 0 |
 | TC-UX — flows | 24 | 1 |
-| **Total** | **215** | **15** |
+| **Total** | **216** | **15** |
 
 **Requirement coverage.** Every `DR-0nn`, `UR-nn` and `UJ-0nn` ID published in `domain-rules.md` v1.0 and `user-journey.md` v1.0 is cited by at least one case above. This was checked mechanically against both documents on 2026-10-05 and is re-checked at each milestone exit.
 
