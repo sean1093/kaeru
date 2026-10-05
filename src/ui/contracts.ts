@@ -143,7 +143,9 @@ export interface AmountDisplayProps {
   fee?: { value: Jpy; label: string };
   /**
    * Reads naturally for a screen reader, e.g. "Estimated net, 24,860 yen". The `~` is
-   * never announced; the word "estimated" carries that meaning.
+   * never announced and does not survive into speech on its own — for `kind: 'estimate'`,
+   * the caller's `accessibleName` must carry the estimated-ness itself (the word
+   * "estimated" / 預估), because nothing else will (Architect review, #115).
    */
   accessibleName: string;
 }

@@ -4,7 +4,11 @@ import styles from './AmountDisplay.module.css';
 import type { AmountDisplayProps } from './contracts.ts';
 import { VisuallyHidden } from './VisuallyHidden.tsx';
 
-/** Cached per locale: constructing an `Intl.NumberFormat` is the expensive part. */
+/**
+ * Cached per locale: constructing an `Intl.NumberFormat` is the expensive part. Kaeru
+ * ships two locales, so this holds at most two entries for the life of the tab —
+ * deliberately never cleared on locale change, not a leak (Architect review, #115).
+ */
 const formatters = new Map<string, Intl.NumberFormat>();
 
 function jpyFormatter(locale: string): Intl.NumberFormat {
