@@ -200,6 +200,34 @@ describe('deadlineStatusOf (DR-031, DR-076)', () => {
     }
   });
 
+  it('keeps expired and risk independent: a comfortable deadline still passes eventually', () => {
+    // They are different axes on purpose. `risk` compares the deadline to the departure
+    // date and never moves; `expired` compares it to today and moves every midnight. So
+    // expired && risk === 'none' is reachable and correct: a five-day trip in November
+    // whose receipts had 85 days of margin, read again in March.
+    const shortTrip = aTrip({ departureDate: '2026-11-06' });
+    const longAfter = deadlineStatusOf(
+      receipt,
+      shortTrip,
+      rules,
+      fixedClock('2027-03-01T09:00:00+09:00'),
+    );
+    expect(longAfter.risk).toBe('none');
+    expect(longAfter.expired).toBe(true);
+    expect(longAfter.slackDays).toBe(85);
+
+    // And the reverse pair: already missed against departure, not yet past today.
+    const longStay = aTrip({ departureDate: '2027-03-01' });
+    const early = deadlineStatusOf(
+      receipt,
+      longStay,
+      rules,
+      fixedClock('2026-11-02T09:00:00+09:00'),
+    );
+    expect(early.risk).toBe('missed');
+    expect(early.expired).toBe(false);
+  });
+
   it('TC-DOM-064 changes the countdown by exactly one across a Japanese midnight', () => {
     const before = deadlineStatusOf(
       receipt,
