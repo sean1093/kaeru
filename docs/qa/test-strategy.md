@@ -134,7 +134,7 @@ Written down because a known limit is cheaper than rediscovering it under pressu
 
 #### What reads this back?
 
-Five mechanisms this week were **present, correct-looking, commented, green — and inert.** Not untested: every one sat inside a passing suite.
+Six mechanisms this week were **present, correct-looking, commented, green — and inert or false.** Not untested: every one sat inside a passing suite.
 
 | Mechanism | What it was | What read it back |
 |---|---|---|
@@ -143,14 +143,16 @@ Five mechanisms this week were **present, correct-looking, commented, green — 
 | `BottomSheet`'s `inert` loop (#121) | a loop over background nodes | nothing — the sheet rendered inside `#app`, so the filter removed the only candidate |
 | The global `testIgnore` | a config key | nothing — a project-level sibling **replaces** it rather than extending it |
 | `BottomSheet`'s own inert test | an assertion | nothing real — the fixture appended a div to `<body>`, constructing the one DOM shape where the broken code works |
+| #113's blocker-uniqueness assertion | an assertion with teeth | nothing — it was **false**: a high-value receipt in a checked bag belongs under two blockers, and the fixture could not reach the case |
 
-**The question to ask in review is "what reads this back?"** Each of the five answers "nothing", and each answer was available when the code was written rather than after the incident. That is cheap enough to apply every time, which is the only property that matters.
+**The question to ask in review is "what reads this back?"** Each of the six answers "nothing", and each answer was available when the code was written rather than after the incident. That is cheap enough to apply every time, which is the only property that matters.
 
-Three things follow, each paid for:
+Four things follow, each paid for:
 
-- **A correct comment is evidence about intent and none at all about effect.** Three of the five had comments that accurately described what the code was *for*. A reader checks that the code matches the comment, agrees that it does, and never asks whether the code does anything. The comment is what made them invisible.
+- **A correct comment is evidence about intent and none at all about effect.** Three of the six had comments that accurately described what the code was *for*. A reader checks that the code matches the comment, agrees that it does, and never asks whether the code does anything. The comment is what made them invisible.
 - **When two mechanisms produce the same observable, a test of the observable is not a test of either of them.** The keyboard focus-trap and `inert` both yield "focus stays in the sheet"; writing and re-writing a live region both yield "the region contains the right text". In both cases the broken one was the one serving the population we cannot test — which is not a coincidence, because the mechanism that is easy to observe is the one that exists for the users we can see. **Assert the mechanism**: `expect(document.getElementById('app')?.hasAttribute('inert')).toBe(true)`, not "focus stayed inside".
 - **A fixture that manufactures the production condition is worse than no test.** Its presence is why nobody looks.
+- **Mutation proves an assertion has teeth; it says nothing about whether the assertion is true.** These are two independent checks and we have been treating one as sufficient. *Break the code, does the test fail?* establishes that the test catches **this** bug. *Construct the case the assertion forbids but the product should allow, does the test fail?* establishes that the assertion is **right**. #113's uniqueness assertion passed the first and failed the second: reverting the predicate turned it red, and it was still a false claim about the function — a high-value receipt in a checked bag belongs under two blockers, because taking it out of the bag and finding its certificate are different jobs. **A false assertion with teeth is worse than no assertion**, because it is load-bearing and nobody will touch it. Both authors of this week's two instances had written the warning about it days or hours earlier, which is the argument for the review loop rather than for anyone being more careful: the only reason either was caught is that someone else ran the case the author could not imagine.
 
 And one convention for the other direction: **a defensive branch that looks redundant must say what breaks when it is removed** — in the imperative, at the line where the removal would happen. Three instances already: the `IGNORED` constant each Playwright project spreads, the registry's `undefined` filter, and `BottomSheet` restoring only the nodes it marked. All three read as tidy-up bait, and the comment is the only thing standing between them and a simplification.
 
