@@ -1,10 +1,17 @@
+export { actionItemsOf } from './actions.ts';
+export { airportReadinessOf } from './airport.ts';
 export type {
+  ActionItem,
+  AirportBlocker,
+  AirportReadiness,
   LineAmounts,
   PayoutEstimate,
   RefundEstimate,
   ShopDayGroup,
   TransitionBlockReason,
   TransitionOutcome,
+  TravelerChecklist,
+  TripTotals,
   ValidationFinding,
   ValidationSeverity,
 } from './api.ts';
@@ -71,4 +78,5 @@ export { kaeruRules, RATE_LABEL_KEYS, RULES_REVIEW_MAX_AGE_DAYS } from './rules-
 export { shopKeyOf } from './shop-key.ts';
 export { isClaimable, isOldSystem, registrationStateOf, resolveTransition } from './status.ts';
 export { groupByShopDay } from './threshold.ts';
+export { tripTotalsOf } from './totals.ts';
 export { validatePurchaseDate, validateReceipt } from './validation.ts';

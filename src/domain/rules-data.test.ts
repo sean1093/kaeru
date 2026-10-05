@@ -52,6 +52,8 @@ describe('the rules document is the only place a rule constant lives', () => {
 
   it('scans every module under src/domain', () => {
     expect(sources.map(({ name }) => name).sort()).toEqual([
+      'actions.ts',
+      'airport.ts',
       'api.ts',
       'clock.ts',
       'dates.ts',
@@ -66,6 +68,7 @@ describe('the rules document is the only place a rule constant lives', () => {
       'shop-key.ts',
       'status.ts',
       'threshold.ts',
+      'totals.ts',
       'validation.ts',
     ]);
   });

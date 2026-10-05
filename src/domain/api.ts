@@ -17,6 +17,7 @@ import type {
   OperatorRegistration,
   PackingLocation,
   Receipt,
+  ReceiptId,
   ReceiptLine,
   ReceiptStatus,
   TaxRate,
@@ -292,15 +293,52 @@ export interface TravelerChecklist {
   routedToCounter: readonly Receipt[];
   /** Receipts whose goods are in a checked bag, which is the mistake that costs money (DR-032). */
   inCheckedBag: readonly Receipt[];
-  requiresDocuments: boolean;
+  /**
+   * Receipts customs may ask for a certificate or warranty for (`DR-016`, `UJ-020`).
+   *
+   * A list rather than a boolean, because S17 and S30 both have to say *which* purchase:
+   * "one of your eleven receipts needs documents" is an instruction to search a suitcase.
+   * Emptiness carries the boolean.
+   */
+  requiresDocuments: readonly Receipt[];
+}
+
+/**
+ * Every reason the traveller can be not-ready. Closed, because these are copy identifiers
+ * and the i18n parity test cannot enumerate an open set: a key with no translation would
+ * reach a traveller as a raw identifier, on the screen where attention is scarcest.
+ */
+export type AirportBlockerKey =
+  | 'blocker.checkedBag'
+  | 'blocker.deadlineExpired'
+  | 'blocker.packingUnknown'
+  | 'blocker.itemsNotConfirmed'
+  | 'blocker.itemsMissing'
+  | 'blocker.consumedGoods'
+  | 'blocker.documentsNeeded';
+
+/** One reason the traveller is not ready, and the receipts it is about. */
+export interface AirportBlocker {
+  /** Message key in the airport feature's bundle; the copy lives with the screen. */
+  key: AirportBlockerKey;
+  receiptIds: readonly ReceiptId[];
 }
 
 export interface AirportReadiness {
   travelers: readonly TravelerChecklist[];
   claimableCount: number;
   notClaimingCount: number;
-  /** Message keys for everything standing between the user and a clean kiosk run. */
-  blockerKeys: readonly string[];
+  /**
+   * Everything standing between the traveller and a clean kiosk run, each with the
+   * receipts it is about.
+   *
+   * The ids are carried rather than a count because S30 renders a count per line and S39
+   * has to name the specific receipts: a count is one `.length` away from a list, and a
+   * list is not recoverable from a count. Without them the screen would re-derive the set
+   * by filtering receipts itself, which puts blocker determination in two places — in the
+   * one flow where a disagreement happens in a queue with a flight to catch.
+   */
+  blockers: readonly AirportBlocker[];
   /** Nothing to do, which must be said plainly rather than shown as an empty list (DR-079). */
   nothingToDo: boolean;
 }
@@ -414,9 +452,22 @@ export interface TripTotals {
   operatorCount: number;
 }
 
+/**
+ * Takes the registrations and the trip because the net has **two** deductions (`DR-025`)
+ * and the second one — the traveller's own bank charge for an inbound transfer — is a
+ * property of the trip and of the payout route, not of the operator. Without them this
+ * could only ever report gross minus operator fees, which is the optimistic direction on
+ * the one figure the home screen shows as its hero. In the evidence the bank charge is the
+ * larger bite: ¥19,805 of purchases arriving as NT$77 (PP-03).
+ *
+ * The total is the sum of `EstimateOperatorPayout` over the operator groups, so the home
+ * screen and the refund tracker cannot disagree about what the traveller is owed.
+ */
 export type TripTotalsOf = (
   receipts: readonly Receipt[],
   operators: readonly Operator[],
+  registrations: readonly OperatorRegistration[],
+  trip: Trip,
   rules: ResolvedRules,
 ) => TripTotals;
 
