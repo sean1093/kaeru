@@ -53,7 +53,7 @@ test.describe('Airport Mode — entry and readiness (S30, S39)', () => {
     page,
   }) => {
     await page.goto('./#/airport');
-    const blockers = page.getByTestId('airport-blockers');
+    const blockers = page.getByRole('region', { name: /要先處理|Fix these first/ });
     await expect(blockers).toBeVisible();
     // Each blocker names how many receipts it covers; a bare "something is wrong" is not
     // actionable in a queue (wireframes S30, "5 receipts: goods in checked bags").
@@ -64,14 +64,14 @@ test.describe('Airport Mode — entry and readiness (S30, S39)', () => {
     await page.goto('./#/airport');
     // With no claimable receipts the mode must say so rather than render an empty
     // checklist that looks like a loading failure.
-    await expect(page.getByTestId('airport-nothing-to-do')).toBeVisible();
+    await expect(page.getByText(/沒有要辦的|Nothing to do/)).toBeVisible();
   });
 
   test('TC-AIR-019: the countdown is absent, not zero, when the trip has no flight time', async ({
     page,
   }) => {
     await page.goto('./#/airport');
-    await expect(page.getByTestId('airport-countdown')).toHaveCount(0);
+    await expect(page.getByRole('timer')).toHaveCount(0);
   });
 
   test('S39 is reachable from the start screen and offers all six branches', async ({ page }) => {
@@ -124,7 +124,7 @@ test.describe('Airport Mode — step 1, the hard gate (S31)', () => {
   }) => {
     await page.goto('./#/airport/goods');
     // It must not appear as a tickable row — the kiosk is the wrong place for it (DR-035).
-    const pointer = page.getByTestId('airport-used-goods-pointer');
+    const pointer = page.getByRole('link', { name: /已經用掉|already used/ });
     await expect(pointer).toBeVisible();
     await pointer.click();
     expect(await currentScreen(page)).toBe('S36');
@@ -139,8 +139,10 @@ test.describe('Airport Mode — step 1, the hard gate (S31)', () => {
     page,
   }) => {
     await page.goto('./#/airport/goods');
-    const banner = page.getByTestId('shell-banner');
-    await expect(banner).toContainText(/還不要託運行李|Do not check your bags yet/);
+    const banner = page.getByRole('status').filter({
+      hasText: /還不要託運行李|Do not check your bags yet/,
+    });
+    await expect(banner).toBeVisible();
     await expect(banner.getByRole('button', { name: /關閉|Dismiss|Close/ })).toHaveCount(0);
   });
 });
@@ -199,9 +201,9 @@ test.describe('Airport Mode — landside, the terminal and its results (S32-S36)
     await page.getByRole('button', { name: /綠燈|Green/ }).click();
     expect(await currentScreen(page)).toBe('S34');
     // UJ-031: the gate is released at step 4, never here.
-    await expect(page.getByTestId('shell-banner')).toContainText(
-      /還不要託運行李|Do not check your bags yet/,
-    );
+    await expect(
+      page.getByRole('status').filter({ hasText: /還不要託運行李|Do not check your bags yet/ }),
+    ).toBeVisible();
   });
 
   test('the reported result is persisted before the step content changes', async ({ page }) => {
@@ -213,7 +215,7 @@ test.describe('Airport Mode — landside, the terminal and its results (S32-S36)
     // someone who got red mark a traveler customs_confirmed by tapping the obvious one.
     await page.reload();
     expect(await currentScreen(page)).toBe('S35');
-    await expect(page.getByTestId('red-self-check')).toBeVisible();
+    await expect(page.getByText(/先自己檢查一次|Check yours first/)).toBeVisible();
   });
 
   test('TC-AIR-016: S36 gives the official instruction — the desk, not the terminal', async ({
@@ -231,12 +233,28 @@ test.describe('Airport Mode — landside, the terminal and its results (S32-S36)
 test.describe('Airport Mode — customs done and what happens next (S37, S38)', () => {
   test.fixme(true, 'Enabled by #51 (M2-D4): customs done, what happens next, something is wrong.');
 
-  test('TC-AIR-010: the banner clears only at S37, after every traveler is done', async ({
+  test('TC-AIR-010: the banner clears when the LAST traveler is done, not the first', async ({
     page,
   }) => {
-    await page.goto('./#/airport/done');
+    // The load-bearing half of this case is *when* it clears, not where it shows. With one
+    // traveler, "absent on S37" and "cleared when everyone is done" are the same assertion
+    // and the plausible bug — clearing on the first completion — passes. With two they
+    // diverge, and two is the family the whole per-traveler design exists for (DR-004).
+    await page.goto('./#/airport/kiosk');
+    const banner = page.getByRole('status').filter({
+      hasText: /還不要託運行李|Do not check your bags yet/,
+    });
+    await expect(banner).toBeVisible();
+
+    await page.getByRole('button', { name: /綠燈|Green/ }).click();
+    await page.getByRole('button', { name: /換下一位|Next traveler/ }).click();
+    // First traveler done, second outstanding: the gate must still hold.
+    await expect(banner).toBeVisible();
+
+    await page.getByRole('button', { name: /綠燈|Green/ }).click();
+    await page.getByRole('link', { name: /下一步|Next step|步驟 4/ }).click();
     expect(await currentScreen(page)).toBe('S37');
-    await expect(page.getByTestId('shell-banner')).toHaveCount(0);
+    await expect(banner).toHaveCount(0);
     await expect(
       page.getByText(/現在可以去報到|Now you can check in and drop your bags/),
     ).toBeVisible();
@@ -271,22 +289,19 @@ test.describe('Airport Mode — customs done and what happens next (S37, S38)', 
     ).toBeVisible();
     await expect(page.getByText(/沒有人賠|Nobody compensates/)).toBeVisible();
     // Biggest-first, so the user can see what a decision costs (UJ-032).
-    await expect(page.getByTestId('out-of-time-receipts')).toBeVisible();
+    await expect(page.getByText(/金額由大到小|Biggest first/)).toBeVisible();
   });
 });
 
-test.describe('Airport Mode — offline (TC-AIR-001 to TC-AIR-003)', () => {
+/**
+ * Only the flow's own offline behaviour lives here. The test is "would this still be true
+ * if Airport Mode did not exist?" — if yes it is a shell property and belongs in the
+ * offline suite beside the service-worker cases, not in this file (QALead's ruling on
+ * #99). That moves `TC-AIR-001` (offline cold start) and `TC-AIR-002` (offline deep link)
+ * out: both are true of any route and are testable today, without waiting on #48.
+ */
+test.describe('Airport Mode — offline (TC-AIR-003)', () => {
   test.fixme(true, 'Enabled by #48 to #51: the whole sequence, with the radio off.');
-
-  test('TC-AIR-002: a deep link into Airport Mode resolves offline from cache', async ({
-    page,
-    context,
-  }) => {
-    await activateServiceWorker(page);
-    await context.setOffline(true);
-    await page.goto('./#/airport');
-    expect(await currentScreen(page)).toBe('S30');
-  });
 
   test('TC-AIR-003: the whole sequence completes offline and survives a reload', async ({
     page,
