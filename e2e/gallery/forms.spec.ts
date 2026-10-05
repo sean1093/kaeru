@@ -24,9 +24,8 @@ test.describe('UI kit gallery — M1-3c components (#25)', () => {
   });
 
   test('yen renders with grouping and no decimals', async ({ page }) => {
-    await expect(
-      page.locator('[data-gallery="amount-actual"]').getByText('890'),
-    ).toBeVisible();
+    const visual = page.locator('[data-gallery="amount-actual"] [aria-hidden="true"]');
+    await expect(visual).toHaveText('¥890');
   });
 
   test('the estimate hero shows the ~ prefix with no raw tilde in the accessible tree', async ({
