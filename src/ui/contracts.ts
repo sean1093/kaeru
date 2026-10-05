@@ -68,21 +68,27 @@ export interface ButtonContractProps extends ButtonHTMLAttributes<HTMLButtonElem
 
 // --- 4. Card ---------------------------------------------------------------
 
-export interface CardContractProps {
+interface CardBaseProps {
   title?: string;
   headingLevel?: 2 | 3;
-  /** A whole-card tap target. A card with more than one action is never itself tappable. */
-  onActivate?: () => void;
-  href?: string;
   children?: ComponentChildren;
 }
 
+/**
+ * A card with a single destination is the whole tap target: `href` makes it a link,
+ * `onActivate` makes it a button, neither makes it a plain section. A card with more than
+ * one action is never itself tappable, so the two are mutually exclusive rather than
+ * merely discouraged — a component that silently prefers one when both are passed hides
+ * the mistake instead of reporting it.
+ */
+export type CardContractProps =
+  | (CardBaseProps & { href?: undefined; onActivate?: undefined })
+  | (CardBaseProps & { href: string; onActivate?: undefined })
+  | (CardBaseProps & { href?: undefined; onActivate: () => void });
+
 // --- 5. List row -----------------------------------------------------------
 
-export interface ListRowProps {
-  /** The row is a single announce unit, so exactly one of these is provided. */
-  href?: string;
-  onActivate?: () => void;
+interface ListRowBaseProps {
   primary: string;
   secondary?: string;
   status?: StatusChipProps;
@@ -92,6 +98,16 @@ export interface ListRowProps {
   /** Last row in a group omits its divider. */
   last?: boolean;
 }
+
+/**
+ * The row is a single announce unit, so at most one of `href` and `onActivate` exists: a
+ * row with two ways to activate it is two targets wearing one outline. A row with neither
+ * is a display row — not focusable, no chevron, nothing to press.
+ */
+export type ListRowProps =
+  | (ListRowBaseProps & { href?: undefined; onActivate?: undefined })
+  | (ListRowBaseProps & { href: string; onActivate?: undefined })
+  | (ListRowBaseProps & { href?: undefined; onActivate: () => void });
 
 // --- 6. Status chip --------------------------------------------------------
 
