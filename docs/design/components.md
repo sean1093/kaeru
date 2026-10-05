@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.1 (M0) |
+| Status | v1.2 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -58,7 +58,9 @@ Transition between flat and raised is `--duration-fast` on `box-shadow` only, wh
 | Inactive | `--color-text-muted` |
 | Badge | 8 px dot (`--color-attention`) for "needs action", or a pill with a count at `--text-xs` on `--color-attention` / `--color-on-attention` |
 
-Accessibility: `<nav aria-label="主要導覽 / Main">` containing a list of links; the active item carries `aria-current="page"`. The badge is not announced on its own — the link's accessible name includes the count ("收據，3 項待處理" / "Receipts, 3 need action"). Hidden in Airport Mode and in full-screen flows.
+Accessibility: `<nav aria-label="主要導覽 / Main">` containing a list of links; the active item carries `aria-current="page"`. The badge is not announced on its own — the link's accessible name is the visible label immediately followed by the badge's own fragment, joined by the component with no separator of its own: `${item.label}${badge.accessibleName}`. The fragment carries its own leading connector, supplied by the feature that owns the string — zh-TW `，3 項待處理`, en `, 3 need action` — so the composed name reads 收據，3 項待處理 / Receipts, 3 need action. This gives Label in Name (WCAG 2.5.3) as a structural guarantee: the kit always renders the label first and the fragment second, so a caller cannot reverse the order or omit the label, and there is no separator slot inside `src/ui` for a caller to exploit — not even a convention to violate, since the kit chooses no punctuation of any language. The full-width 「，」 is deliberate, not 「、」: this is a clause break before a status, the same role an English comma plays, not an enumeration of parallel items.
+
+**A leading connector is the most fragile shape a translated string can take, and it fails silently.** `.trim()` in a loader or test helper, whitespace collapse, a future i18n lint that flags strings beginning with punctuation, or a reviewer "tidying" what looks like a typo in isolation — any of these turns `，3 項待處理` into `3 項待處理`, and the composed result becomes `收據3 項待處理`: no error, just a sentence a screen reader runs together, heard only by the user least able to notice. Two things protect it: a test that asserts the **composed** name (`收據，3 項待處理`, not the bare fragment) so a stripped connector fails the test that matters, and a comment on `BottomNavItem.badge.accessibleName` in `contracts.ts` stating plainly that the leading mark is significant and must not be trimmed.
 
 At 320 px the four English labels ("Home", "Receipts", "Airport", "Guide") fit at `--text-sm`; at 200 % text scale labels wrap to two lines and the bar grows. Labels are never hidden in favour of icons alone.
 
