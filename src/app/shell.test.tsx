@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setActiveLocale } from '../i18n/index.ts';
 import { App } from './App.tsx';
 import type { ScreenRoute } from './navigation.ts';
+import * as registry from './registry.ts';
 import { routes } from './registry.ts';
 import { currentLocation, registerRoutes, startRouter } from './router.ts';
 import { appShellBanner, appToastHost, shellBanner, shellToast } from './shell-state.ts';
@@ -146,5 +147,52 @@ describe('the toast host', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '復原' }));
     expect(onActivate).toHaveBeenCalledOnce();
+  });
+});
+
+describe('tab badges', () => {
+  const tabbed = (badge: () => unknown) =>
+    [
+      {
+        id: 'home',
+        messages: { 'zh-TW': { 'home.nav': '首頁' }, en: { 'home.nav': 'Home' } },
+        routes: [{ pattern: '/', screenIds: ['S10'], chrome: 'tabs', screen: noScreen }],
+        tab: { order: 10, screenId: 'S10', labelKey: 'home.nav', icon: () => null, badge },
+      },
+    ] as unknown as Parameters<typeof registerRoutes>[0];
+
+  it('folds a count into the accessible name rather than announcing a bare number', () => {
+    setActiveLocale('en');
+    vi.spyOn(registry, 'tabFeatures', 'get').mockReturnValue(
+      tabbed(() => ({ kind: 'count', value: 3, accessibleName: ', 3 need action' })) as never,
+    );
+    at('/');
+    render(<App />);
+    // "Home, 3 need action" — never "Home 3". The visible label stays a prefix of the
+    // spoken name (WCAG 2.5.3), which the kit guarantees by plain concatenation.
+    expect(screen.getByTestId('nav-home')).toHaveAttribute('aria-label', 'Home, 3 need action');
+  });
+
+  it('renders no badge when the selector reports nothing', () => {
+    setActiveLocale('en');
+    vi.spyOn(registry, 'tabFeatures', 'get').mockReturnValue(tabbed(() => undefined) as never);
+    at('/');
+    render(<App />);
+    expect(screen.getByTestId('nav-home')).not.toHaveAttribute('aria-label');
+  });
+
+  it('survives a selector that throws, rather than taking the whole navigation with it', () => {
+    setActiveLocale('en');
+    vi.spyOn(registry, 'tabFeatures', 'get').mockReturnValue(
+      tabbed(() => {
+        throw new Error('repository not open yet');
+      }) as never,
+    );
+    at('/');
+    render(<App />);
+    // The user loses one number, not every tab. And the fallback is no badge rather than a
+    // zero: "we could not count" is not "nothing needs doing".
+    expect(screen.getByTestId('nav-home')).toBeVisible();
+    expect(screen.getByTestId('nav-home')).not.toHaveAttribute('aria-label');
   });
 });
