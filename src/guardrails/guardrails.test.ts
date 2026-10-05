@@ -283,6 +283,12 @@ describe('guardrails: rule constants live in the rules document (DR-022, R19)', 
       'a five-second dismissal timeout is a duration in milliseconds, not the yen threshold',
     'features/settings/index.ts':
       'a tab order of 90 is a position in a list, not the 90-day export window',
+    'features/gallery/copy.ts':
+      "the DateField specimen's deadline hint is demo copy illustrating what a derived " +
+      'deadline looks like, not a second definition of the window (#115)',
+    'features/gallery/sections/forms.tsx':
+      'the DateField specimen needs some literal date to start from; it is sample state ' +
+      'for a demo control, not an effective-date boundary (#115)',
   };
 
   for (const { rule, what, pattern } of FORBIDDEN_CONSTANTS) {
