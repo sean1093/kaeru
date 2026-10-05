@@ -1,0 +1,314 @@
+/**
+ * Prop contracts for the shared UI kit.
+ *
+ * Contract module: types only. Implemented by M1-3 against `docs/design/components.md`.
+ *
+ * Two rules the types enforce on purpose:
+ * - Components take **already translated strings**, never message keys. The UI kit has no
+ *   opinion about i18n, which keeps it testable and keeps copy with the feature that owns it.
+ * - Components take no colour, size or spacing values. Everything resolves to a design
+ *   token inside the component (`docs/design/visual-language.md` section 8).
+ */
+import type { ButtonHTMLAttributes, ComponentChildren, VNode } from 'preact';
+import type { Jpy, PackingLocation, ReceiptStatus } from '../domain/model.ts';
+
+export type Icon = () => VNode;
+
+// --- 1. App bar ------------------------------------------------------------
+
+export interface AppBarProps {
+  /** Rendered as the screen's `<h1>`; wraps to two lines, then clips. */
+  title: string;
+  /** Flat by default; raised once the content under it has scrolled. */
+  elevated?: boolean;
+  /** `back` renders a chevron, `close` renders an x for modal and full-screen flows. */
+  leading?: { kind: 'back' | 'close'; label: string; onActivate: () => void };
+  /** At most one; anything more belongs in an overflow menu. */
+  action?: { icon: Icon; label: string; onActivate: () => void };
+}
+
+// --- 2. Bottom navigation --------------------------------------------------
+
+export interface BottomNavItem {
+  id: string;
+  href: string;
+  label: string;
+  icon: Icon;
+  active: boolean;
+  /**
+   * A dot has no number; a count must be folded into the accessible name
+   * ("Receipts, 3 need action") rather than announced on its own.
+   */
+  badge?: { kind: 'dot' } | { kind: 'count'; value: number; accessibleName: string };
+}
+
+export interface BottomNavProps {
+  label: string;
+  items: readonly BottomNavItem[];
+}
+
+// --- 3. Button -------------------------------------------------------------
+
+export type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'destructive';
+
+/** Default 48 px, `airport` 56 px for gloved, hurried taps, `inline` 40 px for quiet links. */
+export type ButtonSize = 'default' | 'airport' | 'inline';
+
+export interface ButtonContractProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
+  /**
+   * Renders `aria-disabled`, never the native `disabled` attribute: the control stays
+   * focusable so a screen-reader user can reach the reason beside it. Save on Add Receipt
+   * is never disabled at all (DR-080).
+   */
+  inactive?: boolean;
+}
+
+// --- 4. Card ---------------------------------------------------------------
+
+export interface CardContractProps {
+  title?: string;
+  headingLevel?: 2 | 3;
+  /** A whole-card tap target. A card with more than one action is never itself tappable. */
+  onActivate?: () => void;
+  href?: string;
+  children?: ComponentChildren;
+}
+
+// --- 5. List row -----------------------------------------------------------
+
+export interface ListRowProps {
+  /** The row is a single announce unit, so exactly one of these is provided. */
+  href?: string;
+  onActivate?: () => void;
+  primary: string;
+  secondary?: string;
+  status?: StatusChipProps;
+  amount?: AmountDisplayProps;
+  /** Multi-select in the packing plan. */
+  selected?: boolean;
+  /** Last row in a group omits its divider. */
+  last?: boolean;
+}
+
+// --- 6. Status chip --------------------------------------------------------
+
+/** The closed DR-060 set, plus the two advisory chips the lists use. */
+export type ChipStatus = ReceiptStatus | 'needs_action' | 'operator_unknown';
+
+export interface StatusChipProps {
+  status: ChipStatus;
+  /** Already translated. Colour never carries the meaning on its own. */
+  label: string;
+}
+
+// --- 7. Amount display -----------------------------------------------------
+
+/**
+ * The three money kinds are told apart by form, never by colour (IA section 6, decision 3):
+ * `actual` is plain, `estimate` carries a `~` prefix, `received` carries a derived fee line.
+ */
+export type AmountKind = 'actual' | 'estimate' | 'received';
+
+export interface AmountDisplayProps {
+  kind: AmountKind;
+  value: Jpy;
+  /** Already translated, e.g. 消費稅 / Consumption tax. */
+  label: string;
+  size?: 'hero' | 'large' | 'body' | 'small';
+  /** `received` only: the implied fee, rendered with a true minus sign. */
+  fee?: { value: Jpy; label: string };
+  /**
+   * Reads naturally for a screen reader, e.g. "Estimated net, 24,860 yen". The `~` is
+   * never announced; the word "estimated" carries that meaning.
+   */
+  accessibleName: string;
+}
+
+// --- 8. Progress -----------------------------------------------------------
+
+export interface ProgressBarProps {
+  value: number;
+  max: number;
+  label: string;
+  /** The numeric form ("3/5") is required; the bar alone is decorative. */
+  valueText: string;
+  complete?: boolean;
+}
+
+export interface StepIndicatorProps {
+  current: number;
+  total: number;
+  /** The accessible source of truth, e.g. "步驟 2/5 · Step 2 of 5"; the dots are hidden. */
+  text: string;
+}
+
+// --- 9. Stepper (Airport Mode shell) ---------------------------------------
+
+export interface CountdownProps {
+  /** Already formatted, tabular. Omit the whole component when there is no flight time. */
+  text: string;
+  /** Inside the final 30 minutes the shell raises the tone. */
+  urgent?: boolean;
+  accessibleName: string;
+}
+
+export interface StepperProps {
+  step: StepIndicatorProps;
+  title: string;
+  countdown?: CountdownProps;
+  onClose: () => void;
+  closeLabel: string;
+  /**
+   * Stays enabled even when the step is not satisfied. `onAdvance` returns the id of the
+   * first unresolved row and the shell scrolls to it and announces the count — friction,
+   * never a cage (IA flow F).
+   */
+  primary: { label: string; onAdvance: () => { blockedBy: string; count: number } | null };
+  secondary?: { label: string; onActivate: () => void };
+  /** Rendered by the shell, not by a step, and cleared only at step 4 (UJ-026, UJ-031). */
+  banner?: BannerProps;
+  children?: ComponentChildren;
+}
+
+// --- 10. Checklist row -----------------------------------------------------
+
+export interface ChecklistRowProps {
+  id: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  primary: string;
+  secondary?: string;
+  /** Rows routed to a human counter render as a linked panel, not a checkbox (DR-035). */
+  excluded?: { reason: string; href: string };
+}
+
+export interface ChecklistGroupProps {
+  /** Becomes the `<legend>`, so the traveller's name is part of every row's name. */
+  legend: string;
+  progress: ProgressBarProps;
+  children?: ComponentChildren;
+}
+
+// --- 11. Form fields -------------------------------------------------------
+
+export interface FieldProps {
+  id: string;
+  label: string;
+  required?: boolean;
+  helper?: string;
+  /** Validation runs on blur and on submit, never per keystroke. */
+  error?: string;
+  children?: ComponentChildren;
+}
+
+export interface AmountEntryProps {
+  id: string;
+  label: string;
+  /** Integer yen. `null` renders an empty field rather than a zero. */
+  value: Jpy | null;
+  onChange: (value: Jpy | null) => void;
+  /** Separators are inserted on blur so the caret never jumps mid-typing. */
+  onBlur?: () => void;
+  autoFocus?: boolean;
+  error?: string;
+  /** The tax-included toggle's derived figure, always labelled as calculated (DR-022). */
+  derivedHint?: string;
+}
+
+export interface DateFieldProps {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  /** "Today" reset chip. */
+  todayLabel: string;
+  /** Read-only derived deadline shown beneath; never editable (DR-031). */
+  deadlineHint?: string;
+  error?: string;
+}
+
+export interface SegmentedOption<T extends string | number> {
+  value: T;
+  label: string;
+}
+
+export interface SegmentedControlProps<T extends string | number> {
+  legend: string;
+  options: readonly SegmentedOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+}
+
+export interface SelectSheetOption {
+  value: string;
+  label: string;
+  secondary?: string;
+  /** Sticky option such as "not sure yet", pinned below the groups. */
+  sentinel?: boolean;
+  group?: string;
+}
+
+export interface SelectSheetProps {
+  title: string;
+  options: readonly SelectSheetOption[];
+  value: string | null;
+  onChange: (value: string | null) => void;
+  /** Shown above six options. */
+  searchLabel?: string;
+  doneLabel: string;
+  onClose: () => void;
+}
+
+// --- 12. Bottom sheet ------------------------------------------------------
+
+export interface BottomSheetProps {
+  /** Labels the dialog; the sheet renders it as its heading. */
+  title: string;
+  open: boolean;
+  /** Escape, scrim tap, swipe down and browser back all route here. */
+  onClose: () => void;
+  children?: ComponentChildren;
+}
+
+// --- 13. Toast and banner --------------------------------------------------
+
+export interface ToastProps {
+  message: string;
+  /** Undo is a convenience; the action it undoes is always reversible elsewhere. */
+  action?: { label: string; onActivate: () => void };
+  /** 5 s, or 10 s with an action. Toasts never stack; a new one replaces the current one. */
+  durationMs?: number;
+  onDismiss: () => void;
+}
+
+export interface BannerProps {
+  tone: 'info' | 'attention' | 'success';
+  /** Short, accent-coloured. The body stays `--color-text`. */
+  heading?: string;
+  body: string;
+  /** Every attention banner carries a way out of the situation it describes. */
+  action?: { label: string; onActivate: () => void; href?: string };
+  /**
+   * `alert` interrupts a screen reader and is only correct when the user just did
+   * something. A persistent shell banner uses `none` so it does not re-announce on every
+   * Airport Mode step.
+   */
+  live?: 'alert' | 'status' | 'none';
+}
+
+// --- 14. Empty state -------------------------------------------------------
+
+export interface EmptyStateProps {
+  /** Decorative; always `aria-hidden`. */
+  mark?: Icon;
+  headline: string;
+  /** Says why it is empty and what will fill it. Never just "No data". */
+  body: string;
+  action?: { label: string; href?: string; onActivate?: () => void };
+  secondary?: { label: string; href: string };
+}
+
+export type { PackingLocation };

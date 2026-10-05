@@ -12,7 +12,8 @@ How Kaeru is put together and why. Decisions and their trade-offs live in
 contributor has to follow. It is updated whenever the structure changes.
 
 Related: [Product brief](../product/brief.md) · [Domain rules](../product/domain-rules.md) ·
-[Visual language](../design/visual-language.md) · [Test strategy](../qa/test-strategy.md)
+[Visual language](../design/visual-language.md) · [Test strategy](../qa/test-strategy.md) ·
+[Implementation plan](implementation-plan.md)
 
 ---
 
@@ -67,6 +68,7 @@ src/
   domain/        pure TypeScript: types, rules, calculations. No DOM, no storage, no I/O
   i18n/          locales, typed message bundles, Intl formatting
   data/          IndexedDB repositories, migrations, backup
+  content/       bundled guide, FAQ and operator catalogue — build-time data, not user data
   ui/            shared presentational components over the design tokens
   features/      one folder per feature: screen, feature state, messages, registration
   app/           shell, router, feature registry, app-level state, service-worker state
@@ -79,18 +81,19 @@ src/
 | `domain` | Money, dates, eligibility, deadlines, status transitions. Deterministic, injectable clock, no globals | nothing |
 | `i18n` | `Locale`, typed bundles, parity, `Intl` wrappers | `domain` |
 | `data` | Opening and migrating the database, repositories, export/import | `domain`, `i18n` |
-| `ui` | Button, Card, BrandMark, VisuallyHidden — no product knowledge | `i18n` |
-| `features/*` | One user-facing area: screen, its state, its messages, its route | `domain`, `data`, `ui`, `i18n`, and `app/feature.ts`, `app/router.ts`, `app/settings-store.ts` |
+| `content` | Guide articles, FAQ, source citations, the operator catalogue. Ships with the build so it works offline, and is the only place rule prose lives | `domain`, `i18n` |
+| `ui` | Shared presentational components. No product knowledge, no message keys — it takes translated strings | `i18n` |
+| `features/*` | One user-facing area: screen, its state, its messages, its routes | `domain`, `data`, `content`, `ui`, `i18n`, and `app/navigation.ts`, `app/router.ts`, `app/settings-store.ts` |
 | `app` | Shell, header, bottom navigation, routing, registry, settings and update state | everything except a feature's internals |
 
 ### Dependency rules
 
 1. **`domain` depends on nothing.** Not on `data`, not on the DOM, not on `Intl` defaults,
    not on the wall clock. If a rule needs "now", it takes a `Clock`.
-2. Dependencies point **one way**: `domain → i18n → data → ui → features → app`. A module
-   never imports from a later column.
+2. Dependencies point **one way**: `domain → i18n → data → content → ui → features → app`.
+   A module never imports from a later column.
 3. **Features never import each other.** Anything two features need belongs in `domain`,
-   `data`, `ui` or `i18n`.
+   `data`, `content`, `ui` or `i18n`.
 4. `app/registry.ts` is the only module that imports features (through a glob). Features may
    import app-level *state* modules (`router.ts`, `settings-store.ts`, `feature.ts`) but
    never the registry or the shell — that would be a cycle.
@@ -196,7 +199,10 @@ only, so a palette change is a one-file change.
 
 ## 7. Planned data model (M1)
 
-From [`domain-rules.md`](../product/domain-rules.md) §1. Not implemented yet — M0 ships
+From [`domain-rules.md`](../product/domain-rules.md) section 1. The **types** exist as
+contract modules (`src/domain/model.ts`, `src/data/repositories.ts`); the stores and
+repositories are M1 work, tracked in the [implementation plan](implementation-plan.md).
+M0 ships
 `meta` and `settings` only — but the storage layer is shaped for it.
 
 ```mermaid
