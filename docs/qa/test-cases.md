@@ -303,7 +303,7 @@ Run against the production build with the service worker active. Airport Mode ha
 
 ### 7.1 Prohibitions discharged by the guardrail suite
 
-Some cases above protect a rule that says something must **not** exist. A prohibition has no runtime surface, so there is often nothing a behavioural test can observe. Those are covered by `src/guardrails.test.ts` (issue #59) under the carve-out in [test-strategy.md](./test-strategy.md) section 3.
+Some cases above protect a rule that says something must **not** exist. A prohibition has no runtime surface, so there is often nothing a behavioural test can observe. Those are covered by `src/guardrails/` (issue #59) under the carve-out in [test-strategy.md](./test-strategy.md) section 3.
 
 Each case below says **who owns it**, because a case with two owners is a case nobody notices is missing. Two modes:
 
