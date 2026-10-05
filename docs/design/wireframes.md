@@ -43,6 +43,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 ## 1. Onboarding and the explainer — S01 to S05 (UJ-001 to UJ-004)
 
 
+**S01** — Welcome
+
 ```
 ┌──────────────────────────────────────────────┐
 │                                              │
@@ -74,6 +76,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │ . 直接設定行程  Set up my trip .             │
 └──────────────────────────────────────────────┘
 ```
+
+**S05** — Explainer, step 2 of 5
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -111,6 +115,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 **S05 Explainer, 5 steps (UJ-001).** The three counter-intuitive facts land first: you pay full price now (step 1), customs happens before bag drop (step 2), one missing item kills a whole receipt (step 3). Steps 4 and 5 cover operators and the 90-day window. Skippable at every step, re-openable from the Guide tab. Each step links to the matching `guide.steps.*` section rather than restating the rule.
 
 
+**S02** — Trip setup
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←            行程 Your trip      1/3         │
@@ -145,6 +151,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 **S02 Trip setup (UJ-002).** The connection link opens a short sheet explaining that the procedure happens at the final airport you leave Japan from (`DR-037`), then asks for that airport. This is load-bearing for Alex-type itineraries and invisible for everyone else.
 
 
+**S03** — Travelers
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←         旅客 Travelers         2/3         │
@@ -177,6 +185,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │ [ 下一步  Next ]                             │
 └──────────────────────────────────────────────┘
 ```
+
+**S04** — Ready, with the airport buffer
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -239,6 +249,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 ## 2. Home — S10 to S16 (UJ-011, UJ-016, UJ-022, UJ-036)
 
 
+**S10** — Home, during the trip
+
 ```
 ┌──────────────────────────────────────────────┐
 │ Kaeru                            [set]       │
@@ -286,6 +298,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 **S10 Home, during trip (UJ-011, UJ-016).** One hero number, a finite and finishable "tonight" list, then the quiet summary. The hero is the *estimated net*, always `~` prefixed, with the gross tax figure named beside it so the user can see the arithmetic (`DR-025`). The action list is capped at three with a count link; it is designed to reach zero.
 
 
+**S11** — Home, empty
+
 ```
 ┌──────────────────────────────────────────────┐
 │ Kaeru                            [set]       │
@@ -312,6 +326,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │ 首頁    收據    機場    指南                 │
 └──────────────────────────────────────────────┘
 ```
+
+**S12** — Home, before the trip
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -345,6 +361,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │ 首頁    收據    機場    指南                 │
 └──────────────────────────────────────────────┘
 ```
+
+**S13** — Home, departure day
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -389,6 +407,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 **S13 Departure day (UJ-022).** The departure-time recommendation shows its own arithmetic so the user can judge it, and is labelled as Kaeru's advice — there is no official figure (`DR-032`). Airport Mode becomes the hero; the refund total moves below the fold, because today it is not actionable.
 
 
+**S14** — Home, after the trip
+
 ```
 ┌──────────────────────────────────────────────┐
 │ Kaeru                            [set]       │
@@ -425,6 +445,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 └──────────────────────────────────────────────┘
 ```
 
+**S15** — Tonight&#39;s list
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←        今晚可以做  Tonight                 │
@@ -455,6 +477,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │~~~ tonight.                                  │
 └──────────────────────────────────────────────┘
 ```
+
+**S16** — Trip summary
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -513,6 +537,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 ## 3. Receipts — S20 to S29 (UJ-005 to UJ-010, UJ-012 to UJ-015)
 
 
+**S20** — Receipt list, with a same-shop same-day subtotal
+
 ```
 ┌──────────────────────────────────────────────┐
 │ 收據  Receipts                  [find]       │
@@ -561,6 +587,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 **S20 Receipt list.** Grouped by purchase date, newest first. Same-shop same-day receipts carry a combined-subtotal footer that **states the total and the shop's discretion, never qualification** — whether separate transactions aggregate towards ¥5,000 is `UR-02`, unconfirmed. A single receipt at or above ¥5,000 is `DR-010` and may state qualification plainly.
 
 
+**S21** — Add receipt, the 20-second path
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ✕        記一筆  Add receipt                 │
@@ -598,6 +626,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 └──────────────────────────────────────────────┘
 ```
 
+**S21** — Add receipt, under the ¥5,000 threshold
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ✕        記一筆  Add receipt                 │
@@ -633,6 +663,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 
 **S21 threshold state (UJ-007, DR-075).** Behavioural, not predictive: it tells the user what definitely works — buying more in the *same* transaction. It never promises that a second receipt will merge. Save stays enabled; the panel is `--color-primary-soft`, not an error, and the field keeps its normal border.
 
+
+**S21** — Add receipt, More details expanded
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -674,9 +706,53 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 └──────────────────────────────────────────────┘
 ```
 
+**S23** — Edit receipt
+
+```
+┌──────────────────────────────────────────────┐
+│ ✕        編輯收據  Edit receipt       ⋯      │
+├──────────────────────────────────────────────┤
+│ 未稅金額  Tax-excluded total   *             │
+│  ¥ [ 8,900                      ]            │
+├──────────────────────────────────────────────┤
+│ 店家  Shop                      *            │
+│ [ 松本清 マツキヨ 新宿東口店     ]           │
+├──────────────────────────────────────────────┤
+│ 誰買的  Who bought it           *            │
+│ [ o 宜君 ]( o 志豪 )                         │
+├──────────────────────────────────────────────┤
+│ 購買日期  Purchase date                      │
+│ [ 2026 / 11 / 04 ]            [cal]          │
+│  海關期限 2027/02/02                         │
+│  Customs deadline 2 Feb 2027                 │
+├──────────────────────────────────────────────┤
+│ 稅率  Tax rate                               │
+│ [ 10% ]( 8% )                                │
+│ 第二個稅率  Second rate line                 │
+│ 8%  ¥ [ 1,200                   ]  ✕         │
+├──────────────────────────────────────────────┤
+│ 退稅業者  Refund operator                    │
+│ [ J-TaxRefund                   ] v          │
+├──────────────────────────────────────────────┤
+│ 東西放哪  Where are the goods                │
+│ [ 隨身 With me ]( 託運 Checked )             │
+│ ( 不確定 Not sure )                          │
+├──────────────────────────────────────────────┤
+│ 備註  Note                                   │
+│ [ 面膜是送人的                   ]           │
+├──────────────────────────────────────────────┤
+│ [ 儲存  Save ]                               │
+│ . 刪除這張收據  Delete this receipt .        │
+└──────────────────────────────────────────────┘
+```
+
+**S23** is S21 with every section expanded and no collapsed *More details* — editing is a considered act at a table, not a doorway act. The mixed-rate second line (`DR-020`) is shown here in its added state. Delete is quiet, at the bottom, and undoable for 5 seconds via the toast.
+
 
 **Tax rate control (DR-023).** Not a hard-coded two-option toggle. The options come from the dated rate table resolved by `purchaseDate`, so a receipt dated on or after 2027-04-01 renders `1%` in the food slot with no code change. The abolished goods categories 一般物品 and 消耗品 appear nowhere in this control (`DR-013`).
 
+
+**S22** — Receipt detail
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -726,6 +802,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 └──────────────────────────────────────────────┘
 ```
 
+**S22** — Receipt detail, the two attention states
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←        收據  Receipt            ⋯          │
@@ -757,6 +835,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │=== . 完整說明  Read more . >                 │
 └──────────────────────────────────────────────┘
 ```
+
+**S2B** — Receipt detail, fee warning
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -794,6 +874,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 **Fee warning (DR-025, DR-027).** Triggered when the estimated net approaches the cost of receiving a transfer, not only when it goes below zero — a ¥30 refund is as bad as none, and the user should see it coming. The illustrating figure is deliberately locale-specific: NT$200–400 is a Taiwanese-bank fact and would be wrong to quote to an English-speaking traveler, so the English string carries the same warning without the number. Both link to `guide.faq.q11`.
 
 
+**S2A** — Not claiming
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ✕   這張不退了  Not claiming                 │
@@ -819,6 +901,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 └──────────────────────────────────────────────┘
 ```
 
+**S29** — Old-system receipt
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←        收據  Receipt            ⋯          │
@@ -843,6 +927,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │ . 從這趟刪掉  Remove from this trip .        │
 └──────────────────────────────────────────────┘
 ```
+
+**S24** — Operator chooser (sheet)
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -885,6 +971,32 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 └──────────────────────────────────────────────┘
 ```
 
+**S25** — Traveler chooser (sheet)
+
+```
+┌──────────────────────────────────────────────┐
+│ ✕        誰買的  Who bought it               │
+├──────────────────────────────────────────────┤
+│ 退稅是綁在購買時用的那本護照上。             │
+│ The refund is tied to the passport           │
+│ used at the till.                            │
+├──────────────────────────────────────────────┤
+│ (o) o 宜君  Yi-chun                          │
+│     護照末四碼 7431                          │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
+│ ( ) o 志豪  Chih-hao                         │
+│     沒填末四碼  no passport digits           │
+├──────────────────────────────────────────────┤
+│ . + 新增旅客  Add traveler .                 │
+├──────────────────────────────────────────────┤
+│ [ 確定  Done ]                               │
+└──────────────────────────────────────────────┘
+```
+
+Used when the trip has four or more travelers; with two or three it is a segmented control inline, and with one it does not appear at all.
+
+**S26** — Packing location (sheet)
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ✕   東西放哪  Where are the goods            │
@@ -910,6 +1022,37 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │ [ 確定  Done ]                               │
 └──────────────────────────────────────────────┘
 ```
+
+**S27** — Photo view
+
+```
+┌──────────────────────────────────────────────┐
+│ ✕                                  ⋯         │
+│                                              │
+│                                              │
+│                                              │
+│    ┌──────────────────────────────────┐      │
+│    │                                  │      │
+│    │     ( receipt photo )            │      │
+│    │                                  │      │
+│    │    雙指縮放可以看清楚            │      │
+│    │    Pinch to zoom                 │      │
+│    │                                  │      │
+│    └──────────────────────────────────┘      │
+│                                              │
+│                                              │
+│                                              │
+├──────────────────────────────────────────────┤
+│ 松本清 マツキヨ · 2026/11/04                 │
+│ 只存在這支手機  Stored on this phone         │
+├──────────────────────────────────────────────┤
+│ . 換一張  Replace .   . 刪除  Delete .       │
+└──────────────────────────────────────────────┘
+```
+
+Full-bleed, dark scrim regardless of theme so the photo is judged on its own. The overflow menu holds replace and delete. The photo is the recovery path for everything the user did not type, including the operator QR, so it is never silently discarded on edit.
+
+**S28** — Receipt list, empty
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -979,6 +1122,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 ## 4. Last day — S17 (UJ-017 to UJ-021)
 
 
+**S17** — Packing plan, the night before
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←        明天出發  Packing plan              │
@@ -1035,6 +1180,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--text-lg` (20 px) minimum, primary buttons are 56 px tall, and every screen works with the radio off. A quiet *Something's wrong* link sits at the bottom of every step, and the countdown (UJ-032) sits in the header from step 2 onward.
 
 
+**S30** — Airport Mode, start
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ✕        機場流程  Airport mode              │
@@ -1077,6 +1224,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │  . 這些是什麼意思  What are these . >        │
 └──────────────────────────────────────────────┘
 ```
+
+**S31** — Step 1, have your goods with you
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -1129,6 +1278,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 **S31 the hard gate (UJ-024).** Advance is blocked until every claimable receipt is either ticked or explicitly moved out of the list. "Blocked" means the primary button explains rather than greys out: tapping it scrolls to the first unresolved receipt and says 還有 2 張沒確認 / 2 receipts still unresolved. Unticking is always allowed (`DR-063`).
 
 
+**S32** — Step 2, go landside before check-in
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ✕   步驟 2/5          還有 2 小時 31 分      │
@@ -1168,6 +1319,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 └──────────────────────────────────────────────┘
 ```
 
+**S33** — Step 3, at the terminal
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ✕   步驟 3/5          還有 2 小時 12 分      │
@@ -1205,6 +1358,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 └──────────────────────────────────────────────┘
 ```
 
+**S34** — Step 3, green result
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ✕   步驟 3/5          還有 2 小時 08 分      │
@@ -1232,6 +1387,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │  . Still do not check bags yet .             │
 └──────────────────────────────────────────────┘
 ```
+
+**S35** — Step 3, red result
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -1277,6 +1434,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 └──────────────────────────────────────────────┘
 ```
 
+**S36** — Already-used goods, routed to the customs desk
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←   已經用掉的東西  Already used             │
@@ -1309,6 +1468,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 └──────────────────────────────────────────────┘
 ```
 
+**S37** — Step 4, customs done, gate released
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ✕   步驟 4/5          還有 1 小時 32 分      │
@@ -1340,6 +1501,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │  . 還有一位旅客沒做  Someone is left .       │
 └──────────────────────────────────────────────┘
 ```
+
+**S38** — Step 5, done
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -1377,6 +1540,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 └──────────────────────────────────────────────┘
 ```
 
+**S39** — Something is wrong
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←   遇到問題  Something is wrong             │
@@ -1409,6 +1574,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │~~~ these. Pick one.                          │
 └──────────────────────────────────────────────┘
 ```
+
+**S39** — Running out of time
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -1487,6 +1654,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 ## 6. Refund tracking — S40, S41 (UJ-033 to UJ-035)
 
 
+**S40** — Refund tracker
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←        退款追蹤  Refunds                   │
@@ -1523,6 +1692,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │ there is no legal time limit.                │
 └──────────────────────────────────────────────┘
 ```
+
+**S41** — Operator refund detail
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -1568,6 +1739,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 ## 7. Guide — S50 to S54
 
 
+**S50** — Guide index
+
 ```
 ┌──────────────────────────────────────────────┐
 │ 指南  Guide                     [find]       │
@@ -1599,6 +1772,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │ 首頁    收據    機場    指南                 │
 └──────────────────────────────────────────────┘
 ```
+
+**S51** — Guide article
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -1636,6 +1811,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 **S51 Guide article.** Every factual section ends with its source link and access date; rules whose status is `pending-legislation` or `unconfirmed` carry the `(i)` caveat inline. This is the only place rule text lives — app screens link here rather than restating.
 
 
+**S52** — Operator directory
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←        退稅業者  Operators                 │
@@ -1666,6 +1843,54 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │~~~ normal.                                   │
 └──────────────────────────────────────────────┘
 ```
+
+**S53** — Operator detail
+
+```
+┌──────────────────────────────────────────────┐
+│ ←        J&J Tax Free                        │
+├──────────────────────────────────────────────┤
+│ J&J Tax Free（J-TaxRefund）                  │
+│ 株式会社J&J（日文名，標記 lang="ja"）        │
+├──────────────────────────────────────────────┤
+│ 怎麼登錄  How to register                    │
+│ 掃收據上或店頭的 QR Code，連到網頁           │
+│ 表單，登錄一次就好。                         │
+│ Scan the QR on the receipt or in the         │
+│ shop. One web form, once.                    │
+│                                              │
+│ 退款方式  How they pay                       │
+│ 信用卡 · 二維碼支付 · 銀行帳戶 · 現金        │
+│ Card · QR payment · bank · cash              │
+│                                              │
+│ 手續費  Fee                                  │
+│ 未公布。沒找到數字，我們就說沒有，           │
+│ 不會編一個。                                 │
+│ Not published. We did not find a             │
+│ figure, so we say so rather than             │
+│ invent one.                                  │
+│ 資料日期 2026-10-05  as of                   │
+├──────────────────────────────────────────────┤
+│~~~ 這份名單是業者自行向日本全國免稅          │
+│~~~ 店協會申報的，不代表協會、日本政府        │
+│~~~ 或 Kaeru 的認可或保證。                   │
+│~~~ This list is self-declared to the         │
+│~~~ national tax-free shop association.       │
+│~~~ It is not an endorsement by them,         │
+│~~~ by the Japanese government, or by         │
+│~~~ Kaeru.                                    │
+├──────────────────────────────────────────────┤
+│ 你這趟有 5 張收據用這家                      │
+│ 5 of your receipts use this operator         │
+│ > 看那些收據  See them                       │
+├──────────────────────────────────────────────┤
+│ [ 開啟官方網站  Official site ↗ ]            │
+└──────────────────────────────────────────────┘
+```
+
+Every operator detail carries the `DR-053` non-endorsement line and the fee observation date (`DR-026`: fees are volatile and change without notice). "Not published" is shown as itself, never as a blank or a guess.
+
+**S54** — FAQ
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -1707,6 +1932,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 ## 8. Settings — S60 to S63 (UJ-003, UJ-037)
 
 
+**S60** — Settings
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←        設定  Settings                      │
@@ -1739,6 +1966,53 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │~~~ Export before you switch devices.         │
 └──────────────────────────────────────────────┘
 ```
+
+**S61** — Trip and travelers
+
+```
+┌──────────────────────────────────────────────┐
+│ ←        行程  Your trip                     │
+├──────────────────────────────────────────────┤
+│ 出境日期  Departure date                     │
+│ [ 2026 / 11 / 09            ] [cal]          │
+│                                              │
+│ 出境機場  Departure airport                  │
+│ [ 成田 NRT                  ] v              │
+│                                              │
+│ 班機時間  Flight time                        │
+│ [ 18:40                     ] [time]         │
+│                                              │
+│ 報到需要  Check-in needs                     │
+│ [ 60 ] 分鐘 minutes                          │
+│  航空公司規定的報到截止時間                  │
+│  Your airline s check-in cut-off             │
+│                                              │
+│ 退稅多留  Extra for tax-free                 │
+│ ( 30 )[ 60 ]( 90 ) 分鐘 minutes              │
+│  Kaeru 的建議，官方沒有數字。                │
+│  Our suggestion. There is no                 │
+│  official figure.                            │
+├──────────────────────────────────────────────┤
+│ 算出來  Which gives you                      │
+│ 建議 14:40 從飯店出發                        │
+│ Leave your hotel by 14:40                    │
+├──────────────────────────────────────────────┤
+│ 旅客  Travelers                              │
+│ > o 宜君 · 7431 · 7 張收據      >            │
+│ > o 志豪 · — · 5 張收據         >            │
+│ . + 新增旅客  Add traveler .                 │
+├──────────────────────────────────────────────┤
+│ 多久算遲  When to call a refund late         │
+│ [ 14 ] 天 days                               │
+│  法律沒有規定入帳時間，這是你自己的          │
+│  標準。There is no legal time limit.         │
+│  This is your own threshold.                 │
+└──────────────────────────────────────────────┘
+```
+
+Every derived number shows its inputs. The check-in requirement is the airline's, the buffer is Kaeru's suggestion, and the overdue threshold is the user's own — three different kinds of authority, labelled as such so the user knows which ones they may disagree with.
+
+**S62** — Data: export, import, delete
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -1773,6 +2047,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │=== [ 刪除所有資料  Delete all ]              │
 └──────────────────────────────────────────────┘
 ```
+
+**S63** — Privacy
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -1819,6 +2095,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 Only shown where being offline actually changes what the user can do: outbound operator links, the Visit Japan Web handoff, and the QR scanner's link-out. Everything else is local and behaves identically.
 
 
+**Offline** — only where it changes what you can do (S22 shown)
+
 ```
 ┌──────────────────────────────────────────────┐
 │ ←        收據  Receipt            ⋯          │
@@ -1845,6 +2123,8 @@ Only shown where being offline actually changes what the user can do: outbound o
 
 ### Form error
 
+
+**Form error** — S21 on a failed submit
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -1876,6 +2156,8 @@ Validation runs on blur and on submit, never on keystroke. Errors are announced 
 ### Storage write failure
 
 
+**Storage write failure** — global
+
 ```
 ┌──────────────────────────────────────────────┐
 ├──────────────────────────────────────────────┤
@@ -1901,6 +2183,8 @@ Validation runs on blur and on submit, never on keystroke. Errors are announced 
 
 Offered before the trip (UJ-004), not at the airport — Airport Mode has to be installed and cached before it is needed.
 
+
+**Install prompt** — offered before the trip, never at the airport
 
 ```
 ┌──────────────────────────────────────────────┐

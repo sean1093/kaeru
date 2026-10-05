@@ -49,7 +49,7 @@ Colours are named after traditional Japanese colour names, then exposed to engin
 | `--color-primary` | `#1B4D73` | Primary button fill, links, active nav |
 | `--color-primary-hover` | `#143A57` | Pressed / hover primary |
 | `--color-primary-soft` | `#E7EEF4` | Selected segment, info panel |
-| `--color-text-on-primary` | `#FFFFFF` | Label on primary fill |
+| `--color-on-primary` | `#FFFFFF` | Label on primary fill |
 | `--color-attention` | `#B23B22` | Blocking airport state, deadline < 7 days, destructive |
 | `--color-on-attention` | `#FFFFFF` | Label on attention fill |
 | `--color-attention-soft` | `#FBEBE6` | Attention banner background |
@@ -77,7 +77,7 @@ Same roles, re-pointed. The dark theme is warm charcoal, not blue-black, and the
 | `--color-primary` | `#8FC0E3` |
 | `--color-primary-hover` | `#AFD4F0` |
 | `--color-primary-soft` | `#1B2C38` |
-| `--color-text-on-primary` | `#0D1A23` |
+| `--color-on-primary` | `#0D1A23` |
 | `--color-attention` | `#F0957C` |
 | `--color-on-attention` | `#2A0F08` |
 | `--color-attention-soft` | `#39211A` |
@@ -114,8 +114,8 @@ All pairs computed with the WCAG 2.x relative-luminance formula. Body text requi
 | `--color-primary` | `--color-surface` | Link / icon on card | 8.91:1 | 4.5:1 | PASS |
 | `--color-primary` | `--color-bg-sunken` | Selected segment label | 7.64:1 | 4.5:1 | PASS |
 | `--color-primary-hover` | `--color-bg` | Pressed link | 11.09:1 | 4.5:1 | PASS |
-| `--color-text-on-primary` | `--color-primary` | Primary button label | 8.91:1 | 4.5:1 | PASS |
-| `--color-text-on-primary` | `--color-primary-hover` | Pressed button label | 11.85:1 | 4.5:1 | PASS |
+| `--color-on-primary` | `--color-primary` | Primary button label | 8.91:1 | 4.5:1 | PASS |
+| `--color-on-primary` | `--color-primary-hover` | Pressed button label | 11.85:1 | 4.5:1 | PASS |
 | `--color-primary` | `--color-primary-soft` | Text on soft primary chip | 7.61:1 | 4.5:1 | PASS |
 | `--color-text` | `--color-primary-soft` | Body on info panel | 14.83:1 | 4.5:1 | PASS |
 | `--color-attention` | `--color-bg` | Attention text on canvas | 5.55:1 | 4.5:1 | PASS |
@@ -151,8 +151,8 @@ All pairs computed with the WCAG 2.x relative-luminance formula. Body text requi
 | `--color-primary` | `--color-surface` | Link / icon on card | 8.56:1 | 4.5:1 | PASS |
 | `--color-primary` | `--color-bg-sunken` | Selected segment label | 9.86:1 | 4.5:1 | PASS |
 | `--color-primary-hover` | `--color-bg` | Pressed link | 11.71:1 | 4.5:1 | PASS |
-| `--color-text-on-primary` | `--color-primary` | Primary button label | 9.10:1 | 4.5:1 | PASS |
-| `--color-text-on-primary` | `--color-primary-hover` | Pressed button label | 11.35:1 | 4.5:1 | PASS |
+| `--color-on-primary` | `--color-primary` | Primary button label | 9.10:1 | 4.5:1 | PASS |
+| `--color-on-primary` | `--color-primary-hover` | Pressed button label | 11.35:1 | 4.5:1 | PASS |
 | `--color-primary` | `--color-primary-soft` | Text on soft primary chip | 7.39:1 | 4.5:1 | PASS |
 | `--color-text` | `--color-primary-soft` | Body on info panel | 12.30:1 | 4.5:1 | PASS |
 | `--color-attention` | `--color-bg` | Attention text on canvas | 8.06:1 | 4.5:1 | PASS |
@@ -325,7 +325,7 @@ Rules:
 
 **Wordmark:** `Kaeru` set in `--font-sans` at `--text-xl`, weight medium, `--tracking-cjk` letter spacing, in `--color-text`. Below it, optionally, `かえる` at `--text-xs` in `--color-text-muted`. The pun (返る / 帰る) is explained once in the guide, never on a screen the user passes through daily.
 
-**Mark (optional, decorative):** a frog seen from above, reduced to three strokes — a rounded body arc and two eye dots — drawn on the same 24 px / 1.75 px grid as the icon set, in `--color-matcha` on `--color-bg`. It is used in exactly three places: the PWA app icon, the onboarding first screen, and the empty state of the receipt list. It never appears in the app bar, never animates, and is always `aria-hidden` with the accessible name carried by the adjacent text.
+**Mark (optional, decorative):** a frog seen from above, reduced to three strokes — a rounded body arc and two eye dots — drawn on the same 24 px / 1.75 px grid as the icon set, in `--color-success` on `--color-bg`. It is used in exactly three places: the PWA app icon, the onboarding first screen, and the empty state of the receipt list. It never appears in the app bar, never animates, and is always `aria-hidden` with the accessible name carried by the adjacent text.
 
 **App icon:** the mark in `--color-success` on `--color-bg`, with a generous safe area so iOS and Android masking does not clip it. Maskable icon provided at 512 px with a 20 % padding ring.
 
@@ -357,7 +357,7 @@ Copy verbatim into `src/styles/tokens.css`. No component may declare a raw hex, 
   --color-primary: #1b4d73;
   --color-primary-hover: #143a57;
   --color-primary-soft: #e7eef4;
-  --color-text-on-primary: #ffffff;
+  --color-on-primary: #ffffff;
 
   --color-attention: #b23b22;
   --color-on-attention: #ffffff;
@@ -454,7 +454,7 @@ Copy verbatim into `src/styles/tokens.css`. No component may declare a raw hex, 
     --color-primary: #8fc0e3;
     --color-primary-hover: #afd4f0;
     --color-primary-soft: #1b2c38;
-    --color-text-on-primary: #0d1a23;
+    --color-on-primary: #0d1a23;
 
     --color-attention: #f0957c;
     --color-on-attention: #2a0f08;
@@ -485,7 +485,7 @@ Copy verbatim into `src/styles/tokens.css`. No component may declare a raw hex, 
   --color-primary: #8fc0e3;
   --color-primary-hover: #afd4f0;
   --color-primary-soft: #1b2c38;
-  --color-text-on-primary: #0d1a23;
+  --color-on-primary: #0d1a23;
 
   --color-attention: #f0957c;
   --color-on-attention: #2a0f08;

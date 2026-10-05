@@ -70,7 +70,7 @@ Three weights. A screen has at most one primary button.
 
 | Variant | Fill | Label | Border | Use |
 |---|---|---|---|---|
-| Primary | `--color-primary` | `--color-text-on-primary` | none | The one action of a screen |
+| Primary | `--color-primary` | `--color-on-primary` | none | The one action of a screen |
 | Secondary | transparent | `--color-primary` | 1 px `--color-border-strong` | An alternative that is not the main path |
 | Quiet | transparent | `--color-primary` | none | Tertiary; text-link weight |
 | Destructive | `--color-attention` | `--color-on-attention` | none | Delete all data; delete receipt confirm |
@@ -262,7 +262,7 @@ The core of Airport Mode step 1 and the packing plan.
 |---|---|
 | Min height | 64 px |
 | Checkbox | 24 px painted, 44x44 target, 2 px `--color-border-strong` border, `--radius-sm` |
-| Checked | `--color-primary` fill, `--color-text-on-primary` check glyph |
+| Checked | `--color-primary` fill, `--color-on-primary` check glyph |
 | Content | Shop name `--text-lg`, then date + amount `--text-base` `--color-text-muted` |
 | Pressed | Row background `--color-bg-sunken` |
 | Excluded | Rows routed to the human counter are not rendered as checkboxes; they are a separate panel with a link |
