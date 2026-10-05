@@ -40,6 +40,8 @@ Index of everything the team plans and decides. New here? Read the product brief
 | Document | What it answers |
 |---|---|
 | [Overview](architecture/overview.md) | Modules, dependency rules, feature auto-registration, data flow, conventions, budgets |
+| [Implementation plan](architecture/implementation-plan.md) | M1–M3 work breakdown: slices, owners, directory ownership, contracts, dependencies, reviewers |
+| Contract modules: [`src/domain/model.ts`](../src/domain/model.ts), [`src/domain/rules.ts`](../src/domain/rules.ts), [`src/data/repositories.ts`](../src/data/repositories.ts), [`src/ui/contracts.ts`](../src/ui/contracts.ts), [`src/app/navigation.ts`](../src/app/navigation.ts), [`src/content/`](../src/content/) | The types every slice codes against; each is implemented by exactly one slice |
 | [ADR 0001](adr/0001-record-architecture-decisions.md) | How decisions are recorded |
 | [ADR 0002](adr/0002-static-local-first-pwa.md) | Static, local-first PWA on GitHub Pages |
 | [ADR 0003](adr/0003-frontend-stack.md) | Preact, Vite, TypeScript strict, Biome |
@@ -72,3 +74,5 @@ Index of everything the team plans and decides. New here? Read the product brief
 | 2026-10-05 | UX principles, visual language, IA, wireframes, components merged (#9). |
 | 2026-10-05 | Brief aligned on refund-operator count (#10); CI on `main` can no longer be cancelled (#11). |
 | 2026-10-05 | **M0 — Discovery & Design complete.** PM decisions on open IA questions: photos in export stay opt-in with a size estimate; archived trips are included in export; `fee.warnBelowJpy = 2000` held as rules data; contrast ratios asserted by an automated test. |
+| 2026-10-05 | Implementation plan and contract-first type modules merged (#57); 45 issues opened for M1–M3 (#13–#56, #59). UX corrected the sheet-route shape (#58). |
+| 2026-10-05 | **M1 — Foundation starts.** PM staffing decision: slice M1-5 (app shell and navigation, #31 #32 #33 #59) and M3-1 (#52) move from the Architect to a fifth engineer, FrontendEngE, so the Architect can review and unblock every slice. The PM is pinged as soon as the 20-second add-receipt budget (S21, #40) looks at risk. |
