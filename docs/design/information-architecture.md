@@ -102,7 +102,7 @@ MVP screens. Every screen is drawn in `wireframes.md`.
 | S26 | Packing location (sheet) | `UJ-015` |
 | S27 | Photo view | `UJ-009` |
 | S28 | Receipt list — empty | — |
-| S29 | Old-system receipt | `DR-003`, `DR-064` |
+| S29 | Old-system receipt | `UJ-038`, `DR-003`, `DR-064` |
 | S2A | Not claiming (sheet) | `UJ-018`, `DR-060h` |
 | S2B | Fee warning state on detail | `DR-025`, `DR-027` |
 
@@ -223,7 +223,7 @@ Only the estimate is ever hero-sized. Where the operator fee is unknown, Kaeru s
 6. The already-used toggle (past tense, distinct from the logging-time one): 已經在日本吃掉或用掉了 / "Already eaten or used in Japan", with the official consequence inline, verbatim: 整張收據都不能退。請不要使用免稅手續機台，直接到海關人員櫃檯申報。 (`DR-035`, `DR-018`).
 7. A quiet *I will not claim this* opens S2A. The reason is **optional** (answer to open question 5): the five reasons from `notClaimingReason` are offered as radios with "you do not have to pick one". Asking a tired traveler to justify giving up buys a better trip summary at the cost of a worse moment.
 8. **Fee warning (S2B, `DR-027`).** Triggers when the estimated net falls below `fee.warnBelowJpy`, default **¥2,000**, held as rules data rather than code — not only when the net goes below zero, because a ¥30 refund is as bad as none and the user should see it coming. The figure covers a Taiwanese bank's NT$200–400 inbound-remittance charge, roughly ¥900–1,900 at recent rates; ¥1,000 would not have fired on the documented NT$77 case. It over-triggers in the safe direction: a shrugged-off warning costs a second of attention, a missing one costs the whole refund. The block offers alternatives — card or e-money instead of a bank transfer, or don't claim this one. The illustrating figure is locale-specific: the zh-TW string names NT$200–400 because that is a Taiwanese-bank fact; the English string carries the identical warning without a number, because quoting NT$ to a traveler from London would be wrong rather than merely unhelpful. This is a deliberate, documented exception to string-level parity — the *meaning* is at parity, the illustration is not. Both link to `guide.faq.q11`.
-9. **Old-system receipts (S29, `DR-003`).** A receipt dated on or before 2026-10-31 shows a soft panel explaining the tax was already deducted at the shop, states that it is excluded from Airport Mode, and offers removal. It never appears in any checklist.
+9. **Old-system receipts (S29, `UJ-038`, `DR-003`).** A receipt dated on or before 2026-10-31 shows a soft panel explaining the tax was already deducted at the shop, states that it is excluded from Airport Mode, and offers removal. It never appears in any checklist.
 
 ### Flow D — Home dashboard (journey stage 3, `UJ-011`, `UJ-016`)
 
@@ -345,6 +345,7 @@ Every journey step has a surface.
 | `UJ-035` overdue nudge | G | S40, S41, S61 |
 | `UJ-036` trip summary | G | S16 |
 | `UJ-037` export / delete | I | S62 |
+| `UJ-038` old-system receipts | C | S29 |
 
 ---
 
