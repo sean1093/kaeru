@@ -3,7 +3,7 @@ import { defineMessages } from '../i18n/index.ts';
 export const messages = defineMessages({
   'zh-TW': {
     'app.name': 'Kaeru',
-    'app.tagline': '日本退稅收據管家',
+    'app.tagline': '收據管家 · 日本退稅',
     'app.skipToContent': '跳到主要內容',
     'app.navLabel': '主要導覽',
     'app.languageLabel': '語言',
@@ -17,7 +17,7 @@ export const messages = defineMessages({
   },
   en: {
     'app.name': 'Kaeru',
-    'app.tagline': 'Japan tax refund receipt keeper',
+    'app.tagline': 'Receipt keeper, Japan tax refunds',
     'app.skipToContent': 'Skip to main content',
     'app.navLabel': 'Main navigation',
     'app.languageLabel': 'Language',
