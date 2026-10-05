@@ -43,6 +43,15 @@ How the Kaeru team plans, builds, reviews, and ships. Every decision should be t
 - CI must be green before merging.
 - Squash merge, delete the branch, remove the worktree.
 
+### Screenshots
+
+UI pull requests show the changed screens in both languages at a 390 px wide viewport. Nobody on the team can drag files into GitHub, so screenshots live on the `pr-assets` branch, never on `main`. `pr-assets` is an **orphan branch that shares no history with `main`**: it can never be merged into `main` by accident, and pushing to it triggers no workflow and never deploys. If it ever has to be recreated, recreate it as an orphan (`git worktree add --orphan -b pr-assets <dir>`).
+
+- Capture with Playwright (`page.screenshot`) from the PR's own build.
+- Commit to the `pr-assets` branch at `pr-<number>/<screen-id>-<locale>-<viewport>.png`, e.g. `pr-40/S21-zh-TW-390.png`. Pull with rebase before pushing; paths never collide.
+- Embed in the PR body or a comment with `https://raw.githubusercontent.com/sean1093/kaeru/pr-assets/pr-<number>/<file>.png`.
+- Screenshots stay after the PR merges; we accept the growth (a few hundred small PNGs). They are the visual record of each review.
+
 ### How reviews are posted
 
 The whole team publishes through the maintainer's single GitHub account, and GitHub does not allow approving your own pull request. Reviews are therefore posted as review comments (`gh pr review --comment`) and start with the reviewer's role in bold, for example `**[Architect]**` or `**[QA]**`.
