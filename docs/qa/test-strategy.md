@@ -104,18 +104,25 @@ Automation-first. Manual effort is reserved for what machines are bad at: real i
 - Query by role and accessible name first (`getByRole('button', { name: … })`). `data-testid` is the fallback for non-semantic containers only. This keeps accessibility load-bearing: if the test can't find it, a screen reader can't either.
 - Every component test renders in **both locales**, with a "longest realistic string" fixture per locale.
 - Assert observable output, never internal state or props plumbing.
+- **Any surface that holds a user-facing string in state gets a locale-switch test**: mount it holding the string — an error, a toast, a pending confirmation — switch locale, assert the text changed. `architecture/overview.md` requires state to store the **key** and translate at render, and that rule deliberately has no static guardrail: `setState(t('x'))` is catchable but a local, a helper, a reducer or a rejected promise two frames away is not, so a check would be loudest exactly where the risk is lowest and silent where it is highest. This test fails for every spelling, because it asserts the property (the traveler's language) rather than a syntax correlated with it.
+- **A live region needs the action done twice.** Writing the same string again is not a mutation, so nothing is announced the second time — and the correct text, the correct politeness and the correct position in the tree are all true in the broken version. Doing the thing twice is the only thing that separates them, and it is exactly what a confused person does. Assert that a second press produces a fresh announcement, not merely the right text.
 
 ### Guardrail test conventions
 
 Some domain rules are prohibitions rather than features. `DR-013` says the general-goods / consumables split must not exist; `DR-040`, `DR-044` and `DR-052` say the app must not talk to a network it does not own; `DR-041` caps a stored field at four characters; `DR-075` and `DR-078` say a validation finding must never block a save. There is nothing to build for any of them, so there is nothing a behavioural test can observe — and nothing stopping a later pull request from quietly violating one.
 
-These get **guardrail tests**: a small suite that reads the source tree and the bundled content instead of running the app (`src/guardrails.test.ts`, owned by `M1-5d` / issue #59).
+These get **guardrail tests**: a small suite that reads the source tree and the bundled content instead of running the app (`src/guardrails/`, owned by `M1-5d` / issue #59).
 
 - This is the **one** exception to "assert observable output, never implementation". The rule above exists to stop tests pinning wording or internal structure in place of behaviour. A prohibition has no behaviour to pin: static assertion is the only mechanism available, and the thing being protected is a published contract in `domain-rules.md`, not an implementation detail. Nobody may cite the general rule to delete this suite.
 - Every guardrail names the rule id it protects in its test title, so a failure explains itself to someone who has never read this document.
 - A guardrail asserts a **prohibition or an equality**, never a quality judgement. "No `fetch` outside the outbound-link helper" is a guardrail. "The code is clean" is not.
 - **No wall-clock assertions.** A guardrail that fails because a CI runner was busy is a flaky test, and under R20 a flaky test gets quarantined — which is exactly what must not happen to a guardrail. Keep the suite fast; do not assert that it is fast.
 - Where a guardrail needs exceptions, they live in an **explicit, documented allowlist** in the test file. Adding to the allowlist must be a visible diff that a reviewer can argue with. A guardrail with an implicit escape hatch protects nothing.
+- **Narrowing the scanned input is not loosening the pattern.** Stripping SVG path data before scanning for rule constants is legitimate, because markup geometry can never be a rule constant — but only as a *closed class*, never as a per-file exemption. An exemption list that grows each time a new icon appears becomes the escape hatch, because every entry arrives as the fix for a failing guardrail.
+- **Every matcher needs a positive control**: assert it fires on a known violation, using the **same pattern object** the rule uses rather than a copy beside the fixture. A pattern that matches nothing is indistinguishable from a codebase that is clean, and a control that re-declares the pattern proves only that the copy works. This is R21 turned on our own instruments (section 3.2).
+- **A gate that watches one spelling of a thing teaches people the other spellings.** `test.fixme` has `describe.fixme` and `skip(true)` beside it; ban the family, not the member. The same argument favours closed unions over strings, and asserting a mechanism over one of its consequences.
+- Prefer the **real enforcement** where one exists. A guardrail duplicating a check the application already performs at boot is weaker than the check and will drift from it: delete the guardrail. One was deleted this way during #59 — the feature registry already validates every route pattern against the published inventory, in the running app.
+- Record what the suite **cannot** cover, in two lists: not machine-checkable (checked in review, say where), and checkable-but-unwritten. Collapsed into one list, the un-checkable rules make the gap look permanent and the gap makes the un-checkable rules look like laziness. Membership of the first list is a claim about our imagination, not a property of the rule.
 
 ### 3.1 What the suite cannot prove
 
@@ -124,6 +131,28 @@ Written down because a known limit is cheaper than rediscovering it under pressu
 - **No real device has run this app, and no screen reader has read it.** This team has no iPhone, no Android handset, no VoiceOver and no TalkBack. Emulation reproduces a viewport, a user agent and an engine; it does not reproduce iOS Safari's storage eviction, PWA install behaviour, camera and HEIC file input, safe-area insets on real hardware, or memory pressure. An accessibility-tree snapshot shows what a screen reader is *handed* — it cannot show what it announces, how gestures navigate, or whether a live region is heard at the moment it matters. `setOffline` is a network emulation, not a radio. `R07` (genuine quota and eviction) and `R14` (iOS install quirks) are therefore **open residual risks carried into launch**, and `R06` has no automated coverage on WebKit at all because Playwright's WebKit does not expose the worker lifecycle. None of this is a reason to withhold the release; it is a reason the release report must say so rather than let a green suite imply otherwise.
 - **A conditional branch is unverified until it has run in the condition it exists for.** Green tests are evidence about the paths those tests take. A branch that exists for a rare case — a filter, a fallback, an error path — is exercised by nothing in a normal run, so an always-false predicate and a working one are indistinguishable in every build we have ever seen. This is not hypothetical: the axe obstruction filter shipped in #91 matched nothing, passed every build, and protected nothing, because `main` produces no `target-size` finding. A rare branch needs a test that **manufactures** the rare case, not a green suite around it.
 - **We cannot reproduce a genuine quota or eviction failure.** `fake-indexeddb` has no quota, so `TC-DATA-006` and `TC-DATA-007` exercise our handling of a simulated error rather than the browser's behaviour when a device actually fills up. `R07` therefore still depends on a real device, and no green suite is evidence about what happens at a real storage ceiling.
+
+#### What reads this back?
+
+Five mechanisms this week were **present, correct-looking, commented, green — and inert.** Not untested: every one sat inside a passing suite.
+
+| Mechanism | What it was | What read it back |
+|---|---|---|
+| `cancel-in-progress: false` on `main` | a flag stating an intent | nothing — runs on `main` were cancelled for seven weeks |
+| The axe obstruction filter (#91) | a filter over findings | nothing — `main` produces no `target-size` finding, so it matched an empty set |
+| `BottomSheet`'s `inert` loop (#121) | a loop over background nodes | nothing — the sheet rendered inside `#app`, so the filter removed the only candidate |
+| The global `testIgnore` | a config key | nothing — a project-level sibling **replaces** it rather than extending it |
+| `BottomSheet`'s own inert test | an assertion | nothing real — the fixture appended a div to `<body>`, constructing the one DOM shape where the broken code works |
+
+**The question to ask in review is "what reads this back?"** Each of the five answers "nothing", and each answer was available when the code was written rather than after the incident. That is cheap enough to apply every time, which is the only property that matters.
+
+Three things follow, each paid for:
+
+- **A correct comment is evidence about intent and none at all about effect.** Three of the five had comments that accurately described what the code was *for*. A reader checks that the code matches the comment, agrees that it does, and never asks whether the code does anything. The comment is what made them invisible.
+- **When two mechanisms produce the same observable, a test of the observable is not a test of either of them.** The keyboard focus-trap and `inert` both yield "focus stays in the sheet"; writing and re-writing a live region both yield "the region contains the right text". In both cases the broken one was the one serving the population we cannot test — which is not a coincidence, because the mechanism that is easy to observe is the one that exists for the users we can see. **Assert the mechanism**: `expect(document.getElementById('app')?.hasAttribute('inert')).toBe(true)`, not "focus stayed inside".
+- **A fixture that manufactures the production condition is worse than no test.** Its presence is why nobody looks.
+
+And one convention for the other direction: **a defensive branch that looks redundant must say what breaks when it is removed** — in the imperative, at the line where the removal would happen. Three instances already: the `IGNORED` constant each Playwright project spreads, the registry's `undefined` filter, and `BottomSheet` restoring only the nodes it marked. All three read as tidy-up bait, and the comment is the only thing standing between them and a simplification.
 
 ### 3.2 The reassuring default (R21)
 
@@ -155,6 +184,8 @@ Corollaries, each from a real instance:
 - A floor on an estimate is a lie at the bottom of its range. If the honest answer is "nearly nothing", say nearly nothing.
 - "Does not apply" and "is fine" are different states and must render differently. An old-system receipt has no deadline to be comfortable about.
 - A field that means two things is the same defect wearing a type. So is an inherited setting a child can silently *replace* rather than extend — it reads as additive at every call site and is not.
+- **The structural half, from `architecture/overview.md`:** a value that can be unknown says so in its **type**, and nothing downstream may substitute a plausible one. `DeadlineRisk` carries `not_applicable` as a member distinct from `none`; `fees: []` means unknown, never zero. A type that cannot express "unknown" guarantees someone will encode it as a real value. And the absence is the rendering, not a slot to fill: the correct rendering of a count that cannot be computed is **no badge at all** — not zero, not a dash, not a skeleton that resolves to zero. A dash reads as "none" to every traveler who sees it.
+- **It applies to our own instruments too, and that is the instance most likely to survive.** A guardrail whose pattern matches nothing is indistinguishable from a clean codebase; a smoke test that matched zero cases exits 0. Every other instance of R21 misleads a traveler about money or time; this one misleads *us* about whether we are protected — and it is the one nobody is downstream of, so nothing surprises anyone into checking. The answer is a positive control: assert the matcher fires on a known violation, using the same pattern object the rule uses, never a copy.
 
 **The badge case is the one still preventable, and it is the most severe.** The other three mislead about money; that one can mislead about the airport. A false `0` at first paint on departure day hides `DR-077` (goods still in checked baggage) and `DR-030` (unconfirmed items) — the two failures that are silent and irreversible, because once the bag is handed over the airline will not retrieve it and nothing afterwards recovers the refund. One paint cycle, on the one screen read while walking into a terminal.
 
