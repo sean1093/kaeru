@@ -70,7 +70,9 @@ Only after customs is done do you check in and drop your bags.
 
 Once customs has confirmed the goods left Japan, the shop or its refund company pays you by the method you registered.
 
-There is no legal deadline for this and no legal limit on fees. Most companies deduct a handling fee, usually in the range of 1.5% to 3% of the purchase. If the money is sent as an international bank transfer, **your own bank may also charge you to receive it**, and on a small refund that charge can be larger than the refund itself.
+There is no legal deadline for this and no legal limit on fees. Most companies deduct a handling fee, and if the money is sent as an international bank transfer, **your own bank may also charge you to receive it** — on a small refund that charge can be larger than the refund itself.
+
+As for what the company takes: few publish what the fee is charged on. Tourego's 1.5% is of the tax-free sale amount (the tax-excluded price); for most others there is only a traveler-reported figure (around 3%) with no published basis, so treat that as an order of magnitude rather than a rate.
 
 Kaeru shows you an estimated net amount rather than a flattering gross one, and lets you record what actually arrived.
 
@@ -156,7 +158,7 @@ Sometimes. Cash at the departure airport is one of the methods the authorities l
 
 ### `guide.faq.q11` — Are there fees?
 
-Yes, and they are not regulated. Refund companies typically deduct around 1.5% to 3%. The bigger risk is on your side: receiving an international bank transfer can cost you NT$200–400 or more, which on a small refund can wipe it out entirely. Travelers have reported receiving almost nothing after both charges. If a refund company offers a credit-card refund, it is usually the cheaper route.
+Yes, and they are not regulated. Few companies publish what the fee is charged on: Tourego's 1.5% is of the tax-free sale amount. For most others there is only a traveler-reported figure (around 3%) with no stated basis, so ask the company before you register. The bigger risk is on your side: receiving an international bank transfer can cost you NT$200–400 or more, which on a small refund can wipe it out entirely. Travelers have reported receiving almost nothing after both charges. If a refund company offers a credit-card refund, it is usually the cheaper route.
 
 ### `guide.faq.q12` — My family is travelling together. Can we combine everything?
 
