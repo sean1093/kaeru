@@ -14,13 +14,21 @@ const BASE_URL = `http://localhost:${PORT}/kaeru/`;
 const GALLERY_PORT = 5174;
 const GALLERY_BASE_URL = `http://localhost:${GALLERY_PORT}/kaeru/`;
 
+/** Never run on a pull request: the production smoke needs a deployed target. */
+const IGNORED = ['**/production.spec.ts'];
+
 export default defineConfig({
   // Disjoint from Vitest: Playwright owns e2e/**, Vitest owns src/**.
   testDir: 'e2e',
   testMatch: '**/*.spec.ts',
   // The production smoke has its own config and its own target; a pull request must never
   // run it and must never be slowed by it.
-  testIgnore: '**/production.spec.ts',
+  //
+  // Repeated on every project below, and that is not redundancy: a project's `testIgnore`
+  // **replaces** this one rather than adding to it, so the moment any project declared its
+  // own (for the gallery carve-out) this line stopped applying to it and the smoke started
+  // running on pull requests with no target URL. Anything added here must be added there.
+  testIgnore: IGNORED,
   fullyParallel: true,
   forbidOnly: CI,
   retries: CI ? 1 : 0,
@@ -44,17 +52,17 @@ export default defineConfig({
   projects: [
     {
       name: 'iphone-webkit',
-      testIgnore: '**/gallery/**',
+      testIgnore: [...IGNORED, '**/gallery/**'],
       use: { ...devices['iPhone 14'] },
     },
     {
       name: 'pixel-chromium',
-      testIgnore: '**/gallery/**',
+      testIgnore: [...IGNORED, '**/gallery/**'],
       use: { ...devices['Pixel 7'] },
     },
     {
       name: 'desktop-chromium',
-      testIgnore: '**/gallery/**',
+      testIgnore: [...IGNORED, '**/gallery/**'],
       use: { ...devices['Desktop Chrome'] },
     },
     {
