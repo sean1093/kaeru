@@ -51,6 +51,31 @@ textarea {
   min-block-size: 100dvh;
 }
 
+/*
+ * The block size of the sticky bottom navigation, declared on the scrolling root so
+ * that everything which must stay clear of it reads one number: the content column's
+ * reserved padding, the update prompt's offset, and the scroll padding below.
+ *
+ * The value here is the floor, derived from the tokens the nav is actually built from
+ * — one tap target, the link's block padding on both sides, and the hairline border —
+ * so it is right before first paint and right if JavaScript never runs. Once the nav
+ * is mounted, `observeShellMetrics` overwrites it with the measured height, because a
+ * declared constant stops being true the moment a label wraps at 320 px or the user
+ * raises their text size. Constant as the floor, measurement as the truth.
+ */
+:root {
+  --shell-nav-block-size: calc(var(--tap-min) + 2 * var(--space-3) + 1px);
+}
+
+/*
+ * Focus Not Obscured (WCAG 2.2 SC 2.4.11). Scrolling an element into view — by Tab, by
+ * a fragment link, or by `scrollIntoView` — stops short of the pinned navigation rather
+ * than leaving the focused control underneath it.
+ */
+html {
+  scroll-padding-block-end: calc(var(--shell-nav-block-size) + var(--safe-bottom) + var(--space-3));
+}
+
 /* ---- Design-system base (docs/design/visual-language.md section 8) ---- */
 
 html {
