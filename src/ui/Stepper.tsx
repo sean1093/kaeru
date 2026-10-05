@@ -86,8 +86,17 @@ export function Stepper({
     // Focus the control inside the row rather than the row, so the user lands on the thing
     // they have to act on.
     (row?.querySelector<HTMLElement>('input, button, a') ?? row)?.focus();
-    if (announcementRef.current) {
-      announcementRef.current.textContent = primary.blockedAnnouncement(blocked.count);
+    // A live region announces on *mutation*, and writing the same string twice is not a
+    // mutation — so pressing Next a second time against the same blocker would say
+    // nothing, at the exact moment the user is most confused about why they did not move.
+    // Clearing first and setting on the next task makes the second press a real change.
+    const region = announcementRef.current;
+    if (region) {
+      const message = primary.blockedAnnouncement(blocked.count);
+      region.textContent = '';
+      setTimeout(() => {
+        region.textContent = message;
+      }, 0);
     }
   };
 

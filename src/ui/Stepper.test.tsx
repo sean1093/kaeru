@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/preact';
+import { fireEvent, render, screen, waitFor } from '@testing-library/preact';
 import { describe, expect, it, vi } from 'vitest';
 import { ChecklistRow } from './Checklist.tsx';
 import { Stepper } from './Stepper.tsx';
@@ -31,7 +31,7 @@ describe('Stepper', () => {
     expect(next).not.toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('explains and moves focus to the blocking row instead of advancing', () => {
+  it('explains and moves focus to the blocking row instead of advancing', async () => {
     render(
       <Stepper
         step={step}
@@ -47,7 +47,33 @@ describe('Stepper', () => {
     fireEvent.click(screen.getByRole('button', { name: '都帶了，下一步' }));
 
     expect(document.activeElement).toBe(screen.getByRole('checkbox', { name: /ABC Mart/ }));
-    expect(screen.getByText('還有 2 張沒確認')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('還有 2 張沒確認')).toBeInTheDocument());
+  });
+
+  it('re-announces when the same gate blocks a second time', async () => {
+    const { container } = render(
+      <Stepper
+        step={step}
+        title="把東西都帶在身上"
+        onClose={vi.fn()}
+        closeLabel="離開"
+        primary={advancing(() => ({ blockedBy: 'r2', count: 2 }))}
+      >
+        <ChecklistRow id="r2" checked={false} onChange={vi.fn()} primary="ABC Mart" />
+      </Stepper>,
+    );
+    const region = container.querySelector('[aria-live="polite"]');
+    const next = screen.getByRole('button', { name: '都帶了，下一步' });
+
+    fireEvent.click(next);
+    await waitFor(() => expect(region).toHaveTextContent('還有 2 張沒確認'));
+
+    // A live region announces on mutation, and the same string written twice is not one.
+    // Without the clear, a second press is silent at the moment the user least understands
+    // why they did not move.
+    fireEvent.click(next);
+    expect(region).toHaveTextContent('');
+    await waitFor(() => expect(region).toHaveTextContent('還有 2 張沒確認'));
   });
 
   it('says nothing when the step is satisfied', () => {
