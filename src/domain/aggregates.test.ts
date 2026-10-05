@@ -169,6 +169,15 @@ describe('airportReadinessOf (DR-030, DR-079, UJ-019)', () => {
       'blocker.usedInJapanUnanswered',
       'blocker.itemsNotConfirmed',
     ]);
+
+    // Each receipt is listed under exactly one blocker. S30 shows a count beside each row,
+    // so a receipt in two rows is counted twice in the one list whose job is telling a
+    // traveller how much is left to do — and 'maybe' matches both unanswered rules.
+    const listed = readiness.blockers.flatMap((blocker) => blocker.receiptIds);
+    expect([...new Set(listed)]).toEqual(listed);
+    expect(
+      readiness.blockers.find((b) => b.key === 'blocker.itemsNotConfirmed')?.receiptIds,
+    ).toEqual(['unanswered']);
   });
 
   it('ranks an expired deadline above every delay, because it is a total loss', () => {

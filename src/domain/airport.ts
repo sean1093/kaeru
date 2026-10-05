@@ -72,8 +72,15 @@ const BLOCKERS: readonly BlockerRule[] = [
     key: 'blocker.usedInJapanUnanswered',
     applies: (receipt) => receipt.willUseInJapan === true && receipt.allItemsPresent === null,
   },
-  // DR-030: the same question for every other receipt.
-  { key: 'blocker.itemsNotConfirmed', applies: (receipt) => receipt.allItemsPresent === null },
+  // DR-030: the same question for every other receipt. Scoped so a receipt appears under
+  // exactly one blocker — the two rows ask the same thing with different consequences, and
+  // the one carrying the consequence owns the receipt. Without this, a receipt predicted
+  // for use in Japan and not yet answered for is counted twice on S30, in a list whose
+  // whole job is telling a traveller how much work is left.
+  {
+    key: 'blocker.itemsNotConfirmed',
+    applies: (receipt) => receipt.allItemsPresent === null && receipt.willUseInJapan !== true,
+  },
 
   // DR-016, DR-078: customs may ask for a certificate or warranty. A delay, not a loss.
   {
