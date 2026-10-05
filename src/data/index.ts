@@ -3,19 +3,22 @@ export { BACKUP_FORMAT, BackupError, exportBackup, importBackup, parseBackup } f
 export type { KaeruDatabase } from './db.ts';
 export { closeDatabase, getDatabase, openDatabase } from './db.ts';
 export type { StorageErrorCode } from './errors.ts';
-export { isStorageError, StorageError } from './errors.ts';
+export { isStorageError, isStorageQuotaError, StorageError, StorageQuotaError } from './errors.ts';
 export type { Migration } from './migrations.ts';
 export { migrations, pendingMigrations, runMigrations } from './migrations.ts';
 export { normalizePassportRef, PASSPORT_REF_MAX_LENGTH } from './normalize.ts';
+export { MAX_PHOTO_BYTES, photoRepository } from './photo-repository.ts';
 export type {
   BackupDocumentV2,
   BackupOptions,
+  EstimateStorage,
   ImportMode,
   ImportPreview,
   PhotoRepository,
   ReceiptQuery,
   ReceiptRepository,
   RegistrationRepository,
+  StorageEstimate,
   StoredPhoto,
   TravelerRepository,
   TripRepository,
@@ -26,6 +29,7 @@ export {
   normalizeSettings,
   saveSettings,
 } from './settings-repository.ts';
+export { estimateStorage, requestPersistentStorage } from './storage-estimate.ts';
 export { travelerRepository } from './traveler-repository.ts';
 export { tripRepository } from './trip-repository.ts';
 export type { AppSettings, MetaRecord, ThemePreference } from './types.ts';

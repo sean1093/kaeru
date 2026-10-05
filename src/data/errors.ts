@@ -5,6 +5,7 @@
  * rather than only a message: the feature layer maps the code to translated copy, and no
  * English string from this module is ever rendered.
  */
+import type { StorageQuotaError as StorageQuotaErrorContract } from './repositories.ts';
 
 export type StorageErrorCode =
   /** IndexedDB is missing or refused — Private Browsing, blocked storage (TC-DATA-009). */
@@ -38,4 +39,25 @@ export class StorageError extends Error {
 
 export function isStorageError(value: unknown): value is StorageError {
   return value instanceof StorageError;
+}
+
+/**
+ * The browser refused a photo write because the origin is out of room, or because the
+ * blob itself is larger than Kaeru will ever try to fit (`TC-PWA-007`). A distinct class
+ * from `StorageError`: the `M1-2` contract (`repositories.ts`) names its shape exactly —
+ * `name: 'StorageQuotaError'` — because the photo screen branches on it specifically
+ * ("storage is full — export, or turn off photos") rather than showing a generic failure.
+ */
+export class StorageQuotaError extends Error implements StorageQuotaErrorContract {
+  override readonly name = 'StorageQuotaError' as const;
+  readonly requiredBytes?: number;
+
+  constructor(message: string, options: { cause?: unknown; requiredBytes?: number } = {}) {
+    super(message, options.cause === undefined ? undefined : { cause: options.cause });
+    if (options.requiredBytes !== undefined) this.requiredBytes = options.requiredBytes;
+  }
+}
+
+export function isStorageQuotaError(value: unknown): value is StorageQuotaError {
+  return value instanceof StorageQuotaError;
 }
