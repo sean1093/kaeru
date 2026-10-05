@@ -11,6 +11,7 @@
  *
  * Sources: `docs/design/wireframes.md` S62, `docs/qa/test-cases.md` TC-DATA-015..021.
  */
+import { readFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
 import { backupDocument } from './support/seed.ts';
 
@@ -19,6 +20,21 @@ const aBackup = (receipts: number): string =>
   backupDocument({
     receipts: Array.from({ length: receipts }, (_, index) => ({ id: `receipt-${index + 1}` })),
   });
+
+/**
+ * How many receipts are actually on the device, read through the **exporter**.
+ *
+ * Deliberately a different surface from the import preview's collision count: two
+ * independent readings agreeing is what makes "nothing was written" a claim rather than an
+ * inference drawn from the one mechanism that could itself be broken.
+ */
+async function receiptsOnDevice(page: Page): Promise<number> {
+  const download = page.waitForEvent('download');
+  await page.getByTestId('export-backup').click();
+  const path = await (await download).path();
+  const text = await readFile(path, 'utf8');
+  return (JSON.parse(text) as { receipts: readonly unknown[] }).receipts.length;
+}
 
 async function chooseBackup(page: Page, contents: string): Promise<void> {
   await page.getByTestId('import-backup').setInputFiles({
@@ -54,7 +70,9 @@ test.describe('S62 — your data', () => {
     await page.getByTestId('cancel-import').click();
     await expect(preview).toBeHidden();
 
-    // Nothing was written: a second file sees no collisions with the first.
+    // Nothing was written, read two independent ways: the device still exports zero
+    // receipts, and a second import of the same file sees nothing to collide with.
+    expect(await receiptsOnDevice(page)).toBe(0);
     await chooseBackup(page, aBackup(3));
     await expect(page.getByTestId('import-conflicts')).toHaveCount(0);
   });
@@ -66,8 +84,9 @@ test.describe('S62 — your data', () => {
     await page.getByTestId('confirm-import').click();
 
     await expect(page.getByTestId('data-notice')).toContainText('3');
-    // The receipts are on the device now: re-importing the same file collides with itself,
-    // which is the cheapest proof that the write actually happened.
+    expect(await receiptsOnDevice(page)).toBe(3);
+    // And re-importing the same file collides with itself, which is the same fact read
+    // through the other surface.
     await chooseBackup(page, aBackup(3));
     await expect(page.getByTestId('import-conflicts')).toBeVisible();
   });

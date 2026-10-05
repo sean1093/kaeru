@@ -11,6 +11,13 @@ import { DataScreen } from './DataScreen.tsx';
  * The behaviour worth defending here is not that the buttons exist: it is that **nothing
  * is written before it has been described**, that photos stay opt-in with their cost
  * visible, and that a file we refuse produces a sentence rather than an exception.
+ *
+ * **Where the seam is.** `backupService` is stubbed throughout, because the screen's
+ * contract is what it *calls* and when — not what the importer does with the file. These
+ * tests would therefore pass against a broken importer, and that is fine: the importer has
+ * its own tests in #22, and `e2e/data.spec.ts` drives the real one against real IndexedDB
+ * in a real browser. Nothing here is evidence about import correctness, and it should not
+ * be read as any.
  */
 
 /**
