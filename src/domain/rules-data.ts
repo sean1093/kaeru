@@ -76,8 +76,13 @@ export const kaeruRules: RulesData = {
     {
       effectiveFrom: '2029-04-01',
       effectiveTo: null,
-      status: 'confirmed-official',
-      source: 'DR-023 [S10] — the 1% window ends and the reduced rate returns to 8%',
+      // Pending for the same reason row 2 is: 8% survives the bill failing, but a rate
+      // *change* on 2029-04-01 exists only as the tail of the 1% window. The two rows
+      // share a fate — if the bill fails, both are deleted and row 1 reopens — and
+      // matching statuses make deleting both the obvious edit rather than leaving a
+      // two-year gap that throws on resolution.
+      status: 'pending-legislation',
+      source: 'DR-023, UR-08 [S10] — the 1% window ends and the reduced rate returns to 8%',
       value: [
         { rate: 0.1, labelKey: RATE_LABEL_KEYS.mostGoods },
         { rate: 0.08, labelKey: RATE_LABEL_KEYS.foodAndNewspapers },
@@ -100,7 +105,10 @@ export const kaeruRules: RulesData = {
       effectiveFrom: RULES_EPOCH,
       effectiveTo: null,
       status: 'confirmed-official',
-      source: 'DR-031 [S1][S7] — day after purchase to the 90th day, inclusive',
+      source:
+        'DR-031 [S1][S7] — day after purchase to the 90th day, inclusive; refund-method ' +
+        'rule, rows before 2026-11-01 exist only so resolution is total and are never read ' +
+        'for an old-system receipt (DR-003, DR-064)',
       value: { exportWindowDays: 90 },
     },
   ],
@@ -110,7 +118,10 @@ export const kaeruRules: RulesData = {
       effectiveFrom: RULES_EPOCH,
       effectiveTo: null,
       status: 'confirmed-official',
-      source: 'DR-016 [S1][S5] — serial numbers transmitted, documents may be requested',
+      source:
+        'DR-016 [S2][S5][S7] — serial numbers transmitted, documents may be requested; ' +
+        'refund-method rule, rows before 2026-11-01 exist only so resolution is total and ' +
+        'are never read for an old-system receipt (DR-003, DR-064)',
       value: { unitPriceJpy: 1000000 },
     },
   ],
@@ -120,7 +131,9 @@ export const kaeruRules: RulesData = {
       effectiveFrom: RULES_EPOCH,
       effectiveTo: null,
       status: 'reported-media',
-      source: 'DR-027 [S3] — Kaeru product decision, sized to the reported NT$200-400 inbound band',
+      source:
+        'DR-027 [S3][S18][S19][S20] — no legal cap on fees; floor sized to the reported ' +
+        'NT$200-400 inbound band; Kaeru product decision',
       value: { warnBelowJpy: 2000 },
     },
   ],
@@ -135,3 +148,15 @@ export const kaeruRules: RulesData = {
  * reason to look at the rules, never a reason to red a pull request on a day nobody pushed.
  */
 export const RULES_REVIEW_MAX_AGE_DAYS = 180;
+
+/**
+ * How far ahead the same weekly check looks for a `pending-legislation` row that is about
+ * to take effect, in days.
+ *
+ * The review-age check alone is not enough: `lastReviewed` plus the review window falls
+ * due on 2027-04-03, two days *after* the 1% food window opens, so the one scheduled
+ * prompt to look at the rules would arrive just too late to catch the largest change in
+ * the file. This one fires while there is still time to act, and it generalises to the
+ * next pending rule rather than being a fix for this one.
+ */
+export const RULES_PENDING_LOOKAHEAD_DAYS = 60;

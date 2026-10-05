@@ -15,12 +15,19 @@
 import type { CalendarDate } from './dates.ts';
 import type { Jpy, SourceStatus, TaxRate } from './model.ts';
 
+/**
+ * How well established a rule is. `confirmed-official` is the only one a screen may state
+ * plainly: `reported-media` needs a visible caveat, `pending-legislation` and
+ * `unconfirmed` must not be asserted as fact (`domain-rules.md` section 0).
+ */
+export type RuleStatus = SourceStatus | 'pending-legislation';
+
 /** A value that is in force between two calendar dates. `effectiveTo: null` means open-ended. */
 export interface Dated<T> {
   effectiveFrom: CalendarDate;
   effectiveTo: CalendarDate | null;
   value: T;
-  status: SourceStatus | 'pending-legislation';
+  status: RuleStatus;
   /** Short label of where this came from; the guide carries the full citation. */
   source: string;
 }
@@ -94,8 +101,25 @@ export interface ResolvedRules {
   deadline: DeadlineRule;
   highValue: HighValueRule;
   fee: FeeRule;
-  /** True when any resolved row is `pending-legislation` or `unconfirmed`; the UI must caveat. */
-  provisional: boolean;
+  /**
+   * The status of the row each value above came from, so a caller can caveat the number it
+   * is actually showing.
+   *
+   * This is deliberately not one boolean over five heterogeneous series. A screen asks
+   * "may I state this number plainly?", and the answer differs per number: at launch the
+   * ¥5,000 threshold is `confirmed-official` while the fee-warning floor is
+   * `reported-media`, and in 2027 a rate is `pending-legislation` while the threshold
+   * beside it is not. A single flag is wrong in both directions — it would caveat an
+   * official figure, which trains the user to ignore the next caveat, or leave the one
+   * figure that needs a caveat bare.
+   */
+  status: {
+    rates: RuleStatus;
+    threshold: RuleStatus;
+    deadline: RuleStatus;
+    highValue: RuleStatus;
+    fee: RuleStatus;
+  };
 }
 
 /** Pick the row in force on `on`. Throws when a dated series has a gap covering that date. */

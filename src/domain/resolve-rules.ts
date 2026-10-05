@@ -75,10 +75,13 @@ export const resolveRules: ResolveRules = (rules: RulesData, on: CalendarDate): 
     deadline: deadline.value,
     highValue: highValue.value,
     fee: fee.value,
-    // `pending-legislation` and `unconfirmed` rows are the ones the UI has to caveat.
-    provisional: [rates, threshold, deadline, highValue, fee].some(
-      (row) => row.status === 'pending-legislation' || row.status === 'unconfirmed',
-    ),
+    status: {
+      rates: rates.status,
+      threshold: threshold.status,
+      deadline: deadline.status,
+      highValue: highValue.status,
+      fee: fee.status,
+    },
   };
 };
 

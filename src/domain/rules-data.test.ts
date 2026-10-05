@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { resolveRules, resolveSystem } from './resolve-rules.ts';
@@ -12,6 +12,11 @@ const DOMAIN_DIR = dirname(fileURLToPath(import.meta.url));
  * Rule constants that may appear in `rules-data.ts` and nowhere else under `src/domain`
  * (`DR-022`, R19). The point is not tidiness: a threshold inlined into a conditional is a
  * rule change that needs a code change, which is how a stale rate ships.
+ *
+ * These are deliberately broad — `90` and every decimal literal are banned outright — so
+ * a false positive will arrive before a catch does. When it does: name the value in
+ * `rules-data.ts`, or add it to a visible allowlist here that a reviewer can argue with.
+ * Do not loosen a pattern. A guard relaxed on first contact protects nothing.
  */
 const FORBIDDEN_CONSTANTS: readonly { rule: string; what: string; pattern: RegExp }[] = [
   { rule: 'DR-010', what: 'the 5,000 yen threshold', pattern: /\b5_?000\b/ },
@@ -28,14 +33,33 @@ function withoutComments(source: string): string {
 }
 
 describe('the rules document is the only place a rule constant lives', () => {
-  const sources = readdirSync(DOMAIN_DIR)
+  // Recursive: a future src/domain/money/ must not silently stop being scanned.
+  const sources = readdirSync(DOMAIN_DIR, { recursive: true, withFileTypes: true })
     .filter(
-      (name) => name.endsWith('.ts') && !name.endsWith('.test.ts') && name !== 'rules-data.ts',
+      (entry) =>
+        entry.isFile() &&
+        entry.name.endsWith('.ts') &&
+        !entry.name.endsWith('.test.ts') &&
+        entry.name !== 'rules-data.ts',
     )
-    .map((name) => ({ name, code: withoutComments(readFileSync(join(DOMAIN_DIR, name), 'utf8')) }));
+    .map((entry) => {
+      const path = join(entry.parentPath, entry.name);
+      return {
+        name: relative(DOMAIN_DIR, path),
+        code: withoutComments(readFileSync(path, 'utf8')),
+      };
+    });
 
-  it('finds domain sources to scan', () => {
-    expect(sources.length).toBeGreaterThan(3);
+  it('scans every module under src/domain', () => {
+    expect(sources.map(({ name }) => name).sort()).toEqual([
+      'api.ts',
+      'clock.ts',
+      'dates.ts',
+      'index.ts',
+      'model.ts',
+      'resolve-rules.ts',
+      'rules.ts',
+    ]);
   });
 
   for (const { rule, what, pattern } of FORBIDDEN_CONSTANTS) {
@@ -90,16 +114,27 @@ describe('the shipped rules document', () => {
     }
   });
 
-  it('leaves no gap between consecutive rows of a series', () => {
-    for (const rows of [kaeruRules.rates, kaeruRules.threshold, kaeruRules.deadline]) {
-      for (let i = 1; i < rows.length; i += 1) {
-        const previous = rows[i - 1];
-        const current = rows[i];
-        if (!previous || !current || previous.effectiveTo === null) continue;
-        // Previous row ends the day before the next begins: no hole, no overlap.
-        const dayAfter = new Date(`${previous.effectiveTo}T00:00:00Z`);
+  it('leaves no gap and no overlap in a series, and only the last row is open-ended', () => {
+    const allSeries = [
+      kaeruRules.rates,
+      kaeruRules.threshold,
+      kaeruRules.deadline,
+      kaeruRules.highValue,
+      kaeruRules.fee,
+    ];
+    for (const rows of allSeries) {
+      for (let i = 0; i < rows.length; i += 1) {
+        const row = rows[i];
+        if (!row) continue;
+        // An open-ended row anywhere but last makes every later row unreachable, because
+        // the resolver returns the first match.
+        expect(row.effectiveTo === null).toBe(i === rows.length - 1);
+        const next = rows[i + 1];
+        if (!next || row.effectiveTo === null) continue;
+        // The previous row ends the day before the next begins: no hole, no overlap.
+        const dayAfter = new Date(`${row.effectiveTo}T00:00:00Z`);
         dayAfter.setUTCDate(dayAfter.getUTCDate() + 1);
-        expect(current.effectiveFrom).toBe(dayAfter.toISOString().slice(0, 10));
+        expect(next.effectiveFrom).toBe(dayAfter.toISOString().slice(0, 10));
       }
     }
   });
@@ -185,7 +220,7 @@ describe('TC-DOM-045 the rate table is data, not code', () => {
     expect(rules.deadline.exportWindowDays).toBe(7);
     expect(rules.highValue.unitPriceJpy).toBe(42);
     expect(rules.fee.warnBelowJpy).toBe(1);
-    expect(rules.provisional).toBe(true);
+    expect(rules.status.rates).toBe('pending-legislation');
   });
 
   it('moves the system boundary with the document', () => {

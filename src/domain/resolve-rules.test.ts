@@ -71,7 +71,7 @@ describe('resolveSystem — which system applies (DR-001, DR-002, DR-003)', () =
 describe('resolveRules — the rate table (DR-023, UR-08)', () => {
   it('resolves the 10% / 8% pair for a purchase under the new system today', () => {
     expect(ratesOn('2026-11-01')).toEqual([0.1, 0.08]);
-    expect(resolveRules(kaeruRules, '2026-11-01').provisional).toBe(false);
+    expect(resolveRules(kaeruRules, '2026-11-01').status.rates).toBe('confirmed-official');
   });
 
   it('TC-DOM-041 @unconfirmed offers 1% for food on 2027-04-02, not 8%', () => {
@@ -98,10 +98,21 @@ describe('resolveRules — the rate table (DR-023, UR-08)', () => {
     expect(rates).toContainEqual({ rate: 0.01, labelKey: RATE_LABEL_KEYS.food });
   });
 
-  it('marks a resolution provisional while any row in force is pending legislation', () => {
-    expect(resolveRules(kaeruRules, '2027-04-01').provisional).toBe(true);
-    expect(resolveRules(kaeruRules, '2029-03-31').provisional).toBe(true);
-    expect(resolveRules(kaeruRules, '2029-04-01').provisional).toBe(false);
+  it('reports the status of each series separately, so a screen caveats only what needs it', () => {
+    const atLaunch = resolveRules(kaeruRules, '2026-11-01');
+    // The threshold is official; the fee-warning floor is our judgement sized to reported
+    // evidence. A single flag would either caveat both or neither, and both are wrong.
+    expect(atLaunch.status.threshold).toBe('confirmed-official');
+    expect(atLaunch.status.rates).toBe('confirmed-official');
+    expect(atLaunch.status.fee).toBe('reported-media');
+
+    const inTheWindow = resolveRules(kaeruRules, '2027-05-01');
+    expect(inTheWindow.status.rates).toBe('pending-legislation');
+    expect(inTheWindow.status.threshold).toBe('confirmed-official');
+
+    // The row that reopens 8% on 2029-04-01 shares the pending row's fate: that date
+    // exists only as the tail of the 1% window.
+    expect(resolveRules(kaeruRules, '2029-04-01').status.rates).toBe('pending-legislation');
   });
 
   it('carries the system boundary through so a receipt set can be classified per receipt', () => {
