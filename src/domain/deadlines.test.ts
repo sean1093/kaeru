@@ -324,6 +324,27 @@ describe('leaveForAirportBy (DR-032, UJ-022)', () => {
     // dayOffset is the whole point: "23:00" alone on a departure-day screen is 22 hours late.
   });
 
+  it('refuses a combination that would cross two midnights rather than reporting one', () => {
+    // 09:00 minus 34 hours lands at 23:00 two days before the flight. The old arithmetic
+    // reported exactly "23:00" with dayOffset -1, which reads as the previous evening and
+    // is a full day out — a plausible answer is worse than none here, because nothing
+    // downstream can tell it apart from a correct one.
+    const absurd = aTrip({ flightTime: '09:00', checkInMinutes: 1200, airportBufferMinutes: 840 });
+    expect(leaveForAirportBy(absurd)).toBeNull();
+
+    // One minute inside the boundary still answers, and answers for the previous day.
+    const justInside = aTrip({
+      flightTime: '09:00',
+      checkInMinutes: 1200,
+      airportBufferMinutes: 779,
+    });
+    expect(leaveForAirportBy(justInside)).toEqual({
+      time: '00:01',
+      dayOffset: -1,
+      explained: true,
+    });
+  });
+
   it('pads the clock reading so it is never 9:5', () => {
     expect(
       leaveForAirportBy(
