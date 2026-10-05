@@ -149,4 +149,25 @@ describe('S62 delete all (TC-SEC-005)', () => {
     fireEvent.click(screen.getByTestId('confirm-delete'));
     await waitFor(() => expect(erase).toHaveBeenCalledTimes(1));
   });
+
+  it('delivers the modal behaviour the alertdialog role promises', async () => {
+    // Claiming the role and not containing focus is worse than not claiming it: a screen
+    // reader user is told this is modal and then finds it is not.
+    render(<DataScreen />);
+    fireEvent.click(screen.getByTestId('delete-all'));
+
+    const dialog = await screen.findByTestId('delete-confirm');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('heading', { name: '確定要刪除所有資料？' }),
+      ),
+    );
+
+    // Escape is a way out that does not require finding a button, and focus goes back
+    // where it came from rather than to the top of the document.
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByTestId('delete-confirm')).toBeNull());
+    expect(document.activeElement).toBe(screen.getByTestId('delete-all'));
+  });
 });

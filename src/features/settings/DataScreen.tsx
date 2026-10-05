@@ -1,5 +1,5 @@
 import type { JSX } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import { pathTo, screenAttrs } from '../../app/screens.ts';
 import {
   BackupError,
@@ -41,6 +41,9 @@ export function DataScreen(): JSX.Element {
   );
   const [mode, setMode] = useState<ImportMode>('merge');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const deleteDialog = useRef<HTMLElement>(null);
+  const deleteCard = useRef<HTMLDivElement>(null);
+  const deleteHeading = useRef<HTMLHeadingElement>(null);
   /**
    * Messages are held as **keys**, not as translated sentences.
    *
@@ -55,6 +58,63 @@ export function DataScreen(): JSX.Element {
   const [failure, setFailure] = useState<SettingsMessageKey | null>(null);
 
   const options: BackupOptions = { includePhotos, includeArchived: true };
+
+  /**
+   * Focus goes back where it came from once the trigger exists again.
+   *
+   * The trigger is unmounted while the dialog is open, so focusing it inside the close
+   * handler would be focusing null. A dialog that releases focus to the top of the
+   * document leaves a screen-reader user to find their place again, on the one screen
+   * where the thing they just declined to do is irreversible.
+   */
+  const restoreFocus = useRef(false);
+  const closeDelete = useCallback(() => {
+    restoreFocus.current = true;
+    setConfirmingDelete(false);
+  }, []);
+
+  useEffect(() => {
+    if (confirmingDelete || !restoreFocus.current) return;
+    restoreFocus.current = false;
+    // Queried rather than held in a ref: `Button` is a plain function component and does
+    // not forward one, and the trigger is remounted after the dialog closes anyway.
+    deleteCard.current?.querySelector<HTMLButtonElement>('[data-testid="delete-all"]')?.focus();
+  }, [confirmingDelete]);
+
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    deleteHeading.current?.focus();
+
+    /**
+     * `role="alertdialog"` promises modal behaviour, so it has to be delivered: focus
+     * stays inside while it is open, and Escape is a way out that does not require
+     * finding a button. Promising containment and not providing it is worse than not
+     * claiming the role at all.
+     */
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        closeDelete();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = deleteDialog.current?.querySelectorAll<HTMLElement>('button, [href]');
+      if (!focusable || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === deleteHeading.current)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [confirmingDelete, closeDelete]);
 
   useEffect(() => {
     let current = true;
@@ -124,6 +184,7 @@ export function DataScreen(): JSX.Element {
 
   async function deleteEverything(): Promise<void> {
     await backupService.deleteAll(await getDatabase());
+    restoreFocus.current = true;
     setConfirmingDelete(false);
     setPreview(null);
     setNotice({ key: 'data.delete.done' });
@@ -243,39 +304,45 @@ export function DataScreen(): JSX.Element {
       </Card>
 
       <Card title={t('data.delete.title')}>
-        <p>{t('data.delete.body')}</p>
-        {confirmingDelete ? (
-          <section
-            class={styles.preview}
-            role="alertdialog"
-            aria-label={t('data.delete.confirmTitle')}
-            data-testid="delete-confirm"
-          >
-            <h3>{t('data.delete.confirmTitle')}</h3>
-            <p>{t('data.delete.confirmBody')}</p>
-            <div class={styles.actions}>
-              {/* Offered here rather than three paragraphs up: the moment someone decides
+        <div ref={deleteCard}>
+          <p>{t('data.delete.body')}</p>
+          {confirmingDelete ? (
+            <section
+              ref={deleteDialog}
+              class={styles.preview}
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="delete-confirm-title"
+              data-testid="delete-confirm"
+            >
+              <h3 id="delete-confirm-title" ref={deleteHeading} tabIndex={-1}>
+                {t('data.delete.confirmTitle')}
+              </h3>
+              <p>{t('data.delete.confirmBody')}</p>
+              <div class={styles.actions}>
+                {/* Offered here rather than three paragraphs up: the moment someone decides
                   to erase everything is exactly when they will not go and find it. */}
-              <Button variant="quiet" data-testid="export-first" onClick={() => void runExport()}>
-                {t('data.delete.exportFirst')}
-              </Button>
-              <Button data-testid="confirm-delete" onClick={() => void deleteEverything()}>
-                {t('data.delete.confirm')}
-              </Button>
-              <Button variant="quiet" onClick={() => setConfirmingDelete(false)}>
-                {t('data.delete.cancel')}
-              </Button>
-            </div>
-          </section>
-        ) : (
-          <Button
-            variant="quiet"
-            data-testid="delete-all"
-            onClick={() => setConfirmingDelete(true)}
-          >
-            {t('data.delete.action')}
-          </Button>
-        )}
+                <Button variant="quiet" data-testid="export-first" onClick={() => void runExport()}>
+                  {t('data.delete.exportFirst')}
+                </Button>
+                <Button data-testid="confirm-delete" onClick={() => void deleteEverything()}>
+                  {t('data.delete.confirm')}
+                </Button>
+                <Button variant="quiet" data-testid="cancel-delete" onClick={closeDelete}>
+                  {t('data.delete.cancel')}
+                </Button>
+              </div>
+            </section>
+          ) : (
+            <Button
+              variant="quiet"
+              data-testid="delete-all"
+              onClick={() => setConfirmingDelete(true)}
+            >
+              {t('data.delete.action')}
+            </Button>
+          )}
+        </div>
       </Card>
 
       <p class={styles.meta}>
