@@ -81,4 +81,28 @@ describe('AmountDisplay', () => {
     render(<AmountDisplay kind="actual" value={520} label="Tax" accessibleName="520 yen" />);
     expect(screen.queryByText(/\u2212/)).toBeNull();
   });
+
+  it('distinguishes an unknown fee from a genuinely zero fee on a received amount (R21)', () => {
+    const { unmount } = render(
+      <AmountDisplay
+        kind="received"
+        value={520}
+        label="Received"
+        accessibleName="Received, 520 yen"
+      />,
+    );
+    expect(screen.queryByText(/\u2212/)).toBeNull();
+    unmount();
+
+    render(
+      <AmountDisplay
+        kind="received"
+        value={520}
+        label="Received"
+        fee={{ value: 0, label: 'Fee' }}
+        accessibleName="Received, 520 yen"
+      />,
+    );
+    expect(screen.getByText(/\u2212.*0/)).toBeVisible();
+  });
 });
