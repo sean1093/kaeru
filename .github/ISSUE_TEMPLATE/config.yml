@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Product brief
+    url: https://github.com/sean1093/kaeru/blob/main/docs/product/brief.md
+    about: What Kaeru is, who it is for, and what is out of scope.
+  - name: Team workflow
+    url: https://github.com/sean1093/kaeru/blob/main/docs/process/team-workflow.md
+    about: Branches, pull requests, reviews, and the Definition of Done.
+  - name: Test strategy
+    url: https://github.com/sean1093/kaeru/blob/main/docs/qa/test-strategy.md
+    about: Risks, test levels, severity definitions, and the release checklist.
+  - name: Epic — project roadmap
+    url: https://github.com/sean1093/kaeru/issues/1
+    about: Milestones and the issues that belong to them.
