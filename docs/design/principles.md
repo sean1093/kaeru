@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.0 (M0) |
+| Status | v1.1 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -57,7 +57,8 @@ Traditional Chinese and English are two first-class products that happen to shar
 | | |
 |---|---|
 | **Do** | Size every button, chip, and label against the English string, which is typically 1.6–2.2x wider than the zh-TW one. "海關確認完成" is 6 characters; "Customs confirmation done" is 25. |
-| **Do** | Use the vocabulary travelers already read on Japanese receipts and airport signage: 退稅, 免稅, 收據, 護照, 託運, 海關, 手續費, 隨身行李, 消耗品. |
+| **Do** | Use the vocabulary travelers already read on Japanese receipts and airport signage: 退稅, 免稅, 收據, 護照, 託運, 海關, 手續費, 隨身行李, 未稅價／含稅價, 綠燈／紅燈, 入帳. |
+| **Don't** | Reuse the abolished goods categories 一般物品 and 消耗品 (`DR-013`). They stopped meaning anything on 2026-11-01, and borrowing them to label tax *rates* recreates the exact confusion the reform caused. |
 | **Do** | Set `lang` correctly per element so the right font and line-breaking rules apply; Japanese proper nouns (店名, 免税手続用の端末) are marked `lang="ja"`. |
 | **Don't** | Truncate English with an ellipsis to make a Chinese-sized box work. Wrap to two lines instead. |
 | **Don't** | Machine-translate operator names or legal terms. Operator brand names stay in their own script (J&J Tax Free, PIE VAT, Global Blue). |
