@@ -109,9 +109,9 @@ Formula: `deadline = purchaseDate + 90 calendar days`, deadline day inclusive. O
 | TC-DOM-060 | **Property:** 500 seeded purchase dates | Deadline is always exactly `purchaseDate + 90` days, always ≥ the purchase date, and identical under `TZ=UTC`, `TZ=Asia/Taipei`, `TZ=Asia/Tokyo`, `TZ=Pacific/Kiritimati` | DR-031, UR-07 | R03, R12 | U | P0 |
 | TC-DOM-061 | Each receipt in a trip has its own deadline | No trip-level deadline exists; the earliest is surfaced, not substituted | DR-031 | R03 | U | P0 |
 | TC-DOM-062 | `exportDeadline` **strictly before** `trip.departureDate` | `DR-076`: prominent warning. The receipt cannot be confirmed — the refund is already lost | DR-076, UJ-021 | R03 | U, C | P0 |
-| TC-DOM-062a | `exportDeadline` falls **exactly on** `trip.departureDate` | `DR-076a`, **not** `DR-076` and **not** silent: the window is inclusive so the receipt is valid, but it has zero margin. Quiet warning with a **different message key** — "this receipt's deadline is your departure day", never "this will expire". Not an exotic input: Taiwan passport holders get 90 days visa-free and 短期滞在 caps at 90 days, so buying on arrival day and leaving on the last permitted day hits this exactly | DR-076a, DR-031 | R03 | U, C | P0 |
+| TC-DOM-062a | `exportDeadline` falls **exactly on** `trip.departureDate` | `DR-076a`, **not** `DR-076` and **not** silent: the window is inclusive so the receipt is valid, but it has zero margin. Quiet warning, worded as "this receipt's deadline is your departure day", never "this will expire". Not an exotic input: Taiwan passport holders get 90 days visa-free and 短期滞在 caps at 90 days, so buying on arrival day and leaving on the last permitted day hits this exactly | DR-076a, DR-031 | R03 | U, C | P0 |
 | TC-DOM-062b | Deadline 1, 2, 3 and 4 days after departure, `deadlineSlackWarnDays` at its default of 3 | Quiet at +1, +2 and +3; **silent** at +4. The boundary is read from the deadline rules data, never from a literal | DR-076a | R03, R19 | U | P0 |
-| TC-DOM-062c | The two findings compared | They carry **different message keys**, not merely different severities. One says the refund is already lost, the other says there is no room if the plan changes — a shared string collapses the distinction the split exists to make | DR-076, DR-076a | R03, R09 | U | P0 |
+| TC-DOM-062c | A screen rendering a deadline finding, across every member of `DeadlineRisk` | `missed` and `no_margin` read as **different sentences**, not one sentence at a different severity — one says the refund is already lost, the other says there is no room if the plan changes. The domain does **not** emit copy keys: `ui/contracts.ts` takes translated strings, and a domain with opinions about keys reaches into a layer it cannot see. The guarantee comes from the union instead — the screen switches **exhaustively** on `risk`, so a shared sentence is something someone has to write on purpose rather than something that happens by default. Owned by #35 and #43, where the copy lives | DR-076, DR-076a | R03, R09 | C | P0 |
 | TC-DOM-062d | Old-system receipt (`purchaseDate <= 2026-10-31`), any departure date | The deadline finding is `not_applicable`, **never `'none'`**. `'none'` is a claim about a deadline and this receipt does not have one: `DR-031`'s window is a refund-method rule that does not apply to it at all. A screen must not render a reassuring "deadline fine" state for a receipt that was never in the game — that is the one thing S29 exists to deny. Same family as `fees: []` meaning unknown rather than zero: *"we checked and it is fine"* and *"there is nothing to check"* look identical on a screen and license opposite conclusions | DR-003, DR-064, DR-031, UJ-038 | R01, R03 | U, C | P0 |
 | TC-DOM-063 | Ordinary five-day trip, roughly 85 days of slack | Silent. `DR-076a` can only fire on a near-maximum stay, which is exactly when it is informative; a warning that fires on every trip is noise | UJ-021, DR-076a | — | E | P1 |
 | TC-DOM-064 | Days-remaining computed at 23:59 and 00:01 device-local | Changes by exactly one at the calendar-day boundary, never by zero or two | DR-031, UR-07 | R12 | U | P0 |
@@ -221,8 +221,9 @@ Run against the production build with the service worker active. Airport Mode ha
 | TC-AIR-017 | Old-system receipt (purchased ≤ 2026-10-31) | Absent from every Airport Mode checklist, labelled as old-system elsewhere | DR-003 | R01 | E | P0 |
 | TC-AIR-018 | Expired receipt in Airport Mode | Marked expired and excluded from the amount the traveler expects | DR-031 | R03 | E | P0 |
 | TC-AIR-019 | Countdown to the "leave for check-in" time | Updates offline; when short, states honestly that abandoning an inspection counts as no confirmation and that a missed flight is not compensated. The app never decides what to drop | UJ-032, DR-032 | — | E | P0 |
-| TC-AIR-020 | Service worker update: load build A, serve build B, reload | New build active (asset hash changed); stored data intact | — | R06 | E | P0 |
-| TC-AIR-021 | Update available while the app is open | Non-intrusive affordance; accepting reloads into the new build; declining does not break the session | — | R06 | E | P0 |
+| TC-AIR-020 | Load build A, deploy build B, accept the update **through the product's own button** | The live page shows build B seconds after the tap, and stored data is intact. Driven through `applyUpdate` rather than by posting `SKIP_WAITING` by hand: the real path also registers the `controllerchange` listener that reloads once the new worker takes control, and a hand-rolled version that skips it observes an update that never arrives. The code under test must be the code that runs | — | R06 | E | P0 |
+| TC-AIR-021 | Update available while the app is open | Non-intrusive affordance; accepting reloads into the new build; declining does not break the session **and leaves the update waiting to accept later** | — | R06 | E | P0 |
+| TC-AIR-022a | A second tab open on the same origin when another tab accepts an update | The bystander tab reloads too — `skipWaiting()` claims every client of the registration. Not a defect and not changeable without weakening the update, but it means an unsaved form in that tab is lost, so the draft autosave (`TC-UX-018`) is what makes it survivable. Reachable in a browser tab; an installed PWA is a single client, so the person who tapped Update is the only one affected there | — | R06, R04 | E | P1 |
 | TC-AIR-022 | A rules-data change shipped in a new build (e.g. the 1% rate) | Reaches an already-installed client after one update cycle; no stale rate is applied to a new purchase date | DR-023, UR-08 | R06, R19 | E | P0 `@unconfirmed` |
 | TC-AIR-023 | Offline on `iphone-webkit` specifically | Full offline suite passes on WebKit, not only on Chromium | — | R05 | E | P0 |
 
@@ -362,13 +363,13 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 |---|---|---|
 | TC-DOM — domain rules | 99 | 13 |
 | TC-DATA — storage and backup | 23 | 0 |
-| TC-AIR — airport, offline, service worker | 23 | 1 |
+| TC-AIR — airport, offline, service worker | 24 | 1 |
 | TC-I18N — localization | 15 | 0 |
 | TC-A11Y — accessibility | 18 | 0 |
 | TC-PWA — install and platform | 8 | 0 |
 | TC-SEC — privacy | 5 | 0 |
 | TC-UX — flows | 24 | 1 |
-| **Total** | **215** | **15** |
+| **Total** | **216** | **15** |
 
 **Requirement coverage.** Every `DR-0nn`, `UR-nn` and `UJ-0nn` ID published in `domain-rules.md` v1.0 and `user-journey.md` v1.0 is cited by at least one case above. This was checked mechanically against both documents on 2026-10-05 and is re-checked at each milestone exit.
 
