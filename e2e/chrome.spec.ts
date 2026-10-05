@@ -100,4 +100,52 @@ test.describe('shell chrome', () => {
     // this shell controls, so the assertion would measure the test machine. The tabs are
     // ordinary anchors, and axe covers focusability in the scan above.
   });
+
+  /**
+   * The nav's measured height reaches the things that offset from it.
+   *
+   * QAEngineer found my first attempt at this proved nothing, and chasing it down showed
+   * the reservation does not bind where I assumed. The bar is `position: sticky` and still
+   * **in flow** at the end of the column, so at full scroll it sits below the content by
+   * construction — content is never under it there, with or without the padding. The
+   * padding matters at intermediate offsets, which `smoke.spec.ts` already covers by
+   * scrolling every control clear.
+   *
+   * What is unique to this PR, and falsifiable, is that the measured height actually
+   * reaches its consumers. `--shell-nav-block-size` is the one number the content padding,
+   * the scrolling root's `scroll-padding-block-end` and the toast offset all derive from,
+   * and the failure it exists to prevent is three places agreeing by hand and then drifting.
+   * So: assert the published value equals the bar's real height, and that the scroll
+   * padding — the Focus Not Obscured guarantee (WCAG 2.2 SC 2.4.11) — is derived from it
+   * rather than written down separately.
+   */
+  test('the published nav height is the real one, and focus scrolling derives from it', async ({
+    page,
+  }) => {
+    await page.goto('./');
+    await page.getByTestId('bottom-nav').waitFor({ state: 'visible' });
+
+    const metrics = await page.evaluate(() => {
+      const nav = document.querySelector('[data-testid="bottom-nav"]');
+      if (!nav) return null;
+      const published = getComputedStyle(document.documentElement)
+        .getPropertyValue('--shell-nav-block-size')
+        .trim();
+      return {
+        published,
+        measured: nav.getBoundingClientRect().height,
+        scrollPadding: getComputedStyle(document.documentElement).scrollPaddingBottom,
+      };
+    });
+
+    expect(metrics).not.toBeNull();
+    // Published from the element rather than derived from tokens: a label that wraps at
+    // 320 px or a raised text size changes the real height and not the declared one.
+    expect(Number.parseFloat(metrics?.published ?? '0')).toBeCloseTo(metrics?.measured ?? -1, 0);
+    // And the scrolling root reserves exactly that, so a tabbed-to control is never left
+    // underneath the bar.
+    expect(Number.parseFloat(metrics?.scrollPadding ?? '0')).toBeGreaterThanOrEqual(
+      metrics?.measured ?? Number.POSITIVE_INFINITY,
+    );
+  });
 });

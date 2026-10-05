@@ -40,7 +40,17 @@ export function ShellNav(): JSX.Element | null {
     const destination = LOCATION_BY_SCREEN[tab.screenId];
     // The registry has already proved this resolves and takes no parameters.
     if (!destination) continue;
-    const badge = tab.badge?.();
+    // A badge selector runs inside the shell's render, reading feature state the shell
+    // knows nothing about. If it throws — a repository not open yet, a trip not loaded —
+    // an unguarded call takes the whole navigation down with it, which is a far worse
+    // outcome than a missing count: the user loses every tab, not one number.
+    let badge: ReturnType<NonNullable<typeof tab.badge>>;
+    try {
+      badge = tab.badge?.();
+    } catch {
+      // Deliberately `undefined`, never zero: "we could not count" is not "nothing to do".
+      badge = undefined;
+    }
     items.push({
       id: feature.id,
       href: hrefFor(destination.pattern),

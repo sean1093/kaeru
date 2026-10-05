@@ -13,30 +13,29 @@ import { UpdatePrompt } from './UpdatePrompt.tsx';
 /**
  * How much of the shell a screen keeps, from `ScreenRoute.chrome`.
  *
- * **The bottom navigation goes in `fullscreen` and `mode`; the app bar goes only in
- * `mode`.** That asymmetry is the IA's, not a convenience: section 2 says the *bar* hides
- * in Airport Mode and inside full-screen flows, and a full-screen flow is still a screen
- * with a heading and a way out. Airport Mode is the one that is a mode rather than a
- * screen (section 1) — the Stepper owns the whole viewport there.
+ * **Both the navigation and the shell's app bar belong to `tabs` chrome only.** A screen
+ * outside it carries its own bar with its own controls, which is what the wireframes draw:
+ * S01 has no bar at all, S02 and S05 have a minimal local one, and S21 is optimised for
+ * twenty seconds and does not want the detour.
  *
- * Why the navigation specifically. In a full-screen flow a tab bar is a one-tap exit from
- * a form the user is part-way through filling in. In Airport Mode it is worse: a one-tap
- * exit from a linear sequence, taken standing in a queue with luggage, at the one point
- * where leaving halfway cannot be undone — `DR-032` treats an abandoned procedure as no
- * customs confirmation, and nobody compensates that.
+ * I had `fullscreen` keeping the shell bar, for a reason that was right and an inference
+ * that was not: onboarding needs a way to change language before the user ever reaches a
+ * tabs screen, and the shell bar was the only thing carrying that control. UXDesigner's
+ * ruling is the narrower fix — the control belongs in onboarding's **own** app bar action
+ * slot (#139), not in a shell bar on every full-screen flow.
  *
- * Keeping the app bar in `fullscreen` also keeps the language control reachable, which
- * matters most in onboarding — the first full-screen flow a user meets, and the one where
- * being in the wrong language is hardest to escape.
+ * Why the navigation specifically must go. In a full-screen flow a tab bar is a one-tap
+ * exit from a form the user is part-way through filling in. In Airport Mode it is worse: a
+ * one-tap exit from a linear sequence, taken standing in a queue with luggage, at the one
+ * point where leaving halfway cannot be undone — `DR-032` treats an abandoned procedure as
+ * no customs confirmation, and nobody compensates that.
  *
  * An unmatched route keeps both, so a mistyped URL still leaves the user somewhere they
  * can navigate out of.
  */
 function chromeOf(chrome: Chrome | undefined): { nav: boolean; bar: boolean } {
-  return {
-    nav: chrome !== 'fullscreen' && chrome !== 'mode',
-    bar: chrome !== 'mode',
-  };
+  const tabs = chrome === undefined || chrome === 'tabs';
+  return { nav: tabs, bar: tabs };
 }
 
 export function App(): JSX.Element {
