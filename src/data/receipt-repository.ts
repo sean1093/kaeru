@@ -7,14 +7,15 @@ import { nextSequence } from './transaction.ts';
 import type { StoredReceipt } from './types.ts';
 
 /**
- * Newest purchase first, and within one day the order they were logged.
- *
- * A trip is read as a reverse diary, but two receipts from the same afternoon must not
- * swap places between renders — that is the difference between a list and a shuffle.
+ * Newest purchase first, and within one day the one logged most recently (UXDesigner
+ * review, #85): the most common moment a user opens this list is right after logging a
+ * receipt — "Add another", or returning to the list to check what they just typed — and
+ * they want that receipt at the top, not buried under whatever they logged first that
+ * morning. A single consistent direction, feed-style, with no seam at a day boundary.
  */
 function byPurchaseDateThenLogged(a: StoredReceipt, b: StoredReceipt): number {
   if (a.purchaseDate !== b.purchaseDate) return a.purchaseDate < b.purchaseDate ? 1 : -1;
-  return a.seq - b.seq;
+  return b.seq - a.seq;
 }
 
 /**
@@ -58,7 +59,7 @@ function checked(receipt: Receipt): Receipt {
   if (!next) {
     throw new StorageError(
       'invalid-record',
-      'A receipt needs an id, a trip, a traveller and a valid purchase date.',
+      'A receipt needs an id, a trip, a traveler and a valid purchase date.',
     );
   }
   return next;
@@ -86,9 +87,9 @@ export const receiptRepository: ReceiptRepository = {
   },
 
   /**
-   * All or nothing, for the airport screen that confirms a whole traveller at once (S34).
+   * All or nothing, for the airport screen that confirms a whole traveler at once (S34).
    * Every record is validated before the first write, so a bad one in the middle of the
-   * batch cannot leave half a traveller confirmed.
+   * batch cannot leave half a traveler confirmed.
    */
   async putMany(db, receipts) {
     const validated = receipts.map(checked);

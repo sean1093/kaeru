@@ -74,7 +74,7 @@ describe('receiptRepository', () => {
     reopened.close();
   });
 
-  it('lists newest purchase first and keeps same-day receipts in the order they were logged', async () => {
+  it('lists newest purchase first, and within a day the one logged most recently', async () => {
     await seed([
       aReceipt({ id: 'a', purchaseDate: '2026-11-15' }),
       aReceipt({ id: 'b', purchaseDate: '2026-11-17' }),
@@ -83,23 +83,23 @@ describe('receiptRepository', () => {
 
     expect((await receiptRepository.list(db, { tripId: 'trip-1' })).map((r) => r.id)).toEqual([
       'b',
-      'a',
       'c',
+      'a',
     ]);
 
-    // Editing a receipt must not move it to the end of its day.
+    // Editing a receipt must not move it within its day — it keeps its own seq.
     await receiptRepository.put(
       db,
       aReceipt({ id: 'a', purchaseDate: '2026-11-15', shopName: 'ドン・キホーテ' }),
     );
     expect((await receiptRepository.list(db, { tripId: 'trip-1' })).map((r) => r.id)).toEqual([
       'b',
-      'a',
       'c',
+      'a',
     ]);
   });
 
-  it('narrows by traveller, shop and day, and never crosses trips', async () => {
+  it('narrows by traveler, shop and day, and never crosses trips', async () => {
     await seed([
       aReceipt({ id: 'a', travelerId: 'mum', shopKey: 'bic', purchaseDate: '2026-11-15' }),
       aReceipt({ id: 'b', travelerId: 'mum', shopKey: 'donki', purchaseDate: '2026-11-16' }),
@@ -110,16 +110,16 @@ describe('receiptRepository', () => {
     const ids = async (query: Parameters<typeof receiptRepository.list>[1]) =>
       (await receiptRepository.list(db, query)).map((r) => r.id);
 
-    expect(await ids({ tripId: 'trip-1' })).toEqual(['b', 'a', 'c']);
+    expect(await ids({ tripId: 'trip-1' })).toEqual(['b', 'c', 'a']);
     expect(await ids({ tripId: 'trip-1', travelerId: 'mum' })).toEqual(['b', 'a']);
-    expect(await ids({ tripId: 'trip-1', shopKey: 'bic' })).toEqual(['a', 'c']);
-    expect(await ids({ tripId: 'trip-1', purchaseDate: '2026-11-15' })).toEqual(['a', 'c']);
+    expect(await ids({ tripId: 'trip-1', shopKey: 'bic' })).toEqual(['c', 'a']);
+    expect(await ids({ tripId: 'trip-1', purchaseDate: '2026-11-15' })).toEqual(['c', 'a']);
     expect(await ids({ tripId: 'trip-1', travelerId: 'mum', purchaseDate: '2026-11-15' })).toEqual([
       'a',
     ]);
   });
 
-  it("TC-DATA-002: Yi-chun's trip — 14 receipts, 2 travellers, 4 operators, mixed rates", async () => {
+  it("TC-DATA-002: Yi-chun's trip — 14 receipts, 2 travelers, 4 operators, mixed rates", async () => {
     const operators = ['global-tax-free', 'japan-tax-free', 'tourist-pay', null];
     await seed(
       Array.from({ length: 14 }, (_, index) =>
@@ -184,7 +184,7 @@ describe('receiptRepository', () => {
     expect(await db.getAllKeys('receipts')).toEqual(['kept']);
   });
 
-  it('putMany confirms a whole traveller at once and keeps each receipt in place', async () => {
+  it('putMany confirms a whole traveler at once and keeps each receipt in place', async () => {
     await seed([
       aReceipt({ id: 'a', purchaseDate: '2026-11-15' }),
       aReceipt({ id: 'b', purchaseDate: '2026-11-15' }),
@@ -198,7 +198,7 @@ describe('receiptRepository', () => {
     await receiptRepository.putMany(db, confirmed);
 
     const after = await receiptRepository.list(db, { tripId: 'trip-1' });
-    expect(after.map((r) => r.id)).toEqual(['a', 'b']);
+    expect(after.map((r) => r.id)).toEqual(['b', 'a']);
     expect(after.every((receipt) => receipt.status === 'customs_confirmed')).toBe(true);
   });
 
@@ -290,7 +290,7 @@ describe('receiptRepository', () => {
     expect(await db.count('receipts')).toBe(2);
   });
 
-  it('refuses a receipt with no traveller and writes nothing', async () => {
+  it('refuses a receipt with no traveler and writes nothing', async () => {
     await expect(receiptRepository.put(db, aReceipt({ travelerId: '' }))).rejects.toMatchObject({
       code: 'invalid-record',
     });
