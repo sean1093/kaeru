@@ -21,7 +21,6 @@ export function FormsSection(): JSX.Element {
   const [emptyAmount, setEmptyAmount] = useState<number | null>(null);
   const [erroredAmount, setErroredAmount] = useState<number | null>(null);
   const [date, setDate] = useState('2026-11-04');
-  const [rate, setRate] = useState<number>(0.1);
   const [shop, setShop] = useState('');
 
   /**
@@ -43,6 +42,16 @@ export function FormsSection(): JSX.Element {
     label: formatNumber(locale, option.rate, { style: 'percent' }),
     ...(RATE_HELPER_TEXT[option.labelKey] ? { helper: RATE_HELPER_TEXT[option.labelKey] } : {}),
   }));
+  const [firstRateOption] = rateOptions;
+  if (!firstRateOption) {
+    // Every dated row in kaeruRules.rates has at least one option; this would mean the
+    // demo date fell in a gap the domain itself should have thrown on first.
+    throw new Error('resolveRules returned no tax rate options for the demo date');
+  }
+  // The initial selection is the resolved table's own first option, not a literal rate
+  // value — `useState`'s argument is only read on mount, so a later date change moves
+  // what the control offers without silently reselecting it out from under the user.
+  const [rate, setRate] = useState<number>(firstRateOption.value);
 
   return (
     <>
