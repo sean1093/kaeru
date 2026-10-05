@@ -99,9 +99,7 @@ export const galleryCopy = defineMessages({
     'gallery.field.dateToday': '今天',
     'gallery.field.dateDeadline': '海關期限 2027/02/02 · 90 天',
     'gallery.field.taxRateLegend': '稅率',
-    'gallery.field.taxRate10': '10%',
     'gallery.field.taxRate10Helper': '大部分商品',
-    'gallery.field.taxRate8': '8%',
     'gallery.field.taxRate8Helper': '食品、飲料（不含酒類）',
   },
   en: {
@@ -195,9 +193,7 @@ export const galleryCopy = defineMessages({
     'gallery.field.dateToday': 'Today',
     'gallery.field.dateDeadline': 'Customs deadline 2 Feb 2027 · 90 days',
     'gallery.field.taxRateLegend': 'Tax rate',
-    'gallery.field.taxRate10': '10%',
     'gallery.field.taxRate10Helper': 'Most goods',
-    'gallery.field.taxRate8': '8%',
     'gallery.field.taxRate8Helper': 'Food and drink, not alcohol',
   },
 });

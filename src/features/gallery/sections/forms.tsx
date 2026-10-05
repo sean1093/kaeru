@@ -1,7 +1,7 @@
 import type { JSX } from 'preact';
-import { useMemo, useState } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 import { kaeruRules, RATE_LABEL_KEYS, resolveRules } from '../../../domain/index.ts';
-import { useMessages } from '../../../i18n/index.ts';
+import { activeLocale, formatNumber, useMessages } from '../../../i18n/index.ts';
 import {
   AmountDisplay,
   AmountEntry,
@@ -16,6 +16,7 @@ import { GallerySection, Specimen } from '../Specimen.tsx';
 /** `components.md` sections 7 and 11 — money and the form field family (M1-3c, #25). */
 export function FormsSection(): JSX.Element {
   const t = useMessages(galleryCopy);
+  const locale = activeLocale.value;
   const [amount, setAmount] = useState<number | null>(12345);
   const [emptyAmount, setEmptyAmount] = useState<number | null>(null);
   const [erroredAmount, setErroredAmount] = useState<number | null>(null);
@@ -25,30 +26,23 @@ export function FormsSection(): JSX.Element {
 
   /**
    * Genuinely resolved from `kaeruRules` for the field's own purchase date — not a
-   * hard-coded pair (`DR-023`, #25's acceptance). The copy per `labelKey` is this
-   * gallery's own translation of the same message key a real feature would translate in
-   * its own bundle; only the shipped rate *values* and which ones apply on this date come
-   * from the domain.
+   * hard-coded pair (`DR-023`, #25's acceptance). Computed on every render rather than
+   * memoized: `resolveRules` on one date is cheap, and a cached result keyed only on
+   * `date` previously went stale on a locale switch (the category helper text is a
+   * function of `t`, not `date`). The percentage itself comes straight from `option.rate`
+   * via the shared `formatNumber` percent formatter, so it can never drift from the data
+   * the way a canned "8%" string could — only the category helper (not the number) is the
+   * gallery's own translation of the domain's `labelKey`.
    */
-  const RATE_LABEL_TEXT: Record<string, { label: string; helper: string }> = {
-    [RATE_LABEL_KEYS.mostGoods]: {
-      label: t('gallery.field.taxRate10'),
-      helper: t('gallery.field.taxRate10Helper'),
-    },
-    [RATE_LABEL_KEYS.foodAndNewspapers]: {
-      label: t('gallery.field.taxRate8'),
-      helper: t('gallery.field.taxRate8Helper'),
-    },
+  const RATE_HELPER_TEXT: Record<string, string> = {
+    [RATE_LABEL_KEYS.mostGoods]: t('gallery.field.taxRate10Helper'),
+    [RATE_LABEL_KEYS.foodAndNewspapers]: t('gallery.field.taxRate8Helper'),
   };
-  const rateOptions = useMemo(() => {
-    const resolved = resolveRules(kaeruRules, date);
-    return resolved.rates.map((option) => {
-      const text = RATE_LABEL_TEXT[option.labelKey];
-      return text
-        ? { value: option.rate, label: text.label, helper: text.helper }
-        : { value: option.rate, label: option.labelKey };
-    });
-  }, [date]);
+  const rateOptions = resolveRules(kaeruRules, date).rates.map((option) => ({
+    value: option.rate,
+    label: formatNumber(locale, option.rate, { style: 'percent' }),
+    ...(RATE_HELPER_TEXT[option.labelKey] ? { helper: RATE_HELPER_TEXT[option.labelKey] } : {}),
+  }));
 
   return (
     <>
