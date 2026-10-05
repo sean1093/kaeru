@@ -117,6 +117,28 @@ describe('lineAmountsOf — extracting tax from a price (DR-021, DR-024)', () =>
       derived: true,
     });
   });
+
+  it('never returns a negative amount, whatever it is handed', () => {
+    // An inverted pair is reachable from a hand-edited backup or a v1 import, and
+    // unfloored it would make one receipt subtract from the trip's pending refund.
+    const inverted = aLine({ taxRate: 0.1, taxExcludedAmount: 5500, taxIncludedAmount: 5000 });
+    expect(lineAmountsOf(inverted).tax).toBe(0);
+
+    const hostile = [
+      aLine({ taxExcludedAmount: -1000 }),
+      aLine({ taxIncludedAmount: -1000 }),
+      aLine({ taxRate: 0.08, taxExcludedAmount: -5, taxIncludedAmount: -10 }),
+      inverted,
+      aLine(),
+    ];
+    for (const line of hostile) {
+      const amounts = lineAmountsOf(line);
+      expect(amounts.tax).toBeGreaterThanOrEqual(0);
+      expect(amounts.taxExcluded).toBeGreaterThanOrEqual(0);
+      expect(amounts.taxIncluded).toBeGreaterThanOrEqual(0);
+    }
+    expect(grossRefundOf(aReceipt({ lines: hostile }))).toBeGreaterThanOrEqual(0);
+  });
 });
 
 describe('grossRefundOf — one receipt, one rate per line (DR-020)', () => {
@@ -375,7 +397,20 @@ describe('estimateRefund — what actually reaches the traveller (DR-025, DR-027
     expect(estimateRefund(justOver, operator, null, trip, atLaunch).feeWarning).toBe(false);
   });
 
-  it('never warns on an unknown net, because an unknown number is not a small one', () => {
+  it('still warns when the fee is unknown but the gross is already under the floor', () => {
+    // operatorId is null by default and stays that way for the small receipts nobody
+    // resolves. Every deduction is non-negative, so a 300 yen gross cannot become worth
+    // claiming whatever the fee turns out to be — the warning is provable, not a guess.
+    const tiny = aReceipt({ lines: [aLine({ taxExcludedAmount: 3000 })] });
+    const estimate = estimateRefund(tiny, null, null, aTrip(), atLaunch);
+    expect(estimate.gross).toBe(300);
+    expect(estimate.net).toBeNull();
+    expect(estimate.feeWarning).toBe(true);
+  });
+
+  it('does not warn on an unknown net whose gross is still above the floor', () => {
+    // Here the answer genuinely is "we cannot tell yet": a 10,000 yen gross could net
+    // anything, and inventing a verdict would be the overclaim DR-025 forbids.
     const estimate = estimateRefund(receipt, anOperator(), null, aTrip(), atLaunch);
     expect(estimate.net).toBeNull();
     expect(estimate.feeWarning).toBe(false);
