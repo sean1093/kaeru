@@ -76,9 +76,10 @@ Worked examples are taken verbatim from `domain-rules.md` §4 and are hard asser
 | TC-DOM-035 | Rounding direction on every non-divisible amount | `DR-024` is a **direction, not an operation**: round so the figure understates what reaches the traveller. Amounts paid to the user are floored; **deductions are ceiled**, because flooring a fee inflates the net. An implementation that floors everything fails this case just as surely as one that ceils everything | DR-024 | R01 | U | P0 |
 | TC-DOM-036 | **Property:** for all integer tax-included amounts 1…2,000,000 at each configured rate | `taxExcluded + tax == taxIncluded`, both non-negative integers, `taxExcluded == floor(incl × 100/(100+r))` | DR-021, DR-024 | R01 | U | P0 |
 | TC-DOM-037 | Mixed receipt ¥3,000 @ 8% + ¥2,500 @ 10%, tax-excluded | tax ¥240 + ¥250 = ¥490; threshold total ¥5,500 qualifies. A single blended rate applied to ¥5,500 fails this case | DR-020, DR-010 | R01 | U | P0 |
-| TC-DOM-038 | A receipt holding two lines at the same rate | Rejected or merged per the model — one line per rate (`DR-020`) | DR-020 | R01 | U | P1 |
+| TC-DOM-038 | A receipt holding two lines at the same rate | Rejected by **form validation**, not by the arithmetic: summing two 10% lines is not wrong, it is a model the form should not produce. Owned by #40, not by the money module | DR-020 | R01 | C | P1 |
 | TC-DOM-039 | Receipt prints its own tax amount and the user enters it | The printed figure wins over Kaeru's calculation; `amountsAreDerived == false` | DR-022 | R01 | U | P0 |
-| TC-DOM-040 | Any derived figure shown in the UI | Labelled as an estimate wherever it appears — total, receipt, threshold indicator | DR-022 | R01 | C, E | P0 |
+| TC-DOM-040 | `lineAmountsOf` sets `derived` | True on every path where Kaeru computed a figure, false when the receipt's own printed amounts are present. This is the signal the label is computed from, so it is the half that has to be right | DR-022 | R01 | U | P0 |
+| TC-DOM-040a | Any derived figure shown in the UI | Labelled as an estimate wherever it appears — total, receipt, threshold indicator. Rendering, owned by #41; the domain supplies `derived` (`TC-DOM-040`) and the screen supplies the word | DR-022 | R01 | C, E | P0 |
 | TC-DOM-041 | Food line, tax-included ¥1,010, `purchaseDate` 2027-04-02 | Rate **1%** → tax-excluded ¥1,000, tax ¥10. Not ¥75 | DR-023, UR-08 | R01 | U | P0 `@unconfirmed` |
 | TC-DOM-042 | Food line dated 2027-03-31 vs 2027-04-01 | 8% on 2027-03-31, 1% on 2027-04-01 — rate resolution is by `purchaseDate`, inclusive on the effective-from day | DR-023, UR-08 | R01, R03 | U | P0 `@unconfirmed` |
 | TC-DOM-043 | Food line dated 2029-03-31 vs 2029-04-01 | 1% then back to 8% at the end of the window | DR-023, UR-08 | R01 | U | P0 `@unconfirmed` |
@@ -357,7 +358,7 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 
 | Area | Cases | Of which `@unconfirmed` |
 |---|---|---|
-| TC-DOM — domain rules | 98 | 13 |
+| TC-DOM — domain rules | 99 | 13 |
 | TC-DATA — storage and backup | 23 | 0 |
 | TC-AIR — airport, offline, service worker | 23 | 1 |
 | TC-I18N — localization | 15 | 0 |
@@ -365,7 +366,7 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 | TC-PWA — install and platform | 8 | 0 |
 | TC-SEC — privacy | 5 | 0 |
 | TC-UX — flows | 24 | 1 |
-| **Total** | **212** | **15** |
+| **Total** | **213** | **15** |
 
 **Requirement coverage.** Every `DR-0nn`, `UR-nn` and `UJ-0nn` ID published in `domain-rules.md` v1.0 and `user-journey.md` v1.0 is cited by at least one case above. This was checked mechanically against both documents on 2026-10-05 and is re-checked at each milestone exit.
 
