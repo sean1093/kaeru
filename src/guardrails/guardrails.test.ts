@@ -128,6 +128,14 @@ const ROUTER = [
   { what: 'an internal link literal', pattern: /['"`]#\/[a-z]/i, fixture: 'href="#/receipts"' },
 ] as const;
 
+const DEV_ROUTE = {
+  /** A route declared under `/dev/`, which the registry exempts from the inventory checks. */
+  pattern: /pattern:\s*['"`]\/dev\//,
+  fixture: "routes: [{ pattern: '/dev/tools', screenIds: [] }]",
+} as const;
+
+const DEV_GATE = /import\.meta\.env\.DEV/;
+
 const ABOLISHED_PROSE = ['一般物品', '消耗品', 'general goods', 'consumables'] as const;
 
 const ABOLISHED_IDENTIFIERS = [
@@ -230,6 +238,16 @@ describe('guardrails: every matcher is demonstrated to fire (positive controls)'
     const asType = "type GoodsCategory = 'general' | 'consumable';";
     expect(ABOLISHED_PROSE.some((word) => asType.includes(word))).toBe(false);
     expect(ABOLISHED_IDENTIFIERS.some((pattern) => pattern.test(asType))).toBe(true);
+  });
+
+  it('M1-5a: the matcher catches a /dev/ route, and the gate matcher catches its gate', () => {
+    // Nothing on `main` declares a `/dev/` route yet, so without this the guardrail above
+    // would pass by having nothing to look at — green, plausible, and incapable of failing.
+    expect(DEV_ROUTE.pattern.test(DEV_ROUTE.fixture)).toBe(true);
+    expect(
+      DEV_GATE.test('export const feature = import.meta.env.DEV ? defineFeature({}) : undefined;'),
+    ).toBe(true);
+    expect(DEV_GATE.test('export const feature = defineFeature({});')).toBe(false);
   });
 
   it('DR-008: the matcher catches an eligibility rule cited in a finding', () => {
@@ -459,6 +477,21 @@ describe('guardrails: the router owns navigation (M1-5a)', () => {
       'features/gallery/': 'specimen fixtures, dev-only, never reachable in production',
     };
     expect(offenders(ROUTER[1].pattern, allowed)).toEqual([]);
+  });
+
+  it('gates every /dev/ route behind import.meta.env.DEV', () => {
+    // The registry exempts a `/dev/`-prefixed pattern from the inventory, chrome, location
+    // and sheet checks, and the prefix is the whole test — any feature can claim it. The
+    // only thing keeping an exempt route out of the production bundle is that the module
+    // declaring it is DEV-gated, and nothing checks that. A prohibition with no runtime
+    // surface, which is what this suite is for.
+    const ungated = SOURCES.filter(
+      (file) => DEV_ROUTE.pattern.test(file.code) && !DEV_GATE.test(file.code),
+    ).map((file) => file.name);
+    expect(
+      ungated,
+      'a /dev/ route in a module that ships is an unlisted screen in the production bundle',
+    ).toEqual([]);
   });
 
   it('writes data-screen only through screenAttrs, with a published id', () => {
