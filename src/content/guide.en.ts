@@ -139,18 +139,12 @@ const steps: ArticleSeed = {
         {
           kind: 'callout',
           tone: 'attention',
-          heading: 'Once your bag is checked in, you cannot get it back.',
-          body: ['If your goods are inside it, the refund is gone.'],
-          sourceIds: ['customs-departure'],
-        },
-        {
-          kind: 'callout',
-          tone: 'attention',
-          heading: 'Customs checks one receipt at a time, all or nothing.',
+          heading: 'Two rules that catch people out:',
           body: [
-            'If a single item from a receipt is missing, nothing on that receipt is refunded — not even the items you do have.',
+            'Once your bag is checked in, you cannot get it back for this. If your goods are inside it, the refund is gone.',
+            'Customs checks one receipt at a time, all or nothing. If a single item from a receipt is missing, nothing on that receipt is refunded — not even the items you do have.',
           ],
-          sourceIds: ['nta-caution-leaflet'],
+          sourceIds: ['customs-departure', 'nta-caution-leaflet'],
         },
         {
           kind: 'paragraph',

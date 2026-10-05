@@ -9,11 +9,13 @@
  * `**bold**` does not survive the port as inline markup — `ContentBlock` carries none, by
  * design, so content can never smuggle markup into the app. Each bolded span was read for
  * the job it was doing and re-expressed as structure instead (review: UXDesigner,
- * JapanExpert): a run-in heading becomes `ContentBlock.heading`; a load-bearing warning
- * becomes an `attention` callout, kept to the two that actually cost a traveller a refund
- * (`guide.steps.4`); a dense run-on sentence becomes a `steps` list, in the same order,
- * split only at existing full stops so no word changes. `guide.steps.1`'s threshold line
- * is `info`, not `attention`: it is a fact that helps the reader, not a danger.
+ * JapanExpert): a run-in heading becomes `ContentBlock.heading`; the two rules that
+ * actually cost a traveller a refund stay under the merged source's own lead-in
+ * (「兩個最容易踩雷的規則：」) as one `attention` callout with two body lines — one box,
+ * two distinct statements, never fused into one sentence (`guide.steps.4`); the dense
+ * run-on sentence above it becomes a `steps` list, in the same order, split only at
+ * existing full stops so no word changes. `guide.steps.1`'s threshold line is `info`, not
+ * `attention`: it is a fact that helps the reader, not a danger.
  *
  * Numbers stay literal prose. The three that must not drift from the rules data — the
  * ¥5,000 threshold, the 90-day window and the 2026-11-01 start — are checked against the
@@ -147,16 +149,12 @@ const steps: ArticleSeed = {
         {
           kind: 'callout',
           tone: 'attention',
-          heading: '行李一旦託運出去，就拿不回來了。',
-          body: ['商品如果在裡面，這筆退稅就沒了。'],
-          sourceIds: ['customs-departure'],
-        },
-        {
-          kind: 'callout',
-          tone: 'attention',
-          heading: '海關是以一張收據為單位、全有或全無地確認。',
-          body: ['同一張收據上只要少一件，整張收據都不能退，連你手上有的那幾件也一起不能退。'],
-          sourceIds: ['nta-caution-leaflet'],
+          heading: '兩個最容易踩雷的規則：',
+          body: [
+            '行李一旦託運出去，就拿不回來了。商品如果在裡面，這筆退稅就沒了。',
+            '海關是以一張收據為單位、全有或全無地確認。同一張收據上只要少一件，整張收據都不能退，連你手上有的那幾件也一起不能退。',
+          ],
+          sourceIds: ['customs-departure', 'nta-caution-leaflet'],
         },
         {
           kind: 'paragraph',

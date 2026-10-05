@@ -23,24 +23,28 @@ describe('guide.steps (M1-4b, port of docs/content/guide.*.md)', () => {
     }
   });
 
-  it('keeps the attention-callout budget UX set: one in guide.steps.3, two in .4, one in .5', () => {
+  it('keeps the attention-callout budget: three total across the guide', () => {
     for (const locale of LOCALES) {
       const article = getArticle(locale, 'guide.steps');
       const attention = (article?.sections ?? []).flatMap((section) =>
         section.blocks.filter((block) => block.kind === 'callout' && block.tone === 'attention'),
       );
-      expect(attention).toHaveLength(4);
+      // guide.steps.3 (consumed-in-Japan), guide.steps.4 (checked bag + per-receipt,
+      // merged under one box per UX/JapanExpert), guide.steps.5 (no deadline, no fee cap).
+      expect(attention).toHaveLength(3);
     }
   });
 
-  it('keeps the DR-030 and DR-032 rules in guide.steps.4 as two separate callouts, not merged', () => {
+  it('keeps the DR-030 and DR-032 rules in guide.steps.4 under one callout, as two distinct body lines', () => {
     for (const locale of LOCALES) {
       const callouts = blocksOf('guide.steps.4', locale).filter(
         (block) => block.kind === 'callout',
       );
-      expect(callouts).toHaveLength(2);
-      // Each is its own failure with its own remedy: bag-drop timing, then per-receipt scope.
-      expect(callouts[0]?.heading).not.toBe(callouts[1]?.heading);
+      // One visual box (UX's "two adjacent boxes is a wall of boxes"), but the two rules
+      // stay separately readable rather than fused into one sentence (JapanExpert).
+      expect(callouts).toHaveLength(1);
+      expect(callouts[0]?.body).toHaveLength(2);
+      expect(callouts[0]?.body[0]).not.toBe(callouts[0]?.body[1]);
     }
   });
 
