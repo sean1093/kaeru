@@ -1,5 +1,6 @@
 import type { JSX } from 'preact';
-import { useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
+import { kaeruRules, RATE_LABEL_KEYS, resolveRules } from '../../../domain/index.ts';
 import { useMessages } from '../../../i18n/index.ts';
 import {
   AmountDisplay,
@@ -21,6 +22,33 @@ export function FormsSection(): JSX.Element {
   const [date, setDate] = useState('2026-11-04');
   const [rate, setRate] = useState<number>(0.1);
   const [shop, setShop] = useState('');
+
+  /**
+   * Genuinely resolved from `kaeruRules` for the field's own purchase date — not a
+   * hard-coded pair (`DR-023`, #25's acceptance). The copy per `labelKey` is this
+   * gallery's own translation of the same message key a real feature would translate in
+   * its own bundle; only the shipped rate *values* and which ones apply on this date come
+   * from the domain.
+   */
+  const RATE_LABEL_TEXT: Record<string, { label: string; helper: string }> = {
+    [RATE_LABEL_KEYS.mostGoods]: {
+      label: t('gallery.field.taxRate10'),
+      helper: t('gallery.field.taxRate10Helper'),
+    },
+    [RATE_LABEL_KEYS.foodAndNewspapers]: {
+      label: t('gallery.field.taxRate8'),
+      helper: t('gallery.field.taxRate8Helper'),
+    },
+  };
+  const rateOptions = useMemo(() => {
+    const resolved = resolveRules(kaeruRules, date);
+    return resolved.rates.map((option) => {
+      const text = RATE_LABEL_TEXT[option.labelKey];
+      return text
+        ? { value: option.rate, label: text.label, helper: text.helper }
+        : { value: option.rate, label: option.labelKey };
+    });
+  }, [date]);
 
   return (
     <>
@@ -148,22 +176,14 @@ export function FormsSection(): JSX.Element {
             />
           </div>
         </Specimen>
-        <Specimen id="segmented-tax-rate" state="SegmentedControl: 2 options, data-driven (DR-023)">
+        <Specimen
+          id="segmented-tax-rate"
+          state="SegmentedControl: resolved from kaeruRules for the date above (DR-023)"
+        >
           <div class={styles.stretch}>
             <SegmentedControl
               legend={t('gallery.field.taxRateLegend')}
-              options={[
-                {
-                  value: 0.1,
-                  label: t('gallery.field.taxRate10'),
-                  helper: t('gallery.field.taxRate10Helper'),
-                },
-                {
-                  value: 0.08,
-                  label: t('gallery.field.taxRate8'),
-                  helper: t('gallery.field.taxRate8Helper'),
-                },
-              ]}
+              options={rateOptions}
               value={rate}
               onChange={setRate}
             />
