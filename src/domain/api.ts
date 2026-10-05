@@ -49,6 +49,12 @@ export type TaxOfLine = (line: ReceiptLine) => Jpy;
 /** Sum of per-line tax. This is the gross refund before anybody takes a fee (DR-025). */
 export type GrossRefundOf = (receipt: Receipt) => Jpy;
 
+/**
+ * The receipt's tax-excluded total: what the ¥5,000 threshold is judged on (`DR-011`) and
+ * the basis of a sale-based operator fee (`DR-026a`).
+ */
+export type TaxExcludedTotalOf = (receipt: Receipt) => Jpy;
+
 export interface RefundEstimate {
   gross: Jpy;
   /** The operator's cut. Null when unknown; zero is a claim we are not entitled to make. */

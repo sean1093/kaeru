@@ -165,6 +165,13 @@ export interface OperatorRegistration {
    * charge applies, since it only bites on a bank transfer (`DR-025`, `UR-12`).
    */
   refundMethod: RefundMethod | null;
+  /**
+   * The traveller's own correction to the catalogue fee for this payout route, or null to
+   * use the shipped figure. Fee data is unregulated, volatile and often wrong by the time
+   * it is read, so `DR-051` requires it to be editable; this is where a correction lands,
+   * including the one M2-C4 derives from what actually arrived.
+   */
+  feeOverride: OperatorFee | null;
 }
 
 // --- Operators -------------------------------------------------------------
@@ -183,6 +190,45 @@ export type RefundMethod =
 export type SourceStatus = 'confirmed-official' | 'reported-media' | 'unconfirmed';
 
 /**
+ * What a percentage fee is charged on.
+ *
+ * Required, never inferred (`DR-026a`). Tourego publishes 1.5% of tax-free sales and
+ * Ocean 0.5% of the tax-excluded price, while a "2.2% handling fee" reads as a cut of the
+ * refund — and the refund is roughly a tenth of the sale, so charging one against the
+ * other is a tenfold error in the traveller's money.
+ */
+export type FeeBasis = 'refund' | 'purchase_tax_excluded';
+
+/** A percentage and the thing it is a percentage of. Neither is meaningful alone. */
+export interface FeeRate {
+  /** Basis points — 150 is 1.5%. An integer, so no float enters the money path (DR-071). */
+  basisPoints: number;
+  basis: FeeBasis;
+}
+
+/**
+ * One operator's charge for one payout route (`DR-026`, `DR-051`).
+ *
+ * Levied per transfer, not per receipt: five receipts paid out together are charged once.
+ */
+export interface OperatorFee {
+  /** The payout route this schedule applies to; null applies to any route. */
+  method: RefundMethod | null;
+  /** Null when the charge is flat only. A rate can never exist without its basis. */
+  rate: FeeRate | null;
+  /** Flat charge per payout, in yen; 0 when there is none. */
+  fixedJpy: Jpy;
+  /** Floor on the whole fee, in yen; null when none is published. */
+  minimumJpy: Jpy | null;
+  /**
+   * How well sourced this figure is. An operator publishing its own rate and a traveller's
+   * screenshot of a checkout screen are not the same confidence, and the directory has to
+   * be able to say so.
+   */
+  status: SourceStatus;
+}
+
+/**
  * Shipped catalogue data (DR-050..DR-053). `feeNote: null` means **unknown** and must be
  * rendered as unknown, never as zero (DR-051).
  */
@@ -192,6 +238,15 @@ export interface Operator {
   url: string;
   registrationMethod: readonly RegistrationMethod[];
   refundMethods: readonly RefundMethod[];
+  /**
+   * The fee as arithmetic. **Empty means unknown, never zero** (`DR-051`): eight of the
+   * ten shipped operators publish nothing, so an unknown fee is the normal case and must
+   * produce `net: null` rather than a confident full refund.
+   *
+   * `feeNote` is the same fact as prose for the directory; the two must agree about
+   * whether we know anything at all.
+   */
+  fees: readonly OperatorFee[];
   feeNote: { en: string; 'zh-TW': string } | null;
   /** ISO date the fee was observed; fee data is volatile and must be shown dated (DR-026). */
   feeSourceDate: CalendarDate | null;
