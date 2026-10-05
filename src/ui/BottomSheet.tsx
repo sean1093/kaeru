@@ -1,4 +1,5 @@
 import type { JSX } from 'preact';
+import { createPortal } from 'preact/compat';
 import { useEffect, useId, useRef } from 'preact/hooks';
 import styles from './BottomSheet.module.css';
 import type { BottomSheetProps } from './contracts.ts';
@@ -26,6 +27,7 @@ export function BottomSheet({
   children,
 }: BottomSheetProps): JSX.Element | null {
   const headingId = useId();
+  const layerRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const returnFocusTo = useRef<HTMLElement | null>(null);
   const dragStartY = useRef<number | null>(null);
@@ -45,18 +47,30 @@ export function BottomSheet({
     };
   }, [open]);
 
-  // The background is inert while the sheet is up: not clickable, not reachable by tab,
-  // not readable by a screen reader walking the document.
+  /**
+   * The background is inert while the sheet is up: not clickable, not reachable by tab,
+   * and — the part that only this does — not readable by a screen reader walking the
+   * document, because browse mode follows the DOM rather than tab order.
+   *
+   * The sheet is portalled to `<body>` so that "everything that is not the sheet" is
+   * exactly body's other children. Rendered inline it would sit inside `#app`, which is
+   * body's only element child, so the filter would remove the only candidate and the loop
+   * would run over nothing — the mechanism silently absent while the focus trap kept every
+   * keyboard assertion passing (found by QALead on #121).
+   */
   useEffect(() => {
     if (!open) return;
-    const siblings = [...document.body.children].filter(
+    const sheet = sheetRef.current;
+    const background = [...document.body.children].filter(
       (node): node is HTMLElement =>
-        node instanceof HTMLElement && !node.contains(sheetRef.current),
+        node instanceof HTMLElement && node !== layerRef.current && !node.contains(sheet),
     );
-    const restored = siblings.filter((node) => !node.inert);
-    for (const node of restored) node.inert = true;
+    // The attribute rather than the property: `[inert]` is what a stylesheet, a test and
+    // an older engine can all see, and setting the property does not always reflect.
+    const marked = background.filter((node) => !node.hasAttribute('inert'));
+    for (const node of marked) node.setAttribute('inert', '');
     return () => {
-      for (const node of restored) node.inert = false;
+      for (const node of marked) node.removeAttribute('inert');
     };
   }, [open]);
 
@@ -84,8 +98,8 @@ export function BottomSheet({
     }
   };
 
-  return (
-    <div class={styles.layer}>
+  return createPortal(
+    <div class={styles.layer} ref={layerRef}>
       {/* The scrim is a button so a tap closes the sheet for pointer and keyboard alike,
           and is hidden from the accessibility tree because Escape is the documented way
           out and a second unlabelled control would only add noise. */}
@@ -119,6 +133,7 @@ export function BottomSheet({
         </h2>
         <div class={styles.content}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

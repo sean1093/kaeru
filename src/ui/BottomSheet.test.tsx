@@ -77,24 +77,35 @@ describe('BottomSheet', () => {
     expect(document.activeElement).toBe(last);
   });
 
-  it('makes the rest of the document inert while open, and restores it on close', () => {
-    const behind = document.createElement('div');
-    document.body.append(behind);
-
+  it('makes the app background inert while open, and restores it on close', () => {
+    // The defect this pins (QALead, #121): the sheet used to render inline inside #app,
+    // so "body's children that do not contain the sheet" was the empty set and nothing was
+    // ever marked. Keyboard users were fine — the focus trap held — which is exactly what
+    // hid it, because a screen reader in browse mode walks the DOM rather than tab order.
     const { rerender } = render(
       <BottomSheet title="Who bought this?" open onClose={vi.fn()}>
         <button type="button">Yi-chun</button>
       </BottomSheet>,
     );
-    expect(behind.inert).toBe(true);
+    expect(document.querySelectorAll('[inert]').length).toBeGreaterThan(0);
 
     rerender(
       <BottomSheet title="Who bought this?" open={false} onClose={vi.fn()}>
         <button type="button">Yi-chun</button>
       </BottomSheet>,
     );
-    expect(behind.inert).toBe(false);
-    behind.remove();
+    expect(document.querySelectorAll('[inert]').length).toBe(0);
+  });
+
+  it('renders outside the app root, so nothing it covers can contain it', () => {
+    render(
+      <BottomSheet title="Who bought this?" open onClose={vi.fn()}>
+        <button type="button">Yi-chun</button>
+      </BottomSheet>,
+    );
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.closest('[data-testid="app-root"]')).toBeNull();
+    expect(dialog.parentElement?.parentElement).toBe(document.body);
   });
 
   it('closes on a downward drag, but not on a tap that happens to move a little', () => {
