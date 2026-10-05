@@ -17,6 +17,7 @@ import type { GroupByShopDay, ShopDayGroup } from './api.ts';
 import type { CalendarDate } from './dates.ts';
 import type { Receipt, TravelerId } from './model.ts';
 import { taxExcludedTotalOf } from './money.ts';
+import { shopKeyOf } from './shop-key.ts';
 
 interface Bucket {
   shopKey: string;
@@ -39,8 +40,14 @@ interface Bucket {
 export const groupByShopDay: GroupByShopDay = (receipts, rules): readonly ShopDayGroup[] => {
   const buckets = new Map<string, Bucket>();
   for (const receipt of receipts) {
+    // A receipt whose shop name normalises to nothing has no identity to share, so it gets
+    // a bucket of its own keyed by its id. Merging unnamed receipts would invent a total
+    // neither of them earned — an error in the optimistic direction, which is the one
+    // direction this indicator must never err in.
+    const identity =
+      shopKeyOf(receipt.shopKey) === null ? `\u0000id:${receipt.id}` : receipt.shopKey;
     // NUL joins the three parts so no shop name can forge a key boundary.
-    const key = `${receipt.shopKey}\u0000${receipt.purchaseDate}\u0000${receipt.travelerId}`;
+    const key = `${identity}\u0000${receipt.purchaseDate}\u0000${receipt.travelerId}`;
     const bucket = buckets.get(key);
     if (bucket) {
       bucket.receipts.push(receipt);

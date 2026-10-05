@@ -15,5 +15,10 @@
  */
 import type { ShopKeyOf } from './api.ts';
 
-export const shopKeyOf: ShopKeyOf = (shopName) =>
-  shopName.normalize('NFKC').replace(/\s+/gu, ' ').trim().toLowerCase();
+export const shopKeyOf: ShopKeyOf = (shopName) => {
+  const key = shopName.normalize('NFKC').replace(/\s+/gu, ' ').trim().toLowerCase();
+  // An empty key is not a weak identity, it is the one identity that matches every other
+  // empty key — two unnamed receipts would group and show a total neither of them earned.
+  // Every other failure here is in the safe direction, a missed grouping; this one is not.
+  return key === '' ? null : key;
+};

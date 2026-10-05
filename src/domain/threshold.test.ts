@@ -156,8 +156,8 @@ describe('grouping by shop, day and traveller (DR-012, UR-01, UR-02)', () => {
   it('TC-DOM-030 @unconfirmed treats two tenants of one department store as two shops', () => {
     const groups = groupByShopDay(
       [
-        receiptFor({ id: 'a', shopKey: shopKeyOf('伊勢丹新宿 ユニクロ'), excluded: 3000 }),
-        receiptFor({ id: 'b', shopKey: shopKeyOf('伊勢丹新宿 無印良品'), excluded: 2500 }),
+        receiptFor({ id: 'a', shopKey: shopKeyOf('伊勢丹新宿 ユニクロ') ?? '', excluded: 3000 }),
+        receiptFor({ id: 'b', shopKey: shopKeyOf('伊勢丹新宿 無印良品') ?? '', excluded: 2500 }),
       ],
       rules,
     );
@@ -215,8 +215,28 @@ describe('shopKeyOf (DR-012a)', () => {
     expect(new Set(keys).size).toBe(3);
   });
 
-  it('survives an empty name without producing a key that merges everything', () => {
-    expect(shopKeyOf('   ')).toBe('');
+  it('refuses to invent a key for a name that normalises to nothing', () => {
+    // An empty string would be the one key every unnamed receipt shares, so two blank
+    // receipts would group and show a 5,500 yen total neither of them earned. Every other
+    // imprecision in this module errs towards a missed grouping; this one would not.
+    expect(shopKeyOf('   ')).toBeNull();
+    expect(shopKeyOf('')).toBeNull();
+    expect(shopKeyOf('\u3000\t\n')).toBeNull();
+  });
+
+  it('keeps two unnamed receipts in separate groups rather than merging them', () => {
+    const groups = groupByShopDay(
+      [
+        receiptFor({ id: 'a', shopName: '', shopKey: '', excluded: 3000 }),
+        receiptFor({ id: 'b', shopName: '', shopKey: '', excluded: 2500 }),
+      ],
+      rules,
+    );
+    expect(groups).toHaveLength(2);
+    expect(groups.every((group) => group.meetsThreshold)).toBe(false);
+    // The live indicator on the add screen groups receipts the user is still typing, and
+    // a draft never passes through the data layer's normalisation — so this is the one
+    // moment the storage guarantee is absent and the domain is on its own.
   });
 });
 
