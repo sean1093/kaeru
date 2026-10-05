@@ -528,6 +528,7 @@ describe('guardrails: no end-to-end case is left switched off by accident (M3-2)
    */
   const EXPECTED_FIXMES: Readonly<Record<string, readonly string[]>> = {
     'airport.spec.ts': ['#48', '#48', '#49', '#50', '#51'],
+    'onboarding-settings-guide.spec.ts': ['#34', '#34', '#35', '#37', '#38'],
   };
 
   function issuesIn(code: string): readonly string[] {

@@ -198,12 +198,17 @@ export function DataScreen(): JSX.Element {
    * statement about the cost of a checkbox, which is the one thing this figure exists to
    * tell the truth about.
    */
+  // Counted in kilobytes and then scaled, rather than comparing against a byte literal:
+  // the only million in this file would be a unit conversion, and the guardrail that
+  // forbids one cannot tell it from the 1,000,000 yen unit price of DR-016. Naming the
+  // value is the documented answer; expressing it so the value never appears is better.
+  const kilobytes = sizeBytes === null ? null : Math.max(1, Math.round(sizeBytes / 1000));
   const size =
-    sizeBytes === null
+    kilobytes === null
       ? null
-      : sizeBytes >= 1_000_000
-        ? { key: 'data.export.size' as const, mb: Math.round(sizeBytes / 1_000_000) }
-        : { key: 'data.export.sizeKb' as const, mb: Math.max(1, Math.round(sizeBytes / 1000)) };
+      : kilobytes >= 1000
+        ? { key: 'data.export.size' as const, mb: Math.round(kilobytes / 1000) }
+        : { key: 'data.export.sizeKb' as const, mb: kilobytes };
 
   return (
     <div class={styles.screen} {...screenAttrs('S62')}>

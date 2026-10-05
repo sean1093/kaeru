@@ -4,6 +4,7 @@ import type { Icon } from '../ui/contracts.ts';
 import { defineFeature } from './feature.ts';
 import type { FeatureV2, ScreenId, ScreenRoute } from './navigation.ts';
 import { collectFeatures, features, featuresFromModules, routes, tabFeatures } from './registry.ts';
+import { ROUTE_DEFINITIONS } from './screens.ts';
 
 const messages = defineMessages({
   'zh-TW': { 'test.nav': '測試' },
