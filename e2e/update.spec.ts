@@ -80,35 +80,21 @@ test.describe('service worker update', () => {
       { timeout: 15_000 },
     );
 
-    // Accepting is what the user does; `UpdatePrompt` calls the same thing.
-    await page.evaluate(async () => {
-      const registration = await navigator.serviceWorker.getRegistration();
-      registration?.waiting?.postMessage({ type: 'SKIP_WAITING' });
-    });
-    // Two waits, because "the worker said it is done" and "a reload will serve the new
-    // document" are not the same instant. `waiting` clearing only means it left the waiting
-    // state, and even after `activated` the outdated precache is still being cleaned up —
-    // reload inside that window and the old document comes back, which is a race that
-    // passes on a fast machine and fails on a loaded CI runner.
-    await page.waitForFunction(
-      () =>
-        navigator.serviceWorker
-          .getRegistration()
-          .then((r) => r?.waiting == null && r?.active?.state === 'activated'),
-      undefined,
-      { timeout: 15_000 },
-    );
-    // What the update actually has to deliver: the new build is on the device, and the
-    // worker serving this origin will hand it out. Asserted against the precache rather
-    // than against the document, for a reason worth stating rather than hiding.
-    //
-    // `clientsClaim` is false by design (ADR 0007: a new build never takes over a running
-    // one silently), so the page that accepted the update stays controlled by the *old*
-    // worker for its remaining lifetime. Reloading that page is therefore not reliably the
-    // moment the swap becomes visible — measured here, it stays on the old document across
-    // repeated reloads for 20 s. That is the configuration behaving as specified, not a
-    // defect, but it does mean "reload shows the new build" is the wrong assertion: the
-    // next *cold start* is what a traveller sees, and this is what guarantees it.
+    // Accept the way a traveler does, through the affordance itself. This is the whole
+    // point: `applyUpdate` calls vite-plugin-pwa's `updateServiceWorker(true)`, which posts
+    // SKIP_WAITING *and* registers the `controllerchange` listener that reloads once the
+    // new worker takes control. Posting SKIP_WAITING by hand skips that listener, so the
+    // page never reloads and sits on the old document forever — a true observation about a
+    // path no user takes, and what #102 measured before this was understood.
+    await expect(page.getByTestId('update-prompt')).toBeVisible({ timeout: 20_000 });
+    await page.getByTestId('update-apply').click();
+
+    // The promise the button makes: the page the traveler is looking at is now the new
+    // build. Nothing weaker is worth showing them a button for.
+    await expect(page.locator('#app')).toHaveAttribute('data-build', 'B', { timeout: 20_000 });
+
+    // And the device holds it, so the next cold start gets it too — the half that matters
+    // when the correction is a tax rule and the phone is in airplane mode tomorrow.
     await page.waitForFunction(
       async () => {
         const cached = await caches.match('index.html', { ignoreSearch: true });
@@ -118,23 +104,49 @@ test.describe('service worker update', () => {
       { timeout: 15_000 },
     );
 
-    // What is deliberately *not* asserted, and why, so nobody reads this as an oversight:
-    // that the very next navigation serves the new document. Measured repeatedly, a client
-    // of this origin keeps being served the old document after activation — across reloads
-    // of the accepting page and on a freshly opened page in the same context — while the
-    // precache verifiably holds the new one. Whether that is Workbox's handover window,
-    // `clientsClaim: false`, or something that would bite a real traveller is a question
-    // worth answering properly rather than encoding a guess here, so it is filed for QA
-    // and the architect instead of asserted either way.
-
     // Stored data surviving the update is asserted on a fresh client, because that is the
-    // half that is unambiguous and the half that loses a traveller's receipts if it breaks.
+    // half that loses a traveler's receipts if it breaks.
     const fresh = await page.context().newPage();
     await fresh.goto(`${server.origin}/kaeru/`);
     await expect(fresh.getByRole('heading', { level: 1 })).toHaveText(
       'Bring your Japan tax refund home',
     );
     await fresh.close();
+  });
+
+  test('accepting also reloads every other open client, which ADR 0007 used to deny', async ({
+    page,
+  }) => {
+    // Measured rather than assumed, and it contradicts what the ADR originally promised:
+    // `skipWaiting()` makes the new worker claim every client of the registration, and each
+    // one reloads on `controllerchange`. Consent is per user, not per tab. An installed PWA
+    // is a single client so no traveler meets this, but the guarantee was overstated and
+    // this is what keeps the ADR honest.
+    await activate(page, server.origin);
+
+    const bystander = await page.context().newPage();
+    await bystander.goto(`${server.origin}/kaeru/`);
+    await bystander.waitForFunction(() => navigator.serviceWorker.controller !== null, undefined, {
+      timeout: 15_000,
+    });
+    // A mark that only survives if this document is never replaced.
+    await bystander.evaluate(() => {
+      document.body.dataset.kaeruProbe = 'alive';
+    });
+
+    server.serve(buildB);
+    await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.update();
+    });
+    await expect(page.getByTestId('update-prompt')).toBeVisible({ timeout: 20_000 });
+    await page.getByTestId('update-apply').click();
+
+    await expect(bystander.locator('#app')).toHaveAttribute('data-build', 'B', {
+      timeout: 20_000,
+    });
+    await expect(bystander.locator('body')).not.toHaveAttribute('data-kaeru-probe', 'alive');
+    await bystander.close();
   });
 
   test('TC-AIR-021: the update prompt appears, and declining leaves the session working', async ({

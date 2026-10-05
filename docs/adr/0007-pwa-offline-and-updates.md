@@ -57,6 +57,24 @@ Reloading the page under them is unacceptable. The flip side — R06, a user sit
 stale build with an outdated tax rule — is handled by making the banner persistent and
 prominent rather than by seizing control.
 
+**Amended 2026-10-06, after measuring it (#102).** `clientsClaim: false` keeps a new build
+from seizing a running one before anyone accepts. It does not make an accepted update a
+private event. **Update now** calls `skipWaiting()`, which makes the new worker claim every
+client of the registration, and each client reloads on `controllerchange` — so a second tab
+open on the same origin reloads too, without its own user having tapped anything. Consent
+here is per user, not per tab. An installed PWA is a single client, so no traveler on the
+intended surface meets this, and S21's autosaved draft is what absorbs it in a browser tab.
+The behaviour is right; the original wording promised something stronger than we provide,
+and a guarantee nobody can rely on is worse than a narrower one plainly stated. Both halves
+are asserted in `e2e/update.spec.ts`.
+
+One trap, recorded because it cost a day. Posting `SKIP_WAITING` to the waiting worker by
+hand is **not** the accept path. `applyUpdate` calls `updateServiceWorker(true)`, which posts
+that message *and* registers the `controllerchange` listener that performs the reload. Drive
+the update any other way and the page stays on the old document indefinitely, which looks
+exactly like a broken update mechanism and is not one. Anything testing this must go through
+the button the traveler presses.
+
 `injectRegister: null`: registration happens explicitly in `src/main.tsx`. The rest of the
 app only touches `src/app/update-state.ts`, a plain module with two signals, so component
 tests never import the `virtual:pwa-register` build-time module.
