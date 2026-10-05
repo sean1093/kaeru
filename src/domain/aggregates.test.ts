@@ -15,6 +15,7 @@ import type { Receipt } from './model.ts';
 import { estimateOperatorPayout } from './money.ts';
 import { resolveRules } from './resolve-rules.ts';
 import { kaeruRules } from './rules-data.ts';
+import { isClaimable, isOldSystem } from './status.ts';
 import { tripTotalsOf } from './totals.ts';
 
 const rules = resolveRules(kaeruRules, '2026-11-10');
@@ -207,6 +208,92 @@ describe('tripTotalsOf (UJ-016, UJ-036)', () => {
     // Identical to the refund tracker's own figure, because it is the same calculation.
     expect(totals.estimatedNet).toBe(payout.net);
     expect(totals.estimateIncomplete).toBe(false);
+  });
+
+  it('TC-DOM-050 agrees with the refund tracker for every seeded trip, not just this one', () => {
+    // The worked example above pins one concrete case so a failure here is easy to read.
+    // This is the invariant: for any trip, the home screen's hero figure is the sum of the
+    // per-operator payouts, because it *is* those payouts and not a second calculation.
+    // The interesting shapes are the ones a re-derivation would get wrong — several
+    // operators at once, known and unknown fees mixed, an override, assorted statuses.
+    const knownFee = anOperator({
+      id: 'op-known',
+      fees: [aFee({ rate: { basisPoints: 150, basis: 'refund' } })],
+    });
+    const salesFee = anOperator({
+      id: 'op-sales',
+      refundMethods: ['credit_card'],
+      fees: [aFee({ rate: { basisPoints: 50, basis: 'purchase_tax_excluded' }, minimumJpy: 180 })],
+    });
+    const unknownFee = anOperator({ id: 'op-unknown' });
+    const operators = [knownFee, salesFee, unknownFee];
+    const registrations = [
+      aRegistration({ operatorId: 'op-known', refundMethod: 'bank_transfer' }),
+      aRegistration({
+        operatorId: 'op-sales',
+        refundMethod: 'credit_card',
+        feeOverride: aFee({ rate: { basisPoints: 300, basis: 'refund' }, status: 'unconfirmed' }),
+      }),
+    ];
+    const operatorIds = ['op-known', 'op-sales', 'op-unknown', null] as const;
+    const statuses = [
+      'logged',
+      'registered',
+      'refund_pending',
+      'refunded',
+      'not_claiming',
+    ] as const;
+
+    for (let seed = 0; seed < 50; seed += 1) {
+      const receipts = Array.from({ length: (seed % 6) + 1 }, (_, index) =>
+        ready({
+          id: `p${seed}-${index}`,
+          operatorId: operatorIds[(seed + index) % operatorIds.length] ?? null,
+          status: statuses[(seed * 3 + index) % statuses.length] ?? 'logged',
+          amountReceived: 1234,
+          purchaseDate: index % 5 === 0 ? '2026-10-31' : '2026-11-10',
+          lines: [aLine({ taxExcludedAmount: 1000 * (index + 1) + seed * 37 })],
+        }),
+      );
+
+      // The receipts a payout can still be expected for, named through the public rules
+      // rather than guessed at.
+      const awaiting = receipts.filter(
+        (receipt) =>
+          !isOldSystem(receipt, rules) &&
+          isClaimable(receipt, rules) &&
+          receipt.status !== 'refunded',
+      );
+      const groups = new Map<string | null, typeof awaiting>();
+      for (const receipt of awaiting) {
+        groups.set(receipt.operatorId, [...(groups.get(receipt.operatorId) ?? []), receipt]);
+      }
+
+      let expectedNet = 0;
+      let expectedIncomplete = false;
+      for (const [operatorId, group] of groups) {
+        const payout = estimateOperatorPayout(
+          group,
+          operators.find((candidate) => candidate.id === operatorId) ?? null,
+          registrations.find((candidate) => candidate.operatorId === operatorId) ?? null,
+          trip,
+          rules,
+        );
+        if (payout.net === null) {
+          // TC-DOM-048: the gross still counts. An unknown deduction is not a reason to
+          // show nothing, and it is easy to get wrong when one group is unknown and three
+          // are known.
+          expectedIncomplete = true;
+          expectedNet += payout.gross;
+        } else {
+          expectedNet += payout.net;
+        }
+      }
+
+      const totals = tripTotalsOf(receipts, operators, registrations, trip, rules);
+      expect(totals.estimatedNet, `seed ${seed}`).toBe(expectedNet);
+      expect(totals.estimateIncomplete, `seed ${seed}`).toBe(expectedIncomplete);
+    }
   });
 
   it('TC-DOM-048 flags the estimate as incomplete instead of treating an unknown fee as zero', () => {
