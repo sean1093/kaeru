@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.1 (M0) |
+| Status | v1.3 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -192,7 +192,7 @@ Rules:
 
 - `font-variant-numeric: tabular-nums` always. A total that re-renders must not shift.
 - Format with `Intl.NumberFormat(locale, { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 })`. Yen has no minor unit: `¥12,345`, never `¥12,345.00`. Money is integer yen end to end; never a float (`DR-071`).
-- In the hero, the `¥` symbol is one step smaller and `--color-text-muted`, so the eye lands on the digits.
+- In the hero, the `¥` symbol is `--text-xl` against `--text-3xl` digits and `--color-text-muted`, so the eye lands on the digits. That is a bigger gap than "one step" on the type scale, found and kept during implementation because it serves the goal at least as well as a smaller gap would.
 - Kaeru's own estimates round **down** per line, then sum (`DR-024`), so Kaeru never promises more than arrives.
 - A derived amount — tax-excluded computed from tax-included — is additionally labelled as calculated at the point of entry (`DR-022`), because shop rounding is the issuer's choice and we cannot reproduce it to the yen.
 - Deductions use a true minus sign: `− ¥550` (U+2212), not a hyphen.
