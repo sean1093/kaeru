@@ -50,7 +50,7 @@ export interface ScreenRoute {
   pattern: RoutePattern;
   /**
    * The screen ids this route can render. The inventory is **not** 1:1 with routes: 46 ids
-   * resolve to roughly 34 routes, because several ids are states of another screen at the
+   * resolve to 33 routes, nine states and four sheets — several ids are states of another screen at the
    * same URL — S29 and S2B are states of S22, S28 is the empty state of S20, S11 to S14
    * are the phases of Home, and S34 and S35 are outcome states of S33. The live component
    * writes the id it is actually showing into `data-screen`, so QA can assert S13 or S29
