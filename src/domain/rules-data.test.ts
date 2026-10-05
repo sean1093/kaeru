@@ -1,36 +1,21 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { FORBIDDEN_CONSTANTS, withoutComments } from '../guardrails/constants.ts';
 import { resolveRules, resolveSystem } from './resolve-rules.ts';
 import type { Dated, RulesData } from './rules.ts';
 import { kaeruRules, RULES_REVIEW_MAX_AGE_DAYS } from './rules-data.ts';
 
-const DOMAIN_DIR = dirname(fileURLToPath(import.meta.url));
+const DOMAIN_DIR = import.meta.dirname;
 
 /**
- * Rule constants that may appear in `rules-data.ts` and nowhere else under `src/domain`
- * (`DR-022`, R19). The point is not tidiness: a threshold inlined into a conditional is a
- * rule change that needs a code change, which is how a stale rate ships.
+ * The list this scan uses lives in `src/guardrails/constants.ts`, shared with the guardrail
+ * suite: this one guards `src/domain`, that one guards everywhere else, and two copies
+ * would drift — with the drifted copy being the one nobody was watching.
  *
- * These are deliberately broad — `90` and every decimal literal are banned outright — so
- * a false positive will arrive before a catch does. When it does: name the value in
- * `rules-data.ts`, or add it to a visible allowlist here that a reviewer can argue with.
- * Do not loosen a pattern. A guard relaxed on first contact protects nothing.
+ * `DR-022`, R19. The point is not tidiness: a threshold inlined into a conditional is a
+ * rule change that needs a code change, which is how a stale rate ships.
  */
-const FORBIDDEN_CONSTANTS: readonly { rule: string; what: string; pattern: RegExp }[] = [
-  { rule: 'DR-010', what: 'the 5,000 yen threshold', pattern: /\b5_?000\b/ },
-  { rule: 'DR-016', what: 'the 1,000,000 yen unit price', pattern: /\b1_?000_?000\b/ },
-  { rule: 'DR-027', what: 'the 2,000 yen fee warning floor', pattern: /\b2_?000\b/ },
-  { rule: 'DR-031', what: 'the 90-day export window', pattern: /\b90\b/ },
-  { rule: 'DR-023', what: 'a tax rate', pattern: /\b\d*\.\d+\b/ },
-  { rule: 'DR-001', what: 'an effective date', pattern: /\b\d{4}-\d{2}-\d{2}\b/ },
-];
-
-/** Comments quote the rules on purpose; only executable text is scanned. */
-function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-}
 
 describe('the rules document is the only place a rule constant lives', () => {
   // Recursive: a future src/domain/money/ must not silently stop being scanned.

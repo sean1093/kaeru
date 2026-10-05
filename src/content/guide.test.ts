@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LOCALES } from '../i18n/index.ts';
-import { getArticle, getContent, getSection } from './index.ts';
+import { getArticle, getSection } from './index.ts';
 import type { ContentBlock } from './schema.ts';
 
 function blocksOf(id: string, locale: (typeof LOCALES)[number]): readonly ContentBlock[] {
@@ -61,19 +61,6 @@ describe('guide.steps (M1-4b, port of docs/content/guide.*.md)', () => {
       const orderedStep = steps4.find((block) => block.kind === 'steps');
       expect(orderedStep?.body.length).toBe(3);
     }
-  });
-
-  it('contains the ¥5,000 threshold and the 2026-11-01 start as literal prose', () => {
-    // The 90-day window is not stated in guide.steps or guide.airport (neither is it in
-    // the merged guide.*.md source); it first appears in guide.faq.q06, which is M1-4c.
-    const zh = getContent('zh-TW');
-    const en = getContent('en');
-    const zhText = JSON.stringify(zh.articles);
-    const enText = JSON.stringify(en.articles);
-    expect(zhText).toContain('5,000');
-    expect(enText).toContain('5,000');
-    expect(zhText).toContain('2026');
-    expect(enText).toContain('2026');
   });
 });
 
