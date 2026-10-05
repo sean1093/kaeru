@@ -69,8 +69,14 @@ export async function openDatabase(
           META_KEY,
         );
       },
-      blocking() {
-        // Another tab is upgrading: release this handle so it is not stuck behind us.
+      blocking(_currentVersion, _blockedVersion, event) {
+        // `blocking` fires on whichever connection is in the way of the new version —
+        // not necessarily the shared singleton `closeDatabase()` knows about, since
+        // `openDatabase(name)` is a public, tested path on its own (TC-DATA-008).
+        // Closing `event.target` is the only way to unblock the upgrade that is actually
+        // stuck; closeDatabase() alongside it keeps the module singleton in sync so the
+        // next getDatabase() reopens rather than reusing a handle that may now be closed.
+        (event.target as IDBDatabase | null)?.close();
         closeDatabase();
       },
     });
