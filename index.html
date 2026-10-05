@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
+    <!--
+      Which build this is. Rewritten at build time by the `build-identity` plugin in
+      vite.config.ts from GITHUB_SHA; `dev` in a local build. The production smoke compares
+      it against the commit the deploy ran for, so "the live site is the current main" is a
+      question the site itself answers rather than one inferred from workflow status.
+    -->
+    <meta name="build-sha" content="dev" />
     <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1a1714" media="(prefers-color-scheme: dark)" />
     <meta
