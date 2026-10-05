@@ -260,7 +260,10 @@ describe('TC-DATA-017: §7 validation failures are quarantined per record, not p
     const preview = await backupService.import(db, document, 'merge');
 
     expect(preview.trips).toBe(1);
-    expect(preview.rejectedKeys).toEqual(expect.arrayContaining([expect.stringContaining('trip')]));
+    // The id survives even when the rest of the record does not, so the message is
+    // actionable ("trip:no-date-at-all") rather than merely "a trip, somewhere" (QA
+    // review, #93).
+    expect(preview.rejectedKeys).toContain('trip:no-date-at-all (unreadable)');
     expect(await db.get('trips', 'no-date-at-all')).toBeUndefined();
   });
 });
@@ -340,6 +343,68 @@ describe('TC-DATA-019: passportRef longer than 4 characters is rejected on impor
 
     await backupService.import(db, document, 'merge');
     expect((await db.get('travelers', 'traveler-1'))?.passportRef).toBe('5678');
+  });
+});
+
+describe('a write failing partway through import leaves the device exactly as it was (QA review, #93)', () => {
+  function failPutFor(storeName: string): () => void {
+    const original = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (
+      this: IDBObjectStore,
+      ...args: Parameters<typeof original>
+    ) {
+      if (this.name === storeName) throw new Error('simulated mid-import failure');
+      return original.apply(this, args);
+    };
+    return () => {
+      IDBObjectStore.prototype.put = original;
+    };
+  }
+
+  it('replace: a failure after the clear and after some writes rolls back, the original trip survives', async () => {
+    await tripRepository.put(db, aTrip({ id: 'already-here' }));
+
+    const restore = failPutFor('registrations');
+    const document = JSON.stringify({
+      format: 'kaeru.backup',
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: '2026-11-01T00:00:00.000Z',
+      settings: {},
+      trips: [aTrip({ id: 'imported' })],
+      travelers: [],
+      receipts: [],
+      registrations: [aRegistration()],
+    });
+
+    await expect(backupService.import(db, document, 'replace')).rejects.toThrow();
+    restore();
+
+    // If the transaction had partially committed, this would be ['imported'] (the clear
+    // took effect) or ['already-here', 'imported'] (the clear didn't). Neither happened:
+    // the clear and the trip write rolled back together with the failing write.
+    expect((await tripRepository.list(db)).map((t) => t.id)).toEqual(['already-here']);
+  });
+
+  it('merge: a failure partway through adds nothing, not a partial set of records', async () => {
+    await tripRepository.put(db, aTrip({ id: 'already-here' }));
+
+    const restore = failPutFor('settings');
+    const document = JSON.stringify({
+      format: 'kaeru.backup',
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: '2026-11-01T00:00:00.000Z',
+      settings: { locale: 'en', theme: 'dark' },
+      trips: [aTrip({ id: 'imported' })],
+      travelers: [],
+      receipts: [],
+      registrations: [],
+    });
+
+    await expect(backupService.import(db, document, 'merge')).rejects.toThrow();
+    restore();
+
+    expect((await tripRepository.list(db)).map((t) => t.id)).toEqual(['already-here']);
+    expect(await loadSettings(db)).toEqual({ locale: 'zh-TW', theme: 'system' });
   });
 });
 

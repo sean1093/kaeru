@@ -33,12 +33,8 @@ import type {
   ImportMode,
   ImportPreview,
 } from './repositories.ts';
-import {
-  DEFAULT_SETTINGS,
-  loadSettings,
-  normalizeSettings,
-  saveSettings,
-} from './settings-repository.ts';
+import { DEFAULT_SETTINGS, loadSettings, normalizeSettings } from './settings-repository.ts';
+import { abortTransaction, nextSequence } from './transaction.ts';
 import { travelerRepository } from './traveler-repository.ts';
 import { tripRepository } from './trip-repository.ts';
 import { type AppSettings, SCHEMA_VERSION, SETTINGS_KEY } from './types.ts';
@@ -116,6 +112,16 @@ function findPassportLikeValues(
   return [];
 }
 
+/**
+ * Best-effort id for a record that failed to normalise at all, so a rejection reads
+ * `receipt:r-1 (unreadable)` rather than `receipt (unreadable)` — the difference between a
+ * user being able to find the record in their own backup file and not (QA review, #93).
+ */
+function rawIdOf(entry: unknown): string | null {
+  const id = (entry as { id?: unknown } | null)?.id;
+  return typeof id === 'string' && id.trim() !== '' ? id.trim() : null;
+}
+
 // --- Raw document shape (what `JSON.parse` can hand back) -------------------
 
 interface RawDocument {
@@ -176,7 +182,7 @@ function validateTravelers(raw: unknown, rejectedKeys: string[]): Traveler[] {
   for (const entry of raw) {
     const traveler = normalizeTraveler(entry);
     if (!traveler) {
-      rejectedKeys.push(`traveler (unreadable)`);
+      rejectedKeys.push(`traveler:${rawIdOf(entry) ?? 'unknown'} (unreadable)`);
       continue;
     }
     // A passportRef over the cap is rejected outright on import, not truncated: an import
@@ -213,7 +219,7 @@ function validateEntities<T extends { id: string }>(
   for (const entry of raw) {
     const entity = normalize(entry);
     if (!entity) {
-      rejectedKeys.push(`${kind} (unreadable)`);
+      rejectedKeys.push(`${kind}:${rawIdOf(entry) ?? 'unknown'} (unreadable)`);
       continue;
     }
     const findings = findPassportLikeValues(entry, '', new Set());
@@ -232,7 +238,11 @@ function validateRegistrations(raw: unknown, rejectedKeys: string[]): OperatorRe
   for (const entry of raw) {
     const registration = normalizeRegistration(entry);
     if (!registration) {
-      rejectedKeys.push('registration (unreadable)');
+      const rawTripId = (entry as { tripId?: unknown } | null)?.tripId;
+      const rawOperatorId = (entry as { operatorId?: unknown } | null)?.operatorId;
+      rejectedKeys.push(
+        `registration:${typeof rawTripId === 'string' ? rawTripId : 'unknown'}/${typeof rawOperatorId === 'string' ? rawOperatorId : 'unknown'} (unreadable)`,
+      );
       continue;
     }
     const findings = findPassportLikeValues(entry, '', new Set());
@@ -434,15 +444,8 @@ export const backupService: BackupService = {
     const validated = validateDocument(parseDocument(text));
     const conflicts = await countConflicts(db, validated);
 
-    if (mode === 'replace') await clearV2Stores(db);
+    await writeImportedCore(db, validated, mode);
 
-    await saveSettings(db, validated.settings);
-    for (const trip of validated.trips) await tripRepository.put(db, trip);
-    for (const traveler of validated.travelers) await travelerRepository.put(db, traveler);
-    if (validated.receipts.length > 0) await receiptRepository.putMany(db, validated.receipts);
-    for (const registration of validated.registrations) {
-      await registrationRepository.put(db, registration);
-    }
     for (const photo of validated.photos) {
       try {
         await photoRepository.put(db, {
@@ -455,8 +458,8 @@ export const backupService: BackupService = {
         });
       } catch {
         // A photo is optional field (DR-042): one that is oversized, or arrives when the
-        // device is already out of room, must not cost the trips/receipts/registrations
-        // that already wrote successfully. Recorded so the user is told, not just
+        // device is already out of room, must not cost the core data that already wrote
+        // successfully in one transaction below. Recorded so the user is told, not just
         // silently short a photo.
         validated.rejectedKeys.push(`photo:${photo.id} (could not be stored)`);
       }
@@ -470,6 +473,71 @@ export const backupService: BackupService = {
     await clearV2Stores(db);
   },
 };
+
+const CORE_STORE_NAMES = ['trips', 'travelers', 'receipts', 'registrations', 'settings'] as const;
+
+/**
+ * One transaction over every core store, covering the `replace` clear and every write.
+ * QA review on #93: the previous shape cleared in its own committed transaction and then
+ * wrote through the repositories, each opening its own — so a `QuotaExceededError`, an
+ * aborted transaction, or the tab dying mid-import left the device with neither the data
+ * it had nor the file it was given, and there is no copy left to recover from, because the
+ * copy was what the user just imported. One transaction makes that failure roll back
+ * instead: either the whole import lands, or none of it does, same as `putMany` for the
+ * ordinary per-traveler case (`TC-DATA-006`). Photos stay a separate best-effort step
+ * after this returns — they are optional data (`DR-042`) and were never the risk.
+ */
+async function writeImportedCore(
+  db: KaeruDatabase,
+  validated: ValidatedDocument,
+  mode: ImportMode,
+): Promise<void> {
+  const tx = db.transaction(CORE_STORE_NAMES, 'readwrite');
+  try {
+    const trips = tx.objectStore('trips');
+    const travelers = tx.objectStore('travelers');
+    const receipts = tx.objectStore('receipts');
+    const registrations = tx.objectStore('registrations');
+
+    if (mode === 'replace') {
+      await Promise.all(CORE_STORE_NAMES.map((name) => tx.objectStore(name).clear()));
+    }
+
+    let tripSeq = await nextSequence(trips.index('by-seq'));
+    for (const trip of validated.trips) {
+      const existing = await trips.get(trip.id);
+      await trips.put({ ...trip, seq: existing?.seq ?? tripSeq++ });
+    }
+
+    let travelerSeq = await nextSequence(travelers.index('by-seq'));
+    for (const traveler of validated.travelers) {
+      const existing = await travelers.get(traveler.id);
+      await travelers.put({ ...traveler, seq: existing?.seq ?? travelerSeq++ });
+    }
+
+    let receiptSeq = await nextSequence(receipts.index('by-seq'));
+    for (const receipt of validated.receipts) {
+      const existing = await receipts.get(receipt.id);
+      await receipts.put({ ...receipt, seq: existing?.seq ?? receiptSeq++ });
+    }
+
+    for (const registration of validated.registrations) {
+      await registrations.put(registration);
+    }
+
+    await tx.objectStore('settings').put(validated.settings, SETTINGS_KEY);
+    await tx.done;
+  } catch (cause) {
+    // Nothing is durable until `tx.done` resolves, but idb only auto-aborts on a genuine
+    // IDBRequest failure — a JS error raised between two successful requests (a bad
+    // record, a thrown mock in a test) would otherwise leave every write already queued
+    // free to commit anyway. Explicit abort is what makes "the whole import lands, or
+    // none of it does" actually true rather than true only for the failure modes
+    // IndexedDB happens to catch on its own.
+    await abortTransaction(tx);
+    throw cause;
+  }
+}
 
 async function clearV2Stores(db: KaeruDatabase): Promise<void> {
   const tx = db.transaction(V2_STORE_NAMES, 'readwrite');
