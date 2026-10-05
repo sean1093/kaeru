@@ -51,23 +51,70 @@ export type GrossRefundOf = (receipt: Receipt) => Jpy;
 
 export interface RefundEstimate {
   gross: Jpy;
-  /** Null when the operator's fee is unknown — show the gross and say so (DR-025, DR-051). */
+  /** The operator's cut. Null when unknown; zero is a claim we are not entitled to make. */
+  operatorFee: Jpy | null;
+  /**
+   * The traveller's own bank charge for an inbound transfer, from `Trip.receivingChargeJpy`.
+   * Present only when it actually applies — that is, when the operator will pay by bank
+   * transfer. Null when unknown or not applicable (`DR-025`).
+   */
+  receivingCharge: Jpy | null;
+  /** True when the payout route is a bank transfer, so a receiving charge is coming. */
+  receivingChargeApplies: boolean;
+  /**
+   * Gross minus everything known. Null when any deduction is unknown, because an honest
+   * "fee unknown" beats a confident wrong number (`DR-025`, `DR-051`, `UJ-014`).
+   *
+   * Note what this is **not**: the receiving charge is levied once per transfer, not once
+   * per receipt, so a per-receipt net assumes the worst case of a solo payout. That is the
+   * safe direction. The true figure for a group is `EstimateOperatorPayout`.
+   */
   net: Jpy | null;
-  /** Null when unknown; zero is a claim we are not entitled to make. */
-  fee: Jpy | null;
   /** True when `net` is below `rules.fee.warnBelowJpy` and the warning must show (DR-027, S2B). */
   feeWarning: boolean;
 }
 
 /**
- * Estimate what reaches the traveller. An unknown fee yields `net: null`, because an
- * honest "fee unknown" beats a confident wrong number (UJ-014).
+ * Estimate what reaches the traveller for one receipt. An unknown deduction yields
+ * `net: null` rather than an optimistic number.
  */
 export type EstimateRefund = (
   receipt: Receipt,
   operator: Operator | null,
+  registration: OperatorRegistration | null,
+  trip: Trip,
   rules: ResolvedRules,
 ) => RefundEstimate;
+
+/**
+ * What one operator will actually pay out for a set of receipts. This is the honest view,
+ * because the receiving-side charge is taken once per transfer, and it is also how the
+ * refund tracker groups (S40, S41).
+ */
+export interface PayoutEstimate {
+  operatorId: string | null;
+  receiptIds: readonly string[];
+  gross: Jpy;
+  operatorFee: Jpy | null;
+  /** Applied once for the whole payout, not once per receipt. */
+  receivingCharge: Jpy | null;
+  net: Jpy | null;
+  feeWarning: boolean;
+}
+
+export type EstimateOperatorPayout = (
+  receipts: readonly Receipt[],
+  operator: Operator | null,
+  registration: OperatorRegistration | null,
+  trip: Trip,
+  rules: ResolvedRules,
+) => PayoutEstimate;
+
+/**
+ * Resolve `Receipt.hasHighValueItem`: the user's answer when they gave one, otherwise
+ * derived from the dearest unit price on any line. A user-set value always wins (`DR-016`).
+ */
+export type HasHighValueItemOf = (receipt: Receipt, rules: ResolvedRules) => boolean;
 
 // --- Threshold and eligibility (DR-010..DR-016, UR-01, UR-02) --------------
 

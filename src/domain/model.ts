@@ -46,6 +46,17 @@ export interface Trip {
   airportBufferMinutes: number;
   /** Days after customs confirmation before a refund is "late" — a preference, not a fact (DR-036). */
   overdueThresholdDays: number;
+  /**
+   * What the traveller's own bank takes for one inbound transfer, in yen, as they report
+   * it. Null means unknown and the estimate must say so rather than assume zero.
+   *
+   * This is the second deduction in `DR-025` and in the evidence it is usually the larger
+   * one: pain point PP-03 is a ¥19,805 purchase that arrived as NT$77, where the
+   * operator's 2.2% was the smaller bite. It is a property of the traveller's bank, not of
+   * a receipt, and it is charged **per transfer**, so it is applied once per operator
+   * payout and never once per receipt.
+   */
+  receivingChargeJpy: Jpy | null;
   /** An archived trip stays readable and is still exported (IA flow G). */
   archived: boolean;
 }
@@ -124,8 +135,13 @@ export interface Receipt {
   allItemsPresent: boolean | null;
   /** Future intent, asked at logging time (UJ-008). Null until asked. */
   willUseInJapan: boolean | null;
-  /** Derived from `maxUnitPriceTaxExcluded >= 1_000_000`; a user-set value always wins (DR-016). */
-  hasHighValueItem: boolean;
+  /**
+   * `null` means derive it from `maxUnitPriceTaxExcluded >= 1_000_000`; a non-null value
+   * is the user's own answer and always wins, because only they know whether a
+   * ¥1,280,000 line was one item or two (`DR-016`). A plain boolean could not carry that
+   * distinction and a later recompute would silently discard the override.
+   */
+  hasHighValueItem: boolean | null;
   /** What actually arrived (UJ-034). */
   amountReceived: Jpy | null;
   notClaimingReason: NotClaimingReason | null;
@@ -144,6 +160,11 @@ export interface OperatorRegistration {
   operatorId: OperatorId;
   /** ISO 8601 instant the user said they had registered; null means not registered. */
   registeredAt: string | null;
+  /**
+   * Where the user told the operator to send the money. Decides whether the receiving-side
+   * charge applies, since it only bites on a bank transfer (`DR-025`, `UR-12`).
+   */
+  refundMethod: RefundMethod | null;
 }
 
 // --- Operators -------------------------------------------------------------

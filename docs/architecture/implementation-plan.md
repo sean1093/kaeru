@@ -8,7 +8,7 @@
 | Tracking | Epic #1 |
 | Inputs | [brief](../product/brief.md) · [domain rules](../product/domain-rules.md) · [user journey](../product/user-journey.md) · [IA](../design/information-architecture.md) · [wireframes](../design/wireframes.md) · [components](../design/components.md) · [test strategy](../qa/test-strategy.md) · [test cases](../qa/test-cases.md) |
 
-How Kaeru gets from a working shell to a launched product: 44 issues across three
+How Kaeru gets from a working shell to a launched product: 45 issues across three
 milestones, sized to one pull request each, split so that five people can work at once
 without waiting on each other or editing the same files.
 
@@ -57,7 +57,7 @@ present. Each is implemented by exactly one slice.
 | `src/data/repositories.ts` | Repository interfaces for schema v2, the photo store, quota errors, and the v2 backup envelope | M1-2 |
 | `src/ui/contracts.ts` | Prop types for all fifteen components in `components.md` | M1-3 |
 | `src/content/schema.ts` | Guide articles, FAQ, source references and the operator directory | M1-4 |
-| `src/app/navigation.ts` | Route patterns with parameters, sheet-as-route, chrome kinds, feature registration v2, the shell banner | M1-5 |
+| `src/app/navigation.ts` | Route patterns with parameters, sheet-as-route, chrome kinds, feature registration v2, the shell banner, and `pathTo()` over a screen-id map so a cross-track link is a type error rather than a blank screen | M1-5 |
 
 Two conventions the types enforce deliberately:
 
@@ -108,9 +108,10 @@ Screen coverage is complete: all 46 IDs in the IA inventory appear in exactly on
 
 ## 4. M1 — Foundation
 
-**Goal:** everything M2 needs, and nothing a user sees. Exit when all 21 issues are merged,
+**Goal:** everything M2 needs, and nothing a user sees. Exit when all 22 issues are merged,
 `src/domain` coverage is at or above 90%, the i18n parity test covers the content layer,
-and the shell renders a feature registered through the v2 contract.
+the guardrail suite is green, and the shell renders a feature registered through the v2
+contract.
 
 ### M1-1 — Domain rules engine
 
@@ -122,7 +123,7 @@ The pure engine behind every money, date and status decision in the app.
 | Issue | Key | What | Depends on |
 |---|---|---|---|
 | [#13](../../issues/13) | `M1-1a` | ship the rules as effective-dated data with a resolver | none |
-| [#14](../../issues/14) | `M1-1b` | tax extraction, refund estimate and the fee warning | [#13](../../issues/13) |
+| [#14](../../issues/14) | `M1-1b` | tax extraction, refund estimate and the fee warning | [#13](../../issues/13) (needs `ResolvedRules`) |
 | [#15](../../issues/15) | `M1-1c` | purchase threshold and same-shop same-day grouping | [#13](../../issues/13) |
 | [#16](../../issues/16) | `M1-1d` | export deadlines, trip phase and departure time | [#13](../../issues/13) |
 | [#17](../../issues/17) | `M1-1e` | status lifecycle transitions and validation findings | [#13](../../issues/13) |
@@ -155,7 +156,7 @@ Every shared component the 46 screens are assembled from.
 | [#24](../../issues/24) | `M1-3b` | bottom navigation, progress, banner and toast | [#23](../../issues/23) |
 | [#25](../../issues/25) | `M1-3c` | amount display and the form field family | [#23](../../issues/23) |
 | [#26](../../issues/26) | `M1-3d` | bottom sheet, select sheet, checklist row and the Airport Mode stepper | [#23](../../issues/23), [#24](../../issues/24), [#25](../../issues/25) |
-| [#27](../../issues/27) | `M1-3e` | development-only component gallery for design review | [#23](../../issues/23), [#24](../../issues/24), [#25](../../issues/25), [#26](../../issues/26) |
+| [#27](../../issues/27) | `M1-3e` | gallery capture matrix for design and accessibility review | [#23](../../issues/23), [#24](../../issues/24), [#25](../../issues/25), [#26](../../issues/26) |
 
 ### M1-4 — Bundled content
 
@@ -182,13 +183,14 @@ The routing, chrome and registration contract that all four M2 tracks build on. 
 | [#31](../../issues/31) | `M1-5a` | router v2 — parameters, sheet routes, chrome and guards | none |
 | [#32](../../issues/32) | `M1-5b` | shell chrome — four tabs, app bar host, banner slot, toast host | [#31](../../issues/31), [#23](../../issues/23), [#24](../../issues/24) |
 | [#33](../../issues/33) | `M1-5c` | feature registry v2 and migration of the existing screens | [#31](../../issues/31), [#32](../../issues/32) |
+| [#59](../../issues/59) | `M1-5d` | guardrails for the rules the app must never break | [#13](../../issues/13), [#29](../../issues/29) |
 
 ### M1 order of play
 
 `M1-1a`, `M1-2a`, `M1-3a`, `M1-4a` and `M1-5a` have no dependencies and start together
-on day one. After that each slice is internally sequential and externally independent until
-`M1-5b`, which needs the first two UI kit issues. That is the only cross-slice dependency
-inside M1, and it is one-way.
+on day one. After that each slice is internally sequential and externally independent
+except for two one-way edges: `M1-5b` needs the first two UI kit issues, and `M1-5d` needs
+the rules data and the ported guides it compares.
 
 ---
 
@@ -225,10 +227,10 @@ The thing the traveller does fifteen times a trip, in under twenty seconds each.
 
 | Issue | Key | What | Depends on |
 |---|---|---|---|
-| [#39](../../issues/39) | `M2-B1` | receipt list with shop-day grouping and empty state — S20 S28 | [#15](../../issues/15), [#20](../../issues/20), [#33](../../issues/33), [#23](../../issues/23) |
-| [#40](../../issues/40) | `M2-B2` | the twenty-second add screen — S21 | [#14](../../issues/14), [#15](../../issues/15), [#17](../../issues/17), [#20](../../issues/20), [#25](../../issues/25), [#33](../../issues/33) |
+| [#39](../../issues/39) | `M2-B1` | receipt list with shop-day grouping and empty state — S20 S28 | [#15](../../issues/15), [#20](../../issues/20), [#33](../../issues/33), [#23](../../issues/23), [#25](../../issues/25) (money rendering: `ListRowProps.amount` is `AmountDisplayProps`) |
+| [#40](../../issues/40) | `M2-B2` | the twenty-second add screen with its defaults sheets — S21 S24 S26 | [#14](../../issues/14), [#15](../../issues/15), [#17](../../issues/17), [#20](../../issues/20), [#25](../../issues/25), [#33](../../issues/33) |
 | [#41](../../issues/41) | `M2-B3` | detail, status timeline, fee warning and old-system receipts — S22 S2B S29 | [#39](../../issues/39), [#14](../../issues/14), [#17](../../issues/17), [#30](../../issues/30) |
-| [#42](../../issues/42) | `M2-B4` | edit, choosers, not-claiming and photo view — S23 S24 S25 S26 S2A S27 | [#40](../../issues/40), [#41](../../issues/41), [#21](../../issues/21), [#26](../../issues/26) |
+| [#42](../../issues/42) | `M2-B4` | edit, traveller chooser, not-claiming and photo view — S23 S25 S2A S27 | [#40](../../issues/40), [#41](../../issues/41), [#21](../../issues/21), [#26](../../issues/26) |
 
 ### M2-C — Home, packing plan and refunds
 
@@ -239,10 +241,10 @@ The screen the user opens by reflex, and the one that tells them whether the mon
 
 | Issue | Key | What | Depends on |
 |---|---|---|---|
-| [#43](../../issues/43) | `M2-C1` | phase-aware home with hero, trip strip and summary — S10 S11 S12 | [#16](../../issues/16), [#18](../../issues/18), [#33](../../issues/33), [#23](../../issues/23) |
+| [#43](../../issues/43) | `M2-C1` | phase-aware home with hero, trip strip and summary — S10 S11 S12 | [#16](../../issues/16), [#18](../../issues/18), [#33](../../issues/33), [#23](../../issues/23), [#25](../../issues/25) (money rendering) |
 | [#44](../../issues/44) | `M2-C2` | tonight's list — S15 | [#43](../../issues/43) |
-| [#45](../../issues/45) | `M2-C3` | packing plan and departure day — S17 S13 | [#43](../../issues/43), [#18](../../issues/18) |
-| [#46](../../issues/46) | `M2-C4` | after-trip home, refund tracker and operator detail — S14 S40 S41 | [#43](../../issues/43), [#14](../../issues/14), [#18](../../issues/18), [#30](../../issues/30) |
+| [#45](../../issues/45) | `M2-C3` | packing plan and departure day — S17 S13 | [#43](../../issues/43), [#18](../../issues/18), [#42](../../issues/42) (the integrity check routes into the S2A not-claiming sheet) |
+| [#46](../../issues/46) | `M2-C4` | after-trip home, refund tracker and operator detail — S14 S40 S41 | [#43](../../issues/43), [#14](../../issues/14), [#18](../../issues/18), [#25](../../issues/25), [#30](../../issues/30) |
 | [#47](../../issues/47) | `M2-C5` | trip summary — S16 | [#46](../../issues/46) |
 
 ### M2-D — Airport Mode
@@ -254,10 +256,10 @@ The ten-screen sequence that has to work in a queue, offline, under time pressur
 
 | Issue | Key | What | Depends on |
 |---|---|---|---|
-| [#48](../../issues/48) | `M2-D1` | mode entry, readiness and blockers — S30 | [#18](../../issues/18), [#26](../../issues/26), [#32](../../issues/32), [#33](../../issues/33) |
+| [#48](../../issues/48) | `M2-D1` | mode entry, readiness and the something's-wrong hatch — S30 S39 | [#18](../../issues/18), [#26](../../issues/26), [#32](../../issues/32), [#33](../../issues/33) |
 | [#49](../../issues/49) | `M2-D2` | step 1 gather goods, the advance gate and the bag-drop banner — S31 | [#48](../../issues/48) |
 | [#50](../../issues/50) | `M2-D3` | landside, the terminal, green, red and used goods — S32 S33 S34 S35 S36 | [#49](../../issues/49), [#20](../../issues/20), [#29](../../issues/29) |
-| [#51](../../issues/51) | `M2-D4` | customs done, what happens next, and something's wrong — S37 S38 S39 | [#50](../../issues/50) |
+| [#51](../../issues/51) | `M2-D4` | customs done and what happens next — S37 S38 | [#50](../../issues/50) |
 
 ### M2 cross-track rules
 
@@ -337,7 +339,18 @@ and every M2 track depends on all of M1 rather than on another track.
 | 3 | `fee.warnBelowJpy = 2000`, held as rules data rather than code (`DR-027`) | `RulesData.fee` — `M1-1a`, rendered by `M2-B3` |
 | 4 | Contrast ratios are asserted by an automated test over the token file, not trusted from the doc | QA owns the test; `M1-3a` asserts no raw hex, px or duration exists in `src/ui` |
 | 5 | `--color-text-on-primary` was renamed `--color-on-primary` | Already applied in M0 |
-| 6 | Sheets are `?sheet=<id>`, not a nested `#` | `src/app/navigation.ts` — `M1-5a` |
+| 6 | Sheets are `?sheet=<id>`, not a nested `#`; a deep link **into** a screen is a path segment, so the FAQ route is `/guide/faq/:entryId` | `src/app/navigation.ts` — `M1-5a` |
+
+### Decisions taken in review of this plan
+
+| # | Decision | Where it lands |
+|---|---|---|
+| 7 | `RefundEstimate` models **both** deductions in `DR-025`, not just the operator fee. `Trip.receivingChargeJpy` is the traveller's own bank charge, applied only to a bank-transfer payout and **once per transfer** — so `EstimateRefund` assumes a solo payout (the safe direction) and `EstimateOperatorPayout` is the honest figure for a group. Evidence: PP-03, a ¥19,805 purchase that arrived as NT$77, where the operator's 2.2% was the smaller bite | `src/domain/api.ts` — `M1-1b`, rendered by `M2-C4` |
+| 8 | `Receipt.hasHighValueItem` is `boolean \| null`: null derives, non-null is the user's answer and always wins. A plain boolean could not survive a recompute after a line edit, and the override is the whole point (`DR-016`) | `src/domain/model.ts` — `M1-1b` |
+| 9 | `UR-07` gets acceptance criteria rather than two doc comments. A device on US Pacific reads a 23:30 JST purchase on 31 October as 30 October, which would silently route a refund-method receipt into the old system | `M1-1a`, `M1-1d`, `M2-B2` |
+| 10 | Guide prose keeps its literal numbers; the three that must not drift from the rules data are **asserted**, not interpolated. Templating a threshold through two grammars buys a brittle string for a number that has not moved since 2018 | `M1-5d` |
+| 11 | The gallery is built incrementally across `M1-3a`..`M1-3d`, so design review happens while a slice is open rather than after it merges. `M1-3e` is the capture matrix, and it adds 200% text, forced `:focus-visible` and `prefers-reduced-motion` — where components actually break | `M1-3a`..`M1-3e` |
+| 12 | S24 and S26 ship with S21, because the defaults row is their trigger and the twenty-second budget cannot be measured against an inert row. S39 ships first in the Airport track, because every later step links to it and a hash route that matches nothing renders a blank screen | `M2-B2`, `M2-D1` |
 
 ---
 

@@ -30,6 +30,10 @@ export interface RouteMatch {
    * routing, so the sheet is a query parameter instead. The property the IA actually asks
    * for is preserved: the sheet is part of the URL, so browser back closes the sheet
    * rather than leaving the screen.
+   *
+   * A consequence worth stating: deep links **into** a screen cannot use a fragment
+   * either. The FAQ's per-question link, which the fee warning on S2B opens, is a path
+   * segment (`/guide/faq/:entryId`), not `#q11`.
    */
   sheet: string | null;
 }
@@ -82,6 +86,30 @@ export interface FeatureV2 {
   tab?: TabRegistration;
 }
 
+/**
+ * The design's screen id, e.g. `S20`. Narrowed to the published inventory by M1-5a so a
+ * typo is a type error.
+ */
+export type ScreenId = string;
+
+/**
+ * The one place a route path is written down.
+ *
+ * Features link to each other constantly — the fee warning opens the FAQ, a red kiosk
+ * result opens the guide, the packing plan opens the not-claiming sheet, departure day
+ * opens Airport Mode — and those links cross track boundaries. A raw string agreed by
+ * nobody is a blank screen discovered at an airport, because a hash route that matches
+ * nothing renders nothing rather than failing the build.
+ *
+ * `pathTo` is therefore the only sanctioned way to build an internal link. Parameters are
+ * required by the type when the route has them.
+ */
+export type PathTo = (
+  screen: ScreenId,
+  params?: Readonly<Record<string, string>>,
+  options?: { sheet?: string },
+) => string;
+
 /** Navigation that works from anywhere, including inside the domain-free UI kit. */
 export interface Navigator {
   go(path: string): void;
@@ -90,6 +118,8 @@ export interface Navigator {
   openSheet(sheet: string): void;
   closeSheet(): void;
   hrefFor(path: string): string;
+  /** Build a link to another screen by id; see `PathTo`. */
+  pathTo: PathTo;
 }
 
 /**

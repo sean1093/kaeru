@@ -183,6 +183,11 @@ export interface ChecklistRowProps {
   secondary?: string;
   /** Rows routed to a human counter render as a linked panel, not a checkbox (DR-035). */
   excluded?: { reason: string; href: string };
+  /**
+   * Per-row marker the traveller has to act on before ticking: "goods are in a checked
+   * bag" (DR-032) or "bring the certificate" for a high-value receipt (DR-016, UJ-020).
+   */
+  warning?: { tone: 'attention' | 'info'; text: string };
 }
 
 export interface ChecklistGroupProps {
@@ -233,6 +238,12 @@ export interface DateFieldProps {
 export interface SegmentedOption<T extends string | number> {
   value: T;
   label: string;
+  /**
+   * Second line under the label. Load-bearing on the tax rate control, where "8% food and
+   * drink, not alcohol" is the part that decides whether a bottle of whisky is entered at
+   * the right rate.
+   */
+  helper?: string;
 }
 
 export interface SegmentedControlProps<T extends string | number> {
