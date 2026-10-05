@@ -8,6 +8,9 @@ export default defineConfig({
   // Disjoint from Vitest: Playwright owns e2e/**, Vitest owns src/**.
   testDir: 'e2e',
   testMatch: '**/*.spec.ts',
+  // The production smoke has its own config and its own target; a pull request must never
+  // run it and must never be slowed by it.
+  testIgnore: '**/production.spec.ts',
   fullyParallel: true,
   forbidOnly: CI,
   retries: CI ? 1 : 0,
