@@ -844,7 +844,7 @@ Grouping is best-effort (`DR-012a`): `shopKey` normalisation collapses whitespac
 └──────────────────────────────────────────────┘
 ```
 
-**The receiving-side fee line is conditional on `RefundEstimate.refundMethodKnown`.** When the user has chosen bank transfer at registration, the line above states it as fact. When no method is chosen yet, the line above is replaced with the hedged form in the microcopy table below ("if you choose a bank transfer..."), and when a card or e-money method is chosen, the line does not render at all — only a bank transfer can carry the receiving-side charge (`DR-027`). This mirrors the fee-warning asymmetry already in this document: the deduction is assumed pessimistically either way, but the sentence only claims what it can prove.
+**The receiving-side fee line is conditional on `RefundEstimate.refundMethodKnown`.** When the user has chosen bank transfer at registration, the line above states it as fact. When no method is chosen yet, the line above is replaced with the hedged form in the microcopy table below — the hedge conditions **which route the user will pick**, not whether a transfer is charged, because the estimate already assumes the charge pessimistically wherever a transfer is possible (same bias as the `DR-027` fee warning). The sentence and the figure beside it must agree on what is already deducted. When a card or e-money method is chosen, the line does not render at all, and the deduction is correctly absent from the figure too — only a bank transfer can carry the receiving-side charge (`DR-027`).
 
 **S22** — Receipt detail, the two attention states
 
@@ -1160,7 +1160,7 @@ Full-bleed, dark scrim regardless of theme so the photo is judged on its own. Th
 | Delete confirm | 刪除這張收據？這個動作無法復原。 | Delete this receipt? This cannot be undone. |
 | Registration attribution | 已登錄 · 你在 11/04 標記的 | Registered · you marked this on 4 Nov |
 | Receiving fee, method known | 已算入銀行匯款的手續費。 | Includes your bank's own transfer fee. |
-| Receiving fee, method unknown | 如果選銀行匯款，你的銀行可能還會收一筆手續費。 | If you choose a bank transfer, your bank may charge its own fee too. |
+| Receiving fee, method unknown | 如果選銀行匯款，你的銀行會再收一筆手續費；這個估計已經算進去了。 | If you choose a bank transfer, your bank will charge its own fee — this estimate already assumes it. |
 
 
 ---
@@ -2034,6 +2034,16 @@ Every operator detail carries the `DR-053` non-endorsement line and the fee obse
 │ 出境日期  Departure date                     │
 │ [ 2026 / 11 / 09            ] [cal]          │
 │                                              │
+│=== 這個日期會影響 2 張收據                   │
+│=== This date affects 2 receipts              │
+│===                                           │
+│=== ! 松本清 11/04 — 期限已過，來不及辦       │
+│===   Matsukiyo — deadline has passed,        │
+│===   too late to confirm                     │
+│=== ! BIC CAMERA 11/05 — 期限只剩 0 天緩衝    │
+│===   BIC CAMERA — deadline leaves 0 days     │
+│===   of margin                               │
+│                                              │
 │ 出境機場  Departure airport                  │
 │ [ 成田 NRT                  ] v              │
 │                                              │
@@ -2080,6 +2090,8 @@ Every operator detail carries the `DR-053` non-endorsement line and the fee obse
 ```
 
 Every derived number shows its inputs. The check-in requirement is the airline's, the buffer is Kaeru's suggestion, the overdue threshold is the user's own, and the receiving fee starts as Kaeru's conservative placeholder until the user's own bank corrects it — four different kinds of authority, labelled as such so the user knows which ones they may disagree with.
+
+**The deadline panel re-runs live, on every edit to the departure date, before the user leaves the field.** Each receipt's 90-day deadline (`DR-031`) is independent of the trip, so changing the date never touches a receipt directly — it only changes which receipts the new date would strand. Two states, deliberately worded so they cannot be mistaken for each other (`DR-076`, `DR-076a`): **已過，來不及辦 / deadline has passed** for a receipt whose deadline now falls before the new date — this one is already lost, full stop — and **只剩 N 天緩衝 / N days of margin** for a receipt whose deadline survives but with little room, which fires only inside a configurable slack window (`slackWarnDays`, default 3) and is common precisely for a near-maximum-length stay, since the 90-day visa-free allowance and the 90-day customs deadline are the same number. The panel is non-blocking and the date change still applies the moment it is made, consistent with autosave-over-guard (principle 6) — there is nothing to confirm, only something to know before the user closes the screen and forgets they changed it. This is the one place in the product a plain date edit can cost real money without any other screen telling the user so, which is why it has to fire here rather than waiting for tonight's list to notice it later.
 
 **S62** — Data: export, import, delete
 
@@ -2284,6 +2296,7 @@ Offered before the trip (UJ-004), not at the airport — Airport Mode has to be 
 | Submit blocked | 還有 2 個欄位要填 | 2 fields still need you |
 | Future date warning | 這個日期還沒到，確定嗎？ | That date has not happened yet. Is it right? |
 | Deadline-before-departure warning | 這張的海關期限在出境日之前，來不及辦。 | This receipt's customs deadline falls before you leave — it cannot be confirmed in time. |
+| Deadline near-boundary warning | 這張的期限只剩 {N} 天緩衝。 | This receipt's deadline leaves {N} days of margin. |
 | Storage error | 存不進去。這支手機的瀏覽器空間滿了，或是在無痕模式。 | Could not save. This browser is out of space, or you are in private browsing. |
 | Install prompt | 加到主畫面之後，開啟更快，而且在機場沒訊號也打得開。 | It opens faster and still works at the airport with no signal. |
 | Generic retry | 再試一次 | Try again |
