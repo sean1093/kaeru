@@ -38,8 +38,13 @@ describe('app shell', () => {
   it('builds the bottom navigation from the features that registered a tab', () => {
     render(<App />);
     const links = screen.getByTestId('bottom-nav').querySelectorAll('a');
-    // Settings is an app-bar route, not a fifth tab (IA section 2).
-    expect([...links].map((link) => link.getAttribute('href'))).toEqual(['#/']);
+    const hrefs = [...links].map((link) => link.getAttribute('href'));
+    // Settings is an app-bar route, not a fifth tab, and four is the maximum that keeps
+    // every target >= 64 px wide with English labels un-truncated at 320 px (IA section 2).
+    expect(hrefs).toContain('#/');
+    expect(hrefs).not.toContain('#/settings');
+    expect(hrefs.length).toBeLessThanOrEqual(4);
+    // Home is the route under test, so it is the one marked current.
     expect(links[0]?.getAttribute('aria-current')).toBe('page');
   });
 

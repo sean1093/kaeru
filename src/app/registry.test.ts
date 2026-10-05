@@ -4,6 +4,7 @@ import type { Icon } from '../ui/contracts.ts';
 import { defineFeature } from './feature.ts';
 import type { FeatureV2, ScreenId, ScreenRoute } from './navigation.ts';
 import { collectFeatures, features, featuresFromModules, routes, tabFeatures } from './registry.ts';
+import { ROUTE_DEFINITIONS } from './screens.ts';
 
 const messages = defineMessages({
   'zh-TW': { 'test.nav': '測試' },
@@ -128,17 +129,34 @@ describe('feature modules', () => {
 });
 
 describe('the real registration', () => {
-  it('registers home, settings and the dev-only gallery through the v2 contract', () => {
+  it('registers every route against the published inventory', () => {
     // Vitest runs with import.meta.env.DEV = true, so the gallery (M1-3, #65) registers
     // here same as it would in `npm run dev`; its absence from a production build is
     // proved separately in `e2e/production-bundle.spec.ts` (#27), where DEV is false.
-    expect(features.map((feature) => feature.id)).toEqual(['gallery', 'home', 'settings']);
-    expect(routes.map((entry) => entry.pattern)).toEqual(['/dev/gallery', '/', '/settings']);
+    //
+    // A census, not a decision: every track adds routes, so pinning the list would make
+    // this file a merge-conflict generator in the one place #33 exists to keep
+    // conflict-free (FrontendEngE's call). The property that matters is that nothing
+    // registers a route the inventory does not know about — and `/dev/gallery` is
+    // deliberately absent from it, which is why the development tool is skipped here
+    // rather than exempted there.
+    expect(features.length).toBeGreaterThan(0);
+    expect(routes.length).toBeGreaterThan(0);
+    for (const entry of routes) {
+      if (entry.pattern.startsWith('/dev/')) continue;
+      expect(
+        ROUTE_DEFINITIONS[entry.pattern],
+        `"${entry.pattern}" is not in the published inventory`,
+      ).toBeDefined();
+    }
   });
 
   it('makes settings an app-bar route rather than a fifth tab', () => {
     // IA section 2: four tabs is the maximum that keeps every target >= 64 px wide with
     // English labels un-truncated at 320 px, and settings is visited a handful of times.
-    expect(tabFeatures.map((feature) => feature.id)).toEqual(['home']);
+    // A decision, not a census, so this one is pinned: it must fail if anyone gives
+    // settings a tab, and it must fail if a fifth tab appears.
+    expect(tabFeatures.map((feature) => feature.id)).not.toContain('settings');
+    expect(tabFeatures.length).toBeLessThanOrEqual(4);
   });
 });

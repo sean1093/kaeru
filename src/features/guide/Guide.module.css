@@ -1,0 +1,144 @@
+.screen {
+  display: contents;
+}
+
+.title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
+
+.summary {
+  color: var(--color-text-muted);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionHeading {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
+
+.blockHeading {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+}
+
+.block,
+.info,
+.attention,
+.success {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.info,
+.attention,
+.success {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border-inline-start: var(--space-1) solid var(--color-border-strong);
+  background: var(--color-surface);
+}
+
+.attention {
+  border-inline-start-color: var(--color-warning);
+}
+
+.success {
+  border-inline-start-color: var(--color-success);
+}
+
+.paragraph {
+  line-height: var(--leading-relaxed);
+}
+
+.bullets,
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-inline-start: var(--space-6);
+}
+
+.bullets {
+  list-style: disc;
+}
+
+.steps {
+  list-style: decimal;
+}
+
+.caveat {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.table th,
+.table td {
+  padding: var(--space-2);
+  border-block-end: 1px solid var(--color-border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.sources {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sourceList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.sourceLang,
+.sourceAccessed {
+  color: var(--color-text-muted);
+  margin-inline-start: var(--space-2);
+}
+
+.reviewed,
+.offline {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.faq,
+.faqHighlighted {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  scroll-margin-block-start: var(--space-6);
+}
+
+.faqHighlighted {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.question {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
