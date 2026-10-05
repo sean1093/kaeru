@@ -30,9 +30,31 @@ async function activateServiceWorker(page: Page): Promise<void> {
   await page.reload();
 }
 
-/** The screen id a route is actually rendering, which is not always the route's own. */
+/**
+ * The screen id a route is actually rendering, which is not always the route's own.
+ *
+ * The count assertion is the point, not a formality: the invariant is one `data-screen`
+ * per rendered document, and a nested screen component would produce a second. Taking
+ * `.first()` silently would then read the outer id forever and every assertion in this
+ * file would keep passing against the wrong screen.
+ */
 async function currentScreen(page: Page): Promise<string | null> {
-  return page.locator('[data-screen]').first().getAttribute('data-screen');
+  const marked = page.locator('[data-screen]');
+  await expect(marked).toHaveCount(1);
+  return marked.getAttribute('data-screen');
+}
+
+/**
+ * Put the trip's departure airport where the screens will read it from.
+ *
+ * Deliberately unimplemented. `e2e/` has no seeding story yet and it must be decided once
+ * rather than per spec; the Architect's recommendation on #99 is to seed through the
+ * backup v2 document format, since it is the one serialisation the app already validates
+ * on the way in, so a fixture that drifts from the schema fails at import rather than
+ * producing a half-populated screen. This is raised on #48 and the helper lands there.
+ */
+async function seedTripDepartingFrom(_page: Page, _airport: string): Promise<void> {
+  throw new Error('e2e seeding lands with #48; see the Architect note on #99');
 }
 
 test.describe('Airport Mode — entry and readiness (S30, S39)', () => {
@@ -177,14 +199,25 @@ test.describe('Airport Mode — landside, the terminal and its results (S32-S36)
     ).toBeVisible();
   });
 
-  test('DR-033: the Visit Japan Web alternative carries its constraint, never bare', async ({
+  test('DR-033: at one of the seven airports, VJW is offered with its constraint', async ({
     page,
   }) => {
+    await seedTripDepartingFrom(page, 'NRT');
     await page.goto('./#/airport/terminal');
-    const vjw = page.getByText(/Visit Japan Web/);
-    if ((await vjw.count()) > 0) {
-      await expect(page.getByText(/Wi-Fi 區域|Wi-Fi area/)).toBeVisible();
-    }
+    await expect(page.getByText(/Visit Japan Web/)).toBeVisible();
+    // The constraint is the whole point: inside the departure-lobby procedure Wi-Fi area,
+    // before security. VJW named without it sends someone through security to try it.
+    await expect(page.getByText(/Wi-Fi 區域|Wi-Fi area/)).toBeVisible();
+    await expect(page.getByText(/安檢之前|before security/)).toBeVisible();
+  });
+
+  test('DR-033: elsewhere, VJW is not mentioned at all', async ({ page }) => {
+    // The half that actually constrains anything. A conditional assertion would let a
+    // build that never mentions VJW anywhere pass this rule, and a build that offers it
+    // at every airport pass it too.
+    await seedTripDepartingFrom(page, 'SDJ');
+    await page.goto('./#/airport/terminal');
+    await expect(page.getByText(/Visit Japan Web/)).toHaveCount(0);
   });
 
   test('TC-AIR-015: red is a routing decision, with no error styling and no probability', async ({
