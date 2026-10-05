@@ -528,6 +528,7 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 | Departure banner | 今天出境。先過海關，再託運行李。 | You leave today. Customs first, bag drop second. |
 | Leave-by | 建議 14:40 到機場 | Be at the airport by 14:40 |
 | Leave-by caveat | Kaeru 的建議，不是官方規定。 | Our suggestion, not an official figure. |
+| Leave-by, night before | 建議 {date}（前一晚）{time} 到機場 | Be at the airport by {time} the night before ({date}) |
 | Checked-bag item | 5 張收據的東西還在託運行李 — 過海關前要拿出來 | 5 receipts: goods in checked bags — take them out before customs |
 | Documents item | 1 張收據要帶證明文件 | 1 receipt needs its documents |
 | After-trip totals | 已入帳 / 還在等 / 沒退成 | Received / Still waiting / Not refunded |
@@ -2094,6 +2095,8 @@ Every operator detail carries the `DR-053` non-endorsement line and the fee obse
 Every derived number shows its inputs. The check-in requirement is the airline's, the buffer is Kaeru's suggestion, the overdue threshold is the user's own, and the receiving fee starts as Kaeru's conservative placeholder until the user's own bank corrects it — four different kinds of authority, labelled as such so the user knows which ones they may disagree with.
 
 **The deadline panel re-runs live, on every edit to the departure date, before the user leaves the field.** Each receipt's 90-day deadline (`DR-031`) is independent of the trip, so changing the date never touches a receipt directly — it only changes which receipts the new date would strand. Two states, deliberately worded so they cannot be mistaken for each other (`DR-076`, `DR-076a`): **已過，來不及辦 / deadline has passed** for a receipt whose deadline now falls before the new date — this one is already lost, full stop — and **只剩 N 天緩衝 / N days of margin** for a receipt whose deadline survives but with little room, which fires only inside a configurable slack window (`slackWarnDays`, default 3) and is common precisely for a near-maximum-length stay, since the 90-day visa-free allowance and the 90-day customs deadline are the same number. The panel is non-blocking and the date change still applies the moment it is made, consistent with autosave-over-guard (principle 6) — there is nothing to confirm, only something to know before the user closes the screen and forgets they changed it. This is the one place in the product a plain date edit can cost real money without any other screen telling the user so, which is why it has to fire here rather than waiting for tonight's list to notice it later.
+
+**The airport-arrival time carries a day, not just a clock face, because an early flight can push the number into the previous evening.** `leaveForAirportBy` returns `dayOffset` alongside the time — a flight before roughly 02:30 subtracts the check-in and buffer window across midnight. Every "be at the airport by" line (S04, S13, S17, S61) states the date explicitly whenever `dayOffset` is non-zero and says 前一晚 / "the night before" rather than leaving the user to notice the date on their own: a bare "23:00" the night before a 01:00 red-eye, with no date and no "night before," reads as the same evening's 23:00 — 24 hours late and a missed flight, not a missed refund. When `dayOffset` is 0, the date is omitted exactly as today's examples show it, since adding a redundant same-day date would be noise on every ordinary flight.
 
 **S62** — Data: export, import, delete
 
