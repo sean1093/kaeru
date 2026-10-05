@@ -8,8 +8,14 @@ const LOCALES = ['zh-TW', 'en'] as const;
  * axe evaluates a page at whatever scroll offset it finds it in, so a persistent bottom
  * bar makes `target-size` report every control beneath it as obscured. That report is
  * true about the moment it was taken and says nothing about whether the control is
- * operable, which is what SC 2.5.8 is about — and operability is asserted directly by
- * TC-A11Y-017 below, over every control rather than the ones visible at one offset.
+ * operable, which is what SC 2.5.8 is about.
+ *
+ * This filter exists only because something stronger replaces it. TC-A11Y-017 — the test
+ * `every interactive control can be brought clear of the persistent navigation` below,
+ * specified in docs/qa/test-cases.md and reasoned through in PR #91 — asserts operability
+ * over every control on the route rather than the ones visible at one offset, and it still
+ * fails the build when a control genuinely cannot be cleared. Delete that test and this
+ * filter loses its justification; they are meant to fail together.
  *
  * Deliberately narrow: only `target-size`, and only when every node blamed for the
  * obstruction is the navigation itself. Anything else covering a control is a real
