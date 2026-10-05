@@ -168,10 +168,12 @@ A screen id names something the user recognises as a place. A route names someth
 | S28 Receipt list empty | S20 `/receipts` | no receipts |
 | S29 Old-system receipt | S22 `/receipts/:receiptId` | `purchaseDate <= 2026-10-31` (`DR-003`) |
 | S2B Fee warning | S22 `/receipts/:receiptId` | estimated net below `fee.warnBelowJpy` (`DR-027`) |
-| S34 Green result | S33 airport step 3 | the user reports the terminal's result |
-| S35 Red result | S33 airport step 3 | the user reports the terminal's result |
+| S34 Green result | S33 airport step 3 | the recorded result for this traveller |
+| S35 Red result | S33 airport step 3 | the recorded result for this traveller |
 
 Home being one route with five faces is the point of the design, not an accident of it: the app already knows the departure date, so the user never has to find the right mode. The same applies to S29 and S2B — a receipt is one place, and whether it is old-system or whether its fee eats the refund is something true *about* that receipt, not somewhere else to go.
+
+**The kiosk result is persisted, not a transient choice.** When the traveller reports green or red, that is written to the trip's airport progress against that traveller before the step content changes, so a backgrounded app resumes showing the result rather than the question again (`UJ-023`). This matters most for red, which is the longest the app is out of sight anywhere in the journey: the user pockets the phone and walks to the inspection desk, then comes back wanting the self-check list. A resume that redisplays "what did it show?" also re-offers two outcome buttons with *Green* as the primary, so someone who actually got red can mark a traveller's receipts `customs_confirmed` by re-tapping the obvious one. That is reversible (`DR-062`, `DR-063`) but it is a wrong assertion manufactured by the app, while the user is standing in a queue. Both results are reversible by the user at any time, which is the separate thing `DR-063` is for.
 
 **Sheets — `?sheet=<id>` on whichever screen opened them, never a route:**
 
@@ -189,7 +191,7 @@ S2A is declared by two screens, because the packing plan's integrity check route
 Two consequences for the router contract:
 
 - **A route may render more than one screen id**, so the id written into `data-screen` is the live screen's, not the route's. QA asserts S13 and S29 by name, and those are among the more interesting things to assert — a Home that fails to notice it is departure day is a real defect with no other symptom.
-- **Link building should accept all 46 ids**, resolving a state-only id to its host route. A link to the fee warning should be expressible as the fee warning; that it happens to render as a block on the receipt detail is a routing detail and not the caller's problem. The alternative — callers knowing which ids are "real" — puts the classification in this table into every call site.
+- **Link building should accept all 46 ids**, resolving a state-only id to its host route. A link to the fee warning should be expressible as the fee warning; that it happens to render as a block on the receipt detail is a routing detail and not the caller's problem. The alternative — callers knowing which ids are "real" — puts the classification in this table into every call site. The argument is not tidiness, it is that **this classification will move**: S2B is a plausible future route if the fee explanation outgrows a block, and S29 is a plausible future non-id once the launch cohort passes and old-system receipts stop existing. Callers that named the host route would all need editing on either change; callers that named the screen would not.
 
 ---
 
