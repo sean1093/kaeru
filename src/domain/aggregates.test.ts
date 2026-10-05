@@ -86,12 +86,32 @@ describe('airportReadinessOf (DR-030, DR-079, UJ-019)', () => {
     expect(readiness.travelers[0]?.inCheckedBag.map((r) => r.id)).toEqual(['packed']);
   });
 
-  it('TC-DOM-080 routes a receipt whose goods were used in Japan to the counter', () => {
-    // DR-035: the official instruction is to tell an officer, not to try the machine.
-    const used = ready({ id: 'used', willUseInJapan: true });
+  it('TC-DOM-080 routes a receipt whose goods were actually used in Japan to the counter', () => {
+    // DR-035: the official instruction is to tell an officer, not to try the machine. The
+    // fact that routes it is allItemsPresent === false, with the shop-time prediction as
+    // the reason it is missing.
+    const used = ready({ id: 'used', willUseInJapan: true, allItemsPresent: false });
     const readiness = airportReadinessOf(trip, travelers, [used], rules, departureDay);
     expect(readiness.travelers[0]?.routedToCounter.map((r) => r.id)).toEqual(['used']);
-    expect(keysOf(readiness.blockers)).toContain('blocker.consumedGoods');
+  });
+
+  it('UJ-008 never treats the shop-time prediction as a fact about what happened', () => {
+    // Someone who ticked "I will eat some of this" on day 1 and carried the box home
+    // unopened must not be told they consumed it: DR-035 would send them to a counter
+    // queue, and acting on it costs a refund they are entitled to.
+    const carriedHome = ready({ id: 'carried', willUseInJapan: true, allItemsPresent: true });
+    const readiness = airportReadinessOf(trip, travelers, [carriedHome], rules, departureDay);
+    expect(readiness.travelers[0]?.routedToCounter).toEqual([]);
+    expect(readiness.blockers).toEqual([]);
+  });
+
+  it('UJ-008 turns the prediction into a question while the fact is unanswered', () => {
+    const unanswered = ready({ id: 'maybe', willUseInJapan: true, allItemsPresent: null });
+    const readiness = airportReadinessOf(trip, travelers, [unanswered], rules, departureDay);
+    const asked = readiness.blockers.find((b) => b.key === 'blocker.usedInJapanUnanswered');
+    expect(asked?.receiptIds).toEqual(['maybe']);
+    // Not yet a counter case: the answer decides that, and only the traveller has it.
+    expect(readiness.travelers[0]?.routedToCounter).toEqual([]);
   });
 
   it('TC-DOM-025 flags documents for a high-value receipt', () => {
@@ -121,6 +141,11 @@ describe('airportReadinessOf (DR-030, DR-079, UJ-019)', () => {
     expect(
       readiness.blockers.find((b) => b.key === 'blocker.itemsNotConfirmed')?.receiptIds,
     ).toEqual(['unanswered']);
+    // And the certain loss ranks above the open question, not below it.
+    const order = keysOf(readiness.blockers);
+    expect(order.indexOf('blocker.itemsMissing')).toBeLessThan(
+      order.indexOf('blocker.itemsNotConfirmed'),
+    );
     expect(readiness.blockers.find((b) => b.key === 'blocker.itemsMissing')?.receiptIds).toEqual([
       'missing',
     ]);
@@ -131,14 +156,18 @@ describe('airportReadinessOf (DR-030, DR-079, UJ-019)', () => {
       ready({ id: 'bag', packingLocation: 'checked_bag' }),
       ready({ id: 'unknown-bag', packingLocation: 'unknown' }),
       ready({ id: 'unanswered', allItemsPresent: null }),
-      ready({ id: 'used', willUseInJapan: true }),
+      ready({ id: 'missing', allItemsPresent: false }),
+      ready({ id: 'maybe', willUseInJapan: true, allItemsPresent: null }),
     ];
     const readiness = airportReadinessOf(trip, travelers, everything, rules, departureDay);
+    // Certain losses first, then the questions, then the delay. The order can be read off
+    // the principle rather than memorised.
     expect(keysOf(readiness.blockers)).toEqual([
       'blocker.checkedBag',
+      'blocker.itemsMissing',
       'blocker.packingUnknown',
+      'blocker.usedInJapanUnanswered',
       'blocker.itemsNotConfirmed',
-      'blocker.consumedGoods',
     ]);
   });
 
