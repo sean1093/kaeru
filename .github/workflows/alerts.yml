@@ -13,9 +13,12 @@ on:
     workflows: [CI]
     types: [completed]
     branches: [main]
-  # The rules data going stale is a slow failure that no push will ever surface.
+  # Two slow failures that no push will ever surface: the rules data going stale, and the
+  # live site falling behind `main`. The first is weekly; the second needs to be noticed the
+  # same day, so the schedule runs hourly and each job picks the events it answers to.
   schedule:
     - cron: '0 0 * * 1'
+    - cron: '25 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -62,9 +65,108 @@ jobs:
             green build. Fix forward on `main`; nothing here has reverted or redeployed
             anything.
 
+  # The question every other deploy check approaches sideways: **is the live site the
+  # current main?**
+  #
+  # #113 is why this exists. Five commits reached `main` with a cancelled CI run, the Pages
+  # deploy is gated on CI succeeding (ADR 0009), and so each one silently skipped its deploy
+  # — the live site was behind `main` and every dashboard was green. #114 stopped the
+  # cancellation and #124 made the served build name itself, but neither closes the hole:
+  # the smoke in `deploy.yml` only runs *after* a successful deploy, so a deploy that is
+  # cancelled or never starts is still invisible. A cancelled run does not fail, so the
+  # `ci-failure` job above does not see it either.
+  #
+  # Severity is S1 because of what a stale build serves here. `kaeruRules` is
+  # effective-dated data compiled into the bundle, so behind-main is not missing features —
+  # it is live refund figures computed from superseded rules, with `lastReviewed` shipping
+  # in the same stale bundle, so the stale date agrees with the stale rules and nothing on
+  # screen contradicts anything.
+  deployed-build:
+    name: Live site matches main
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'schedule' && github.event.schedule == '25 * * * *')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compare the served build against this commit
+        id: compare
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = await fetch('https://sean1093.github.io/kaeru/', {
+              headers: { 'Cache-Control': 'no-cache' },
+            });
+            if (!response.ok) {
+              core.setOutput('stale', 'true');
+              core.setOutput('served', `HTTP ${response.status}`);
+              return;
+            }
+            const html = await response.text();
+            const served = /<meta name="build-sha" content="([^"]*)"/.exec(html)?.[1] ?? '';
+            core.setOutput('served', served || 'no build-sha meta tag');
+            // A build predating #124 carries no stamp. Treat that as current rather than
+            // stale: alerting on it would fire until the next deploy and teach everyone to
+            // ignore this job on the one day it is new.
+            if (served === '' || served === 'dev') {
+              core.setOutput('stale', 'false');
+              return;
+            }
+            core.setOutput('stale', String(served !== context.sha));
+
+      # The deploy takes a few minutes and the schedule is hourly, so a single disagreement
+      # is almost always a deploy in flight rather than one that never happened. Confirmed
+      # once, five minutes later, before anyone is told: an alert that fires on a normal
+      # deploy is an alert people learn to close unread.
+      - name: Confirm it is still behind
+        id: confirm
+        if: steps.compare.outputs.stale == 'true'
+        run: sleep 300
+
+      - name: Re-read the served build
+        id: recheck
+        if: steps.compare.outputs.stale == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = await fetch('https://sean1093.github.io/kaeru/', {
+              headers: { 'Cache-Control': 'no-cache' },
+            });
+            const html = response.ok ? await response.text() : '';
+            const served = /<meta name="build-sha" content="([^"]*)"/.exec(html)?.[1] ?? '';
+            core.setOutput('served', served || `HTTP ${response.status}`);
+            core.setOutput('stale', String(response.ok && served !== '' && served !== context.sha));
+
+      - name: File it
+        if: steps.recheck.outputs.stale == 'true'
+        uses: ./.github/actions/file-alert
+        with:
+          key: deployed-build-behind-main
+          title: 'The live site is not the current main'
+          severity: S1
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            The deployed site is serving a build that is not `main`'s head, and it still was
+            five minutes later.
+
+            - Serving: `${{ steps.recheck.outputs.served }}`
+            - `main` is at: `${{ github.sha }}`
+            - Site: https://sean1093.github.io/kaeru/
+
+            This is the condition #113 was about, and it is silent by construction: a deploy
+            that is cancelled or never starts does not fail, so nothing else reports it.
+            Check the Pages deploy runs for `main` — a cancelled `Build` job means the run
+            was dropped from the `pages` concurrency group rather than that anything broke.
+
+            Nothing has been reverted or redeployed. Re-running the deploy workflow on
+            `main` is usually the whole fix.
+
   rules-freshness:
     name: Rules data freshness
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 0 * * 1')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
