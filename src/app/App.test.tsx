@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/preact';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { setActiveLocale } from '../i18n/index.ts';
 import { App } from './App.tsx';
-import { currentPath, startRouter } from './router.ts';
+import { currentLocation, startRouter } from './router.ts';
 
 let stop: (() => void) | undefined;
 
@@ -42,13 +42,13 @@ describe('app shell', () => {
   });
 
   it('renders the registered screen for a known route', () => {
-    currentPath.value = '/settings';
+    currentLocation.value = { path: '/settings', sheet: null };
     render(<App />);
     expect(screen.getByRole('heading', { level: 1, name: '設定' })).toBeVisible();
   });
 
   it('shows the not-found screen for an unknown route', () => {
-    currentPath.value = '/no-such-page';
+    currentLocation.value = { path: '/no-such-page', sheet: null };
     render(<App />);
     expect(screen.getByTestId('not-found')).toBeVisible();
     expect(screen.getByRole('heading', { name: '找不到這個頁面' })).toBeVisible();

@@ -1,5 +1,5 @@
 import type { JSX } from 'preact';
-import { systemClock, systemStatus, TAX_FREE_SYSTEM_START } from '../../domain/index.ts';
+import { systemClock, systemStatus } from '../../domain/index.ts';
 import { activeLocale, formatDate, formatNumber, useMessages } from '../../i18n/index.ts';
 import { Card } from '../../ui/index.ts';
 import styles from './HomeScreen.module.css';
@@ -9,7 +9,7 @@ export function HomeScreen(): JSX.Element {
   const t = useMessages(messages);
   const locale = activeLocale.value;
   const status = systemStatus(systemClock);
-  const startDate = formatDate(locale, TAX_FREE_SYSTEM_START);
+  const startDate = formatDate(locale, status.start);
 
   return (
     <>

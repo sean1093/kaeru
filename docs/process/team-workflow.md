@@ -43,6 +43,13 @@ How the Kaeru team plans, builds, reviews, and ships. Every decision should be t
 - CI must be green before merging.
 - Squash merge, delete the branch, remove the worktree.
 
+### Stacked pull requests
+
+When an issue depends on one still in review, branch from it rather than idling, and say so in the description so a reviewer reads only the top commit. Two sharp edges:
+
+- **Retarget children before merging the parent.** `gh pr merge --squash --delete-branch` **closes** every pull request targeting the deleted branch, and GitHub cannot reopen or retarget a pull request whose base ref is gone. Run `gh pr edit <child> --base main` first. If it has already happened: `git push origin <old-sha>:refs/heads/<branch>`, reopen, retarget to `main`, delete the branch again — reviews and comments survive.
+- **Rebase with `--onto`, not plainly.** After a squash merge the parent's commits exist on `main` only as a single squashed commit, so `git rebase origin/main` replays them and hands you conflicts against your own merged work. Use `git rebase --onto origin/main <old-parent-tip> <branch>`.
+
 ### Screenshots
 
 UI pull requests show the changed screens in both languages at a 390 px wide viewport. Nobody on the team can drag files into GitHub, so screenshots live on the `pr-assets` branch, never on `main`. `pr-assets` is an **orphan branch that shares no history with `main`**: it can never be merged into `main` by accident, and pushing to it triggers no workflow and never deploys. If it ever has to be recreated, recreate it as an orphan (`git worktree add --orphan -b pr-assets <dir>`).

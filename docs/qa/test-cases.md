@@ -240,6 +240,7 @@ Run against the production build with the service worker active. Airport Mode ha
 | TC-I18N-012 | ¥1,280,000 rendered in WebKit and in Chromium | Identical string — guards against `Intl` engine differences | — | R13 | E | P0 |
 | TC-I18N-013 | Dates rendered in both locales | Unambiguous in both; the 2027-01-30 deadline is never rendered in a format a reader could misread as 2027-30-01 | DR-031 | R03, R12 | C | P0 |
 | TC-I18N-014 | Warning and "estimate" copy | The hedge survives translation — the zh-TW string is as explicitly non-committal as the en one, reviewed by the travel expert | DR-022, DR-053 | R19 | M | P0 |
+| TC-I18N-015 | Any confirmation, warning or leave prompt the product shows | Rendered by the app in the active locale. **No native `confirm`, `alert`, `prompt` or `beforeunload` dialog exists anywhere**, because a native dialog renders its buttons in the OS language — a zh-TW user would see "Leave site? / OK / Cancel" in English regardless of the app locale, on the one surface i18n cannot reach | — | R09 | U | P0 |
 
 ---
 
@@ -261,6 +262,8 @@ Run against the production build with the service worker active. Airport Mode ha
 | TC-A11Y-012 | Target size of controls | ≥ 24×24 CSS px (2.5.8); Airport Mode and the shopping log use large targets for one-handed use | UJ-005, UJ-023 | R11 | E | P0 |
 | TC-A11Y-013 | VoiceOver (iOS) and TalkBack pass on the core journey and Airport Mode | Sensible reading order, meaningful names, checklist state announced, no unlabeled images | — | R11 | M | P0 |
 | TC-A11Y-014 | Red-result screen under a screen reader | Reads as guidance, not as an error; no `role="alert"` panic framing | UJ-029 | R11 | M | P1 |
+| TC-A11Y-015 | **Every route, both locales, 320 px viewport:** measure `document.documentElement.scrollWidth <= clientWidth` | No horizontal overflow anywhere (WCAG 1.4.10). Asserted per route **per locale**, never as a spot check: the longest label decides and zh-TW and en wrap differently, so a route can pass in one language and fail in the other. One `evaluate` per route per locale | — | R11, R10 | E | P0 |
+| TC-A11Y-016 | A page taller than the viewport, with the sticky bottom navigation | The nav reserves its own height from content rather than a guessed constant, and isolates its stacking context, so it never paints over in-flow content. Checked on the receipt list and the guide index, the two routes that exceed a screen first | — | R11 | E | P0 |
 
 ---
 
@@ -308,6 +311,7 @@ Each case below says **who owns it**, because a case with two owners is a case n
 | `TC-DATA-019` | `DR-041` | **Backstopped** | no stored entity field can hold more than four characters of a passport reference | **#22** — truncation or rejection on import is runtime behaviour over hostile input, which a shape check cannot see |
 | `TC-SEC-001` | `DR-040` | **Backstopped** | no `fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon` or `EventSource` outside the outbound-link helper and the service-worker registration | **E2E shell suite** — a static check cannot see a request made by a dependency |
 | `TC-SEC-004` | `DR-044`, `DR-052` | **Backstopped** | no credential field in any entity | **E2E** — that links open outward and nothing is submitted is observable, and worth observing |
+| `TC-I18N-015` | bilingual parity (`DR-053` tone, brief constraint) | **Discharged** | no `window.confirm`, `window.alert`, `window.prompt` or `beforeunload` handler anywhere in `src/` | none — a native dialog renders its buttons in the **OS** language, so a zh-TW user sees "Leave site? / OK / Cancel" in English whatever the app locale. That is the one surface our i18n layer cannot reach, so the only enforceable rule is that it never appears. `ScreenRoute.guard` stays in the contract as an escape hatch; a screen that wants one comes back to UXDesigner as a specific case |
 
 The rule of thumb: **discharge only when the assertion is "this does not exist"**. The moment a rule has an input, a user, or a hostile file involved, the behavioural test is authoritative and the guardrail is a floor underneath it.
 
@@ -334,6 +338,10 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 | TC-UX-015 | Full P1 walkthrough (Yi-chun, Narita, two travelers, 14 receipts, one red result) | End-to-end journey passes in zh-TW on `pixel-chromium` | UJ-001–UJ-036 | R05 | E | P0 |
 | TC-UX-016 | Full P2 walkthrough (Alex, Kansai, high-value watch, single traveler, red result) | End-to-end journey passes in en on `iphone-webkit`, including the documents reminder and the 04:50 departure recommendation | UJ-001–UJ-036, DR-016 | R05 | E | P0 |
 | TC-UX-017 | Operator refund methods listed, including cash at the departure port | Cash is listed as a possible method and never promised; methods come from the operator catalog, not from code | DR-039, UR-06 | R19 | C | P1 `@unconfirmed` |
+| TC-UX-018 | Typing into the add-receipt form, then leaving by `x`, by browser back, or by following a link | No prompt of any kind. The draft is autosaved as it is typed and restored silently on reopening the screen — a prompt asking permission to restore is the same dialog wearing a different hat | UJ-005 | R09 | E | P0 |
+| TC-UX-019 | A draft that is never completed | Counted **nowhere** a `Receipt` is counted: not in a shop-day threshold group, not in trip totals or the pending-refund figure, not in any deadline check, and above all not in an Airport Mode checklist. A half-typed amount is not a claim about anything | DR-012, DR-030, DR-031, DR-076, UJ-016 | R01, R05 | U, E | P0 |
+| TC-UX-020 | An abandoned draft, that evening | Surfaces in tonight's list as an ordinary action item — "an unfinished receipt from 松本清" — not as an alert. Removing the leave prompt removed the only thing telling the user they had not finished; the recovery has to happen at 22:00 with the receipt still in the bag, not at the kiosk | UJ-005, UJ-011 | R01 | E | P0 |
+| TC-UX-021 | A photo attached to a draft that is then discarded | Nothing was ever written to the photo store, so there is no orphan blob counting against quota and invisible to both cascade deletes | DR-042, UJ-009 | R04 | U, E | P0 |
 
 ---
 
@@ -344,12 +352,12 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 | TC-DOM — domain rules | 93 | 13 |
 | TC-DATA — storage and backup | 23 | 0 |
 | TC-AIR — airport, offline, service worker | 23 | 1 |
-| TC-I18N — localization | 14 | 0 |
-| TC-A11Y — accessibility | 14 | 0 |
+| TC-I18N — localization | 15 | 0 |
+| TC-A11Y — accessibility | 16 | 0 |
 | TC-PWA — install and platform | 8 | 0 |
 | TC-SEC — privacy | 5 | 0 |
-| TC-UX — flows | 17 | 1 |
-| **Total** | **197** | **15** |
+| TC-UX — flows | 21 | 1 |
+| **Total** | **204** | **15** |
 
 **Requirement coverage.** Every `DR-0nn`, `UR-nn` and `UJ-0nn` ID published in `domain-rules.md` v1.0 and `user-journey.md` v1.0 is cited by at least one case above. This was checked mechanically against both documents on 2026-10-05 and is re-checked at each milestone exit.
 
