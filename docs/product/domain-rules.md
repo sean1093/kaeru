@@ -305,7 +305,7 @@ Four landed in M1, and the pattern was noticed only after the fourth:
 
 | Rule | Held by | Instead of |
 |---|---|---|
-| `UJ-026`, `DR-032` — the bag-drop warning cannot be dismissed | `Banner` has no `onDismiss` prop at all | A dismissible banner and a convention not to dismiss it |
+| `UJ-026`, `DR-032` — the bag-drop warning cannot be dismissed | `Banner` has no `onDismiss` prop at all. The design specified "not dismissible by timeout" generally, and that this banner clears only at the step-4 confirmation; the implementation generalised it to no dismiss mechanism on any `Banner`. That is consistent rather than an overreach — **no banner in the design wants one**, since every one of them (offline notice, checked bag, consumed goods) persists until its underlying condition changes rather than until it is tapped away. If a banner ever does need dismissing, that is a contract change and a reviewer, which is the point | A dismissible banner and a convention not to dismiss it |
 | `UJ-023` — Airport Mode is a mode, never a tabbed screen | A route whose `chrome` disagrees with the published inventory **throws at boot**, naming both claimants | A lint rule, or care |
 | `UR-02` — Kaeru may show a shop/day total and must never pronounce a verdict | The group shape carries no `qualifies`, `eligible` or `approved` field, asserted by a test naming the forbidden keys | Copy guidance about not promising |
 | `DR-035` — consumed goods go to a customs officer, never through the kiosk | A receipt routed to the counter is not rendered as a tickable row | A warning on a row the traveller can still tick |
