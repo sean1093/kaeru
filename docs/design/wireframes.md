@@ -395,8 +395,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │   5 receipts: goods in checked bags          │
 │   — 過海關前要拿出來             >           │
 │                                              │
-│ ● 1 張收據要帶保證書                         │
-│   1 receipt needs its certificate >          │
+│ ● 1 張收據要帶證明文件                       │
+│   1 receipt needs its documents   >          │
 │                                              │
 ├──────────────────────────────────────────────┤
 │ 首頁    收據    機場    指南                 │
@@ -527,7 +527,7 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 | Leave-by | 建議 14:40 從飯店出發 | Leave your hotel by 14:40 |
 | Leave-by caveat | Kaeru 的建議，不是官方規定。 | Our suggestion, not an official figure. |
 | Checked-bag item | 5 張收據的東西還在託運行李 — 過海關前要拿出來 | 5 receipts: goods in checked bags — take them out before customs |
-| Documents item | 1 張收據要帶保證書 | 1 receipt needs its certificate |
+| Documents item | 1 張收據要帶證明文件 | 1 receipt needs its documents |
 | After-trip totals | 已入帳 / 還在等 / 沒退成 | Received / Still waiting / Not refunded |
 | Overdue nudge | 超過你設定的 14 天，要聯絡嗎？ | Past the 14 days you set. Contact them? |
 | Trip summary lesson | 下次可以這樣做：要在日本用的東西分開結帳。 | Next time: buy things you will use in Japan in a separate transaction. |
@@ -1193,7 +1193,7 @@ Full-bleed, dark scrim regardless of theme so the photo is judged on its own. Th
 │ 要帶證明文件  Bring documents   (1)          │
 │ ● BIC CAMERA 11/03 · ¥ 1,280,000             │
 │   單價 100 萬以上，海關可能會要看            │
-│   保證書或保固卡                             │
+│   鑑定書或保證書                             │
 │   Unit price over ¥1,000,000 —               │
 │   customs may ask for the                    │
 │   certificate or warranty        >           │
@@ -1296,9 +1296,9 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │  o 志豪  Chih-hao          0 / 6             │
 │  ░░░░░░░░░░░░░░░░░░░░                        │
 │  [ ] BIC CAMERA       11/03                  │
-│      ¥ 1,280,000  ! 要帶保證書               │
+│      ¥ 1,280,000  ! 要帶證明文件             │
 │                   ! bring the                │
-│                     certificate              │
+│                     documents                │
 │  …                                           │
 ├──────────────────────────────────────────────┤
 │~~~ 有 1 張的東西已經用掉了，那張要           │
@@ -1469,7 +1469,7 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │  先自己檢查一次  Check yours first           │
 │  o 志豪  Chih-hao                            │
 │  [x] BIC CAMERA ¥ 1,280,000                  │
-│      保證書 certificate [x]                  │
+│      證明文件 documents [x]                  │
 │  [x] 鞋店 ¥ 15,000                           │
 │  [ ] NIKE ¥ 11,000   ← 還沒確認              │
 ├──────────────────────────────────────────────┤

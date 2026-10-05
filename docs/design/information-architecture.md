@@ -60,7 +60,7 @@ Rationale:
 
 **Back behaviour.** Every pushed screen has a `chevron-left` back in the app bar and honours the hardware or browser back gesture. Bottom sheets close on back, on scrim tap, and on swipe-down. Add receipt is a full-screen flow whose close is an `x` with an unsaved-changes guard.
 
-**Routing.** One route per screen in the inventory under the Pages base path, so every screen is linkable, restorable after a reload, and testable in isolation. Sheet state is a route too (`/receipts/new#operator`) so browser back closes the sheet rather than leaving the screen. Airport Mode step is a route, so a backgrounded app resumes exactly where it was (`UJ-023`).
+**Routing.** One route per screen in the inventory under the Pages base path, so every screen is linkable, restorable after a reload, and testable in isolation. Sheet state is in the URL too — `?sheet=<id>` on the current route, e.g. `/receipts/new?sheet=operator` — so browser back closes the sheet rather than leaving the screen. (An earlier draft of this document sketched it as a second fragment, `/receipts/new#operator`; routing is hash-based, so a second `#` cannot survive. The query form is what ships, and each screen whitelists the sheet ids it can open, so a stale or hand-typed `?sheet=` degrades to no sheet rather than a broken dialog.) Because the query carries the sheet, any other deep link into a screen — the FAQ's per-question anchor behind the fee warning's `guide.faq.q11` link, for instance — must be a path segment or a second query key, never a fragment. Airport Mode step is a route, so a backgrounded app resumes exactly where it was (`UJ-023`).
 
 ---
 
