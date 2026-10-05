@@ -53,6 +53,48 @@ describe('the ten-operator directory (M1-4c, #30)', () => {
     }
   });
 
+  it('keeps the fee prose and the fee arithmetic agreeing about whether we know anything', () => {
+    for (const operator of directory.operators) {
+      if (operator.feeNote === null) {
+        // No prose means no arithmetic. The reverse of this is the dangerous direction:
+        // a computable fee nobody describes would render as a silent deduction.
+        expect(operator.fees, operator.id).toEqual([]);
+      }
+      if (operator.fees.length > 0) {
+        expect(operator.feeNote, operator.id).not.toBeNull();
+        expect(operator.feeSourceDate, operator.id).not.toBeNull();
+      }
+    }
+  });
+
+  it('ships a computable fee only where the basis is established (DR-026a)', () => {
+    // The converse of the agreement test deliberately does not hold: an operator can have
+    // prose and no arithmetic, because a percentage whose basis we cannot establish is a
+    // guess, not a fee — charged on the refund rather than the purchase it is roughly ten
+    // times out. Naming the operators in that middle state keeps it from growing silently.
+    const proseOnly = directory.operators
+      .filter((op) => op.feeNote !== null && op.fees.length === 0)
+      .map((op) => op.id);
+    expect(proseOnly.sort()).toEqual(['pie-vat', 'smart-detax']);
+
+    const computable = directory.operators.filter((op) => op.fees.length > 0).map((op) => op.id);
+    expect(computable.sort()).toEqual(['ocean', 'tourego']);
+  });
+
+  it('gives every stored rate an explicit basis and never a bare percentage (DR-026a)', () => {
+    for (const operator of directory.operators) {
+      for (const fee of operator.fees) {
+        if (fee.rate !== null) {
+          expect(['refund', 'purchase_tax_excluded'], operator.id).toContain(fee.rate.basis);
+          expect(Number.isInteger(fee.rate.basisPoints), operator.id).toBe(true);
+          expect(fee.rate.basisPoints, operator.id).toBeGreaterThan(0);
+        }
+        expect(Number.isInteger(fee.fixedJpy), operator.id).toBe(true);
+        expect(STATUSES, operator.id).toContain(fee.status);
+      }
+    }
+  });
+
   it('never states a percentage fee as zero or omits it when known (DR-051 negative case)', () => {
     // A null feeNote must never be read as "0%" downstream; assert the type-level
     // guarantee holds for every operator that genuinely has a published fee.

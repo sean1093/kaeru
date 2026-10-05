@@ -22,6 +22,17 @@
  * `feeNote: null` means **unknown**, never zero (`DR-051`). An empty `refundMethods` or
  * `registrationMethod` array means "not itemised publicly" — the source document's own
  * phrase for five of the ten — not "no methods exist".
+ *
+ * `fees` is the same fact as arithmetic, and an empty array means unknown exactly as
+ * `feeNote: null` does. It is **narrower than the prose on purpose**: `DR-026a` says a
+ * percentage without an established basis is a guess, not a fee, because a rate charged
+ * on the refund and the same rate charged on the tax-excluded purchase differ by roughly
+ * ten times. Only two bases are established today — Tourego's 1.5% of the tax-free sales
+ * amount (operator-published) and Ocean's credit-card 0.5% of the tax-excluded price
+ * (traveler-reported from the operator's own terms) — so only those two operators carry
+ * a computable fee. PIE VAT's reported ~3% and Smart Detax's customer-pays plan stay
+ * prose-only: we know a fee exists and cannot say what it is charged on, and storing the
+ * number anyway would be the tenfold error `DR-026a` exists to prevent.
  */
 import type { CalendarDate } from '../domain/dates.ts';
 import type { Operator, OperatorId } from '../domain/model.ts';
@@ -60,6 +71,7 @@ export const OPERATORS: readonly Operator[] = [
     url: 'https://j-taxfree.jp/',
     registrationMethod: ['receipt_qr', 'web'],
     refundMethods: ['credit_card', 'qr_payment', 'bank_transfer', 'cash'],
+    fees: [],
     feeNote: null,
     feeSourceDate: null,
     status: 'confirmed-official',
@@ -70,8 +82,9 @@ export const OPERATORS: readonly Operator[] = [
     url: 'https://pievat.com/japan',
     registrationMethod: ['app', 'counter'],
     refundMethods: ['credit_card'],
+    fees: [],
     feeNote: {
-      en: 'Travelers report around 3% (one reports netting about 7% of a 10% tax).',
+      en: "Travelers report around 3%; one reported keeping about 70% of the tax refund after both this fee and their own bank's charge.",
       'zh-TW': '旅客回報約 3%（一則回報扣除兩邊費用後，實拿約為稅額的 7 成左右）。',
     },
     feeSourceDate: OBSERVED_ON,
@@ -87,6 +100,7 @@ export const OPERATORS: readonly Operator[] = [
     url: 'https://smartdetax.com/',
     registrationMethod: ['counter'],
     refundMethods: ['cash', 'qr_payment', 'credit_card'],
+    fees: [],
     feeNote: {
       en: 'Some shops use a customer-funded plan (顧客負担型), i.e. the traveler pays.',
       'zh-TW': '部分店家採用由旅客負擔費用的方案（顧客負担型）。',
@@ -104,6 +118,7 @@ export const OPERATORS: readonly Operator[] = [
     url: 'https://www.globalblue.com/ja',
     registrationMethod: ['counter', 'app'],
     refundMethods: ['credit_card', 'cash'],
+    fees: [],
     feeNote: null,
     feeSourceDate: null,
     status: 'reported-media',
@@ -114,6 +129,18 @@ export const OPERATORS: readonly Operator[] = [
     url: 'https://tourego.com/',
     registrationMethod: ['app'],
     refundMethods: [],
+    fees: [
+      {
+        // "1.5% of the tax-free sales amount" is the operator's own wording, and 免税売上
+        // is the sale, not the refund: on a ¥10,000 tax-excluded purchase this is ¥150
+        // against a ¥1,000 refund (DR-026a).
+        method: null,
+        rate: { basisPoints: 150, basis: 'purchase_tax_excluded' },
+        fixedJpy: 0,
+        minimumJpy: null,
+        status: 'confirmed-official',
+      },
+    ],
     feeNote: {
       en: '1.5% of the tax-free sales amount, in principle paid by the tourist (a merchant-pays option exists).',
       'zh-TW': '免稅銷售金額（未稅消費額）的 1.5%，原則上由旅客負擔（也有商家負擔的方案）。',
@@ -127,10 +154,24 @@ export const OPERATORS: readonly Operator[] = [
     url: 'https://ocean.inc/',
     registrationMethod: ['receipt_qr', 'web'],
     refundMethods: ['paypal', 'bank_transfer', 'credit_card'],
+    fees: [
+      {
+        // The only Ocean figure with a basis we can establish: 未稅價格的 0.5% is explicit.
+        // The PayPal route (0.33% + from ¥40) and the superseded ~2.2% are deliberately
+        // absent — described as a remittance fee without saying what it is charged on, so
+        // under DR-026a they are an unknown fee rather than a number we may have ten times
+        // wrong.
+        method: 'credit_card',
+        rate: { basisPoints: 50, basis: 'purchase_tax_excluded' },
+        fixedJpy: 0,
+        minimumJpy: 180,
+        status: 'reported-media',
+      },
+    ],
     feeNote: {
-      en: 'About 2.2% reported in June 2026; since 2026-07-16: PayPal 0.33% + from ¥40, or credit card 0.5% of the tax-excluded price with a ¥180 minimum (Visa and UnionPay only — not JCB).',
+      en: 'Credit-card route: 0.5% of the tax-excluded price, minimum ¥180, since 2026-07-16 (Visa and UnionPay only — not JCB). A PayPal route also exists; its charge is described as a remittance fee without saying what it is charged on, so we do not state a figure for it.',
       'zh-TW':
-        '2026 年 6 月約回報 2.2%；自 2026 年 7 月 16 日起：PayPal 路線為 0.33% + 日圓 40 起，信用卡路線為未稅價 0.5%、每筆最低日圓 180（僅支援 Visa 與銀聯，不支援 JCB）。',
+        '信用卡路線：自 2026 年 7 月 16 日起為未稅價的 0.5%、每筆最低日圓 180（僅支援 Visa 與銀聯，不支援 JCB）。另有 PayPal 路線，但其費用只說明為匯款手續費，沒有說明是以什麼金額計算，因此我們不列出數字。',
     },
     feeSourceDate: OBSERVED_ON,
     status: 'reported-media',
@@ -141,6 +182,7 @@ export const OPERATORS: readonly Operator[] = [
     url: 'https://jptaxfree.com/',
     registrationMethod: [],
     refundMethods: [],
+    fees: [],
     feeNote: null,
     feeSourceDate: null,
     status: 'unconfirmed',
@@ -151,6 +193,7 @@ export const OPERATORS: readonly Operator[] = [
     url: 'https://corp.wamazing.com/',
     registrationMethod: [],
     refundMethods: [],
+    fees: [],
     feeNote: null,
     feeSourceDate: null,
     status: 'unconfirmed',
@@ -161,6 +204,7 @@ export const OPERATORS: readonly Operator[] = [
     url: 'https://www.global-taxfree.jp/',
     registrationMethod: [],
     refundMethods: [],
+    fees: [],
     feeNote: null,
     feeSourceDate: null,
     status: 'unconfirmed',
@@ -175,6 +219,7 @@ export const OPERATORS: readonly Operator[] = [
     url: 'https://intapay-payment.intasect.com/intaxfree-refund',
     registrationMethod: [],
     refundMethods: [],
+    fees: [],
     feeNote: null,
     feeSourceDate: null,
     status: 'unconfirmed',
