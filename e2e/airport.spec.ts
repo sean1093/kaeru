@@ -80,6 +80,21 @@ test.describe('Airport Mode — entry and readiness (S30, S39)', () => {
     expect(await currentScreen(page)).toBe('S39');
     await expect(page.getByRole('link')).toHaveCount(6);
   });
+
+  test('TC-AIR-010: the bag-drop banner survives into S39, which is troubleshooting, not leaving', async ({
+    page,
+  }) => {
+    // The banner is a property of whether customs is confirmed yet, not of which screen
+    // you are on (UJ-026, UJ-031 — `StepperProps.banner` is shell state). Dropping it on
+    // S39 would remove the one reminder keeping someone from checking a bag while
+    // mid-panic on the running-out-of-time branch, which is the worst moment to lose it.
+    await page.goto('./#/airport/goods');
+    await page.getByRole('link', { name: /遇到問題|Something is wrong/ }).click();
+    expect(await currentScreen(page)).toBe('S39');
+    await expect(
+      page.getByRole('status').filter({ hasText: /還不要託運行李|Do not check your bags yet/ }),
+    ).toBeVisible();
+  });
 });
 
 test.describe('Airport Mode — step 1, the hard gate (S31)', () => {
