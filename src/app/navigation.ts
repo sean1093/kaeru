@@ -48,8 +48,15 @@ export type Chrome = 'tabs' | 'fullscreen' | 'mode';
 
 export interface ScreenRoute {
   pattern: RoutePattern;
-  /** The design's screen id. Carried into `data-screen` so QA can assert it. */
-  screenId: ScreenId;
+  /**
+   * The screen ids this route can render. The inventory is **not** 1:1 with routes: 46 ids
+   * resolve to roughly 34 routes, because several ids are states of another screen at the
+   * same URL — S29 and S2B are states of S22, S28 is the empty state of S20, S11 to S14
+   * are the phases of Home, and S34 and S35 are outcome states of S33. The live component
+   * writes the id it is actually showing into `data-screen`, so QA can assert S13 or S29
+   * rather than only the host route.
+   */
+  screenIds: readonly ScreenId[];
   chrome: Chrome;
   screen: ComponentType<{ params: Readonly<Record<string, string>> }>;
   /** Sheet ids this screen is allowed to open, so an unknown `?sheet=` is ignored. */
@@ -153,6 +160,11 @@ export type ScreenId =
  *
  * `pathTo` is therefore the only sanctioned way to build an internal link. Parameters are
  * required by the type when the route has them.
+ *
+ * It accepts all 46 ids, including the state-only ones, and resolves them to their host
+ * route: `pathTo('S2B', { receiptId })` lands on S22. That keeps call sites honest — the
+ * fee warning links to the fee warning, and the fact that it is a block on the detail
+ * screen is a routing detail rather than the linker's problem.
  */
 export type PathTo = (
   screen: ScreenId,
