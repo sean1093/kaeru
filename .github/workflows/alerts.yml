@@ -95,8 +95,22 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const { compareDeployedBuild } = await import('${{ github.workspace }}/scripts/deployed-build.mjs');
+            const { compareDeployedBuild, STAMPING_COMMIT } = await import('${{ github.workspace }}/scripts/deployed-build.mjs');
             const { data: branch } = await github.rest.repos.getBranch({ ...context.repo, branch: 'main' });
+            // Does main already contain the commit that introduced the build stamp? An
+            // unstamped live build predates it, so once this is true the site is behind by
+            // definition. Self-retiring: unreachable once any stamped build is live.
+            let stampingLanded = false;
+            try {
+              const { data: comparison } = await github.rest.repos.compareCommitsWithBasehead({
+                ...context.repo,
+                basehead: `${STAMPING_COMMIT}...${branch.commit.sha}`,
+              });
+              stampingLanded = comparison.status === 'identical' || comparison.status === 'ahead';
+            } catch {
+              // The commit is not in this repository's history at all — nothing to conclude.
+              stampingLanded = false;
+            }
             const response = await fetch('https://sean1093.github.io/kaeru/', {
               headers: { 'Cache-Control': 'no-cache' },
             });
@@ -106,9 +120,11 @@ jobs:
               status: response.status,
               html,
               headSha: branch.commit.sha,
+              stampingLanded,
             });
             core.setOutput('stale', String(result.stale));
             core.setOutput('served', result.served);
+            core.setOutput('head', branch.commit.sha);
 
       # The deploy takes a few minutes and the schedule is hourly, so a single disagreement
       # is almost always a deploy in flight rather than one that never happened. Confirmed
@@ -128,8 +144,22 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const { compareDeployedBuild } = await import('${{ github.workspace }}/scripts/deployed-build.mjs');
+            const { compareDeployedBuild, STAMPING_COMMIT } = await import('${{ github.workspace }}/scripts/deployed-build.mjs');
             const { data: branch } = await github.rest.repos.getBranch({ ...context.repo, branch: 'main' });
+            // Does main already contain the commit that introduced the build stamp? An
+            // unstamped live build predates it, so once this is true the site is behind by
+            // definition. Self-retiring: unreachable once any stamped build is live.
+            let stampingLanded = false;
+            try {
+              const { data: comparison } = await github.rest.repos.compareCommitsWithBasehead({
+                ...context.repo,
+                basehead: `${STAMPING_COMMIT}...${branch.commit.sha}`,
+              });
+              stampingLanded = comparison.status === 'identical' || comparison.status === 'ahead';
+            } catch {
+              // The commit is not in this repository's history at all — nothing to conclude.
+              stampingLanded = false;
+            }
             const response = await fetch('https://sean1093.github.io/kaeru/', {
               headers: { 'Cache-Control': 'no-cache' },
             });
@@ -139,6 +169,7 @@ jobs:
               status: response.status,
               html,
               headSha: branch.commit.sha,
+              stampingLanded,
             });
             core.setOutput('stale', String(result.stale));
             core.setOutput('served', result.served);
