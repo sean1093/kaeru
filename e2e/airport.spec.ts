@@ -113,9 +113,7 @@ test.describe('Airport Mode — entry and readiness (S30, S39)', () => {
     await page.goto('./#/airport/goods');
     await page.getByRole('link', { name: /遇到問題|Something is wrong/ }).click();
     expect(await currentScreen(page)).toBe('S39');
-    await expect(
-      page.getByRole('status').filter({ hasText: /還不要託運行李|Do not check your bags yet/ }),
-    ).toBeVisible();
+    await expect(page.getByText(/還不要託運行李|Do not check your bags yet/)).toBeVisible();
   });
 });
 
@@ -176,9 +174,13 @@ test.describe('Airport Mode — step 1, the hard gate (S31)', () => {
     page,
   }) => {
     await page.goto('./#/airport/goods');
-    const banner = page.getByRole('status').filter({
-      hasText: /還不要託運行李|Do not check your bags yet/,
-    });
+    // Located by its text, never by `role="status"`. The Banner defaults its live region
+    // to `none` on purpose, because a permanently-present message that re-announces on
+    // unrelated updates is one the user learns to tune out — and this is the message that
+    // must never become noise. Asserting the role would pin vocabulary the design
+    // deliberately withholds, and tempt whoever turns these on to add `live="status"` to
+    // make the test pass, reintroducing exactly what the default prevents.
+    const banner = page.getByText(/還不要託運行李|Do not check your bags yet/);
     await expect(banner).toBeVisible();
     await expect(banner.getByRole('button', { name: /關閉|Dismiss|Close/ })).toHaveCount(0);
   });
@@ -204,6 +206,7 @@ test.describe('Airport Mode — landside, the terminal and its results (S32-S36)
   }) => {
     await seedTripDepartingFrom(page, 'NRT');
     await page.goto('./#/airport/terminal');
+    expect(await currentScreen(page)).toBe('S32');
     await expect(page.getByText(/Visit Japan Web/)).toBeVisible();
     // The constraint is the whole point: inside the departure-lobby procedure Wi-Fi area,
     // before security. VJW named without it sends someone through security to try it.
@@ -217,6 +220,9 @@ test.describe('Airport Mode — landside, the terminal and its results (S32-S36)
     // at every airport pass it too.
     await seedTripDepartingFrom(page, 'SDJ');
     await page.goto('./#/airport/terminal');
+    // Without this, "VJW is not mentioned" passes trivially on a screen that failed to
+    // render at all — the absence assertion needs the screen to be present first.
+    expect(await currentScreen(page)).toBe('S32');
     await expect(page.getByText(/Visit Japan Web/)).toHaveCount(0);
   });
 
@@ -249,9 +255,7 @@ test.describe('Airport Mode — landside, the terminal and its results (S32-S36)
     await page.getByRole('button', { name: /綠燈|Green/ }).click();
     expect(await currentScreen(page)).toBe('S34');
     // UJ-031: the gate is released at step 4, never here.
-    await expect(
-      page.getByRole('status').filter({ hasText: /還不要託運行李|Do not check your bags yet/ }),
-    ).toBeVisible();
+    await expect(page.getByText(/還不要託運行李|Do not check your bags yet/)).toBeVisible();
   });
 
   test('the reported result is persisted before the step content changes', async ({ page }) => {
@@ -289,9 +293,7 @@ test.describe('Airport Mode — customs done and what happens next (S37, S38)', 
     // and the plausible bug — clearing on the first completion — passes. With two they
     // diverge, and two is the family the whole per-traveler design exists for (DR-004).
     await page.goto('./#/airport/kiosk');
-    const banner = page.getByRole('status').filter({
-      hasText: /還不要託運行李|Do not check your bags yet/,
-    });
+    const banner = page.getByText(/還不要託運行李|Do not check your bags yet/);
     await expect(banner).toBeVisible();
 
     await page.getByRole('button', { name: /綠燈|Green/ }).click();
