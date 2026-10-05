@@ -321,12 +321,44 @@ export type AirportReadinessOf = (
  */
 export type ValidationSeverity = 'block' | 'warn' | 'inform';
 
+/** The rules that can produce a finding. Closed, so a typo cannot invent one. */
+export type ValidationRule =
+  | 'DR-070'
+  | 'DR-070a'
+  | 'DR-071'
+  | 'DR-072'
+  | 'DR-073'
+  | 'DR-074'
+  | 'DR-076'
+  | 'DR-076a'
+  | 'DR-077'
+  | 'DR-078';
+
+/**
+ * Every message a finding can ask for. Closed because these **are** copy identifiers: an
+ * open `string` cannot be checked by the i18n parity test, so a key with no translation
+ * would reach a traveller as a raw identifier rather than as a sentence.
+ */
+export type ValidationMessageKey =
+  | 'validation.lineNeedsAnAmount'
+  | 'validation.amountMustBeWholeYen'
+  | 'validation.amountsContradict'
+  | 'validation.rateNotInTable'
+  | 'validation.purchaseDateOutsideRules'
+  | 'validation.purchaseDateInFuture'
+  | 'validation.purchaseDateAfterDeparture'
+  | 'validation.deadlineBeforeDeparture'
+  | 'validation.deadlineNoMargin'
+  | 'validation.goodsInCheckedBag'
+  | 'validation.goodsLocationUnknown'
+  | 'validation.documentsNeeded';
+
 export interface ValidationFinding {
   /** The rule this came from, e.g. `DR-076`, so a message can cite the guide. */
-  rule: string;
+  rule: ValidationRule;
   severity: ValidationSeverity;
   /** Message key in the feature's own bundle. Never raw copy. */
-  messageKey: string;
+  messageKey: ValidationMessageKey;
   /** Field path for focus management on a failed submit, e.g. `lines.0.taxExcludedAmount`. */
   field?: string;
   values?: Readonly<Record<string, string | number>>;

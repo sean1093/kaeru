@@ -19,22 +19,24 @@ import type {
   ValidatePurchaseDate,
   ValidateReceipt,
   ValidationFinding,
+  ValidationMessageKey,
+  ValidationRule,
   ValidationSeverity,
 } from './api.ts';
 import type { Clock } from './clock.ts';
 import { JAPAN_TIME_ZONE, today } from './dates.ts';
 import { deadlineStatusOf } from './deadlines.ts';
 import type { Receipt, Trip } from './model.ts';
-import { hasHighValueItemOf, taxExcludedTotalOf } from './money.ts';
+import { hasHighValueItemOf } from './money.ts';
 import { tripPhaseOf } from './phase.ts';
 import { resolveDated } from './resolve-rules.ts';
 import type { ResolvedRules, RulesData } from './rules.ts';
 import { isClaimable, isOldSystem } from './status.ts';
 
 function finding(
-  rule: string,
+  rule: ValidationRule,
   severity: ValidationSeverity,
-  messageKey: string,
+  messageKey: ValidationMessageKey,
   extra: Partial<ValidationFinding> = {},
 ): ValidationFinding {
   return { rule, severity, messageKey, ...extra };
@@ -131,19 +133,11 @@ export const validateReceipt: ValidateReceipt = (receipt, trip, rules, clock: Cl
     );
   }
 
-  // DR-075: the threshold indicator is advice and never blocks. This is the per-receipt
-  // figure; the shop/day aggregate is `groupByShopDay`, which the list owns.
-  const taxExcluded = taxExcludedTotalOf(receipt);
-  if (taxExcluded < rules.threshold.minTaxExcludedJpy) {
-    found.push(
-      finding('DR-075', 'inform', 'validation.belowThreshold', {
-        values: {
-          shortfall: rules.threshold.minTaxExcludedJpy - taxExcluded,
-          minimum: rules.threshold.minTaxExcludedJpy,
-        },
-      }),
-    );
-  }
+  // DR-075 is deliberately absent. The threshold is a shop/day/traveller aggregate
+  // (DR-012), and this function sees one receipt: firing per receipt would tell the user
+  // that each of Yi-chun's three ¥3,000 receipts "does not qualify" while the group of
+  // them does. `inform` would not make that less wrong — they would read it and stop
+  // claiming. The indicator belongs to `groupByShopDay`, which has the figure.
 
   if (trip !== null) {
     found.push(...tripFindings(receipt, trip, rules, clock));

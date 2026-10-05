@@ -119,17 +119,14 @@ describe('what blocks a save (DR-070, DR-070a, DR-071, DR-072)', () => {
     expect([...blocking].sort()).toEqual(['DR-070', 'DR-070a', 'DR-071', 'DR-072']);
   });
 
-  it('TC-DOM-104 informs below the threshold and never blocks it', () => {
+  it('TC-DOM-104 leaves the threshold to the shop/day group, which is the only thing that knows', () => {
+    // DR-075 is a group rule (DR-012). Firing it per receipt would tell a traveller that
+    // each of three ¥3,000 receipts at one shop "does not qualify" while the group of them
+    // does, and `inform` would not make that less wrong — they would read it and stop.
     const small = sound({ lines: [aLine({ taxExcludedAmount: 4999 })] });
     const findings = validateReceipt(small, trip, rules, onTheTrip);
-    const threshold = findings.find((finding) => finding.rule === 'DR-075');
-    expect(threshold?.severity).toBe('inform');
-    expect(threshold?.values?.shortfall).toBe(1);
-    expect(rulesOf(blocks(findings))).toEqual([]);
-
-    // And it is silent once the receipt qualifies.
-    const qualifying = sound({ lines: [aLine({ taxExcludedAmount: 5000 })] });
-    expect(rulesOf(validateReceipt(qualifying, trip, rules, onTheTrip))).not.toContain('DR-075');
+    expect(rulesOf(findings)).not.toContain('DR-075');
+    expect(blocks(findings)).toEqual([]);
   });
 });
 
