@@ -56,7 +56,7 @@ async function assertNoOverlap(page: Page): Promise<void> {
   // Every specimen's stage is a flex column; a genuine overlap shows up as two sibling
   // boxes with intersecting rects, which at 200 % text is where wrapping bugs appear.
   const overlaps = await page.locator(GALLERY_ROOT).evaluate((root) => {
-    const stages = [...root.querySelectorAll<HTMLElement>('[class*="stage"]')];
+    const stages = [...root.querySelectorAll<HTMLElement>('[data-gallery-stage]')];
     const bad: string[] = [];
     for (const stage of stages) {
       const children = [...stage.children] as HTMLElement[];

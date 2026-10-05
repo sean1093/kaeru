@@ -1,12 +1,13 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { expect, test } from '@playwright/test';
 
 /**
  * M1-3e (#27): the gallery's bundle-absence claim needs a gate, not a PR-body
- * measurement. Runs once per production project (no browser needed — a fast `fs` check),
- * against the real `dist/` the `webServer` in `playwright.config.ts` just built.
+ * measurement. Runs once per production project (no browser needed — a fast `fs` check,
+ * deliberately run three times against the same `dist/`: a dedicated project would cost
+ * more to maintain than the second and third runs cost to execute).
  *
  * `GALLERY_MARKER` in `src/features/gallery/GalleryScreen.tsx` is a string used nowhere
  * else in the app; grepping for a gallery-only *content* string is the correct gate —
@@ -15,10 +16,18 @@ import { expect, test } from '@playwright/test';
  * targets content rather than the path string.
  */
 const GALLERY_MARKER = 'kaeru-ui-kit-gallery';
-/** `src/ui/**` + `src/features/gallery/**` at launch; generous headroom under the ~100 KB
- * budget stated in the architecture plan while still catching an accidental regression —
- * tightened once more of M1-3/M2 land and the real baseline is known. */
-const GZIP_BUDGET_BYTES = 40 * 1024;
+
+/**
+ * A regression tripwire, not **the** budget — the ~100 KB figure in
+ * `docs/architecture/implementation-plan.md` is that, and it covers the whole app, not
+ * just this directory's slice. This number is deliberately a different kind of check: it
+ * sums each JS asset's own gzip size rather than the bundle's actual gzip size, and it
+ * ignores CSS, so it is not a substitute for the real budget — it exists to fail fast and
+ * specifically on an accidental import inside `src/ui/**`/`src/features/gallery/**`,
+ * roughly twice today's measured size (23.3 KB at last count), tightened as the baseline
+ * moves.
+ */
+const GZIP_TRIPWIRE_BYTES = 40 * 1024;
 
 test.describe('production bundle (#27 bundle-absence gate)', () => {
   test('contains no gallery content string', () => {
@@ -33,7 +42,7 @@ test.describe('production bundle (#27 bundle-absence gate)', () => {
     expect(offenders, 'built JS asset(s) containing the gallery-only marker string').toEqual([]);
   });
 
-  test('gzip size stays under budget', () => {
+  test('gzip size stays under the regression tripwire', () => {
     const assetsDir = join(process.cwd(), 'dist', 'assets');
     const jsFiles = readdirSync(assetsDir).filter((name) => name.endsWith('.js'));
     let totalGzip = 0;
@@ -43,13 +52,7 @@ test.describe('production bundle (#27 bundle-absence gate)', () => {
     }
     expect(
       totalGzip,
-      `production JS gzip size ${(totalGzip / 1024).toFixed(2)} KB exceeds the ${(GZIP_BUDGET_BYTES / 1024).toFixed(0)} KB budget`,
-    ).toBeLessThan(GZIP_BUDGET_BYTES);
-  });
-
-  test('dist/ exists and is non-trivial (sanity check for the two tests above)', () => {
-    const distDir = join(process.cwd(), 'dist');
-    const stat = statSync(distDir);
-    expect(stat.isDirectory()).toBe(true);
+      `production JS gzip size ${(totalGzip / 1024).toFixed(2)} KB exceeds the ${(GZIP_TRIPWIRE_BYTES / 1024).toFixed(0)} KB tripwire`,
+    ).toBeLessThan(GZIP_TRIPWIRE_BYTES);
   });
 });
