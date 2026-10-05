@@ -64,7 +64,9 @@ describe('the rules document is the only place a rule constant lives', () => {
       'resolve-rules.ts',
       'rules.ts',
       'shop-key.ts',
+      'status.ts',
       'threshold.ts',
+      'validation.ts',
     ]);
   });
 
