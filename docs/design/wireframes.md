@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.1 (M0) |
+| Status | v1.2 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -221,6 +221,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │ . 之後再說  Later .                          │
 └──────────────────────────────────────────────┘
 ```
+
+**When a flight time was given in S02, a leave-by line appears right after the buffer control** — same format as S61 and S13: 建議 14:40 從飯店出發 / Leave your hotel by 14:40, with the arithmetic available on tap. It is the immediate payoff for the buffer choice the user just made, so it sits directly below that control rather than waiting for S61. When no flight time was given, nothing renders in its place — not a dash, not a placeholder; there is nothing to compute yet, and the field stays correctable later in S61 (`CountdownProps`: omit the whole component when there is no flight time, same rule extended here).
 
 
 ### Onboarding microcopy
@@ -809,6 +811,8 @@ Grouping is best-effort (`DR-012a`): `shopKey` normalisation collapses whitespac
 │ about ¥60. 手續費是業者自訂，可能            │
 │ 會變。Fees are set by the operator           │
 │ and can change.                              │
+│ 已算入銀行匯款的手續費。                     │
+│ Includes your bank's own transfer fee.       │
 ├──────────────────────────────────────────────┤
 │ 進度  Progress                               │
 │  ✓ 已記錄          Logged                    │
@@ -839,6 +843,8 @@ Grouping is best-effort (`DR-012a`): `shopKey` normalisation collapses whitespac
 │ . 這張不退了  I will not claim this .        │
 └──────────────────────────────────────────────┘
 ```
+
+**The receiving-side fee line is conditional on `RefundEstimate.refundMethodKnown`.** When the user has chosen bank transfer at registration, the line above states it as fact. When no method is chosen yet, the line above is replaced with the hedged form in the microcopy table below ("if you choose a bank transfer..."), and when a card or e-money method is chosen, the line does not render at all — only a bank transfer can carry the receiving-side charge (`DR-027`). This mirrors the fee-warning asymmetry already in this document: the deduction is assumed pessimistically either way, but the sentence only claims what it can prove.
 
 **S22** — Receipt detail, the two attention states
 
@@ -1153,6 +1159,8 @@ Full-bleed, dark scrim regardless of theme so the photo is judged on its own. Th
 | Undo | 復原 | Undo |
 | Delete confirm | 刪除這張收據？這個動作無法復原。 | Delete this receipt? This cannot be undone. |
 | Registration attribution | 已登錄 · 你在 11/04 標記的 | Registered · you marked this on 4 Nov |
+| Receiving fee, method known | 已算入銀行匯款的手續費。 | Includes your bank's own transfer fee. |
+| Receiving fee, method unknown | 如果選銀行匯款，你的銀行可能還會收一筆手續費。 | If you choose a bank transfer, your bank may charge its own fee too. |
 
 
 ---
@@ -1757,6 +1765,10 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │  from your refund. Fees are not              │
 │  regulated and not always published.         │
 │  資料日期 2026-10-05  as of                  │
+│                                              │
+│  已算入銀行匯款的手續費。                    │
+│  Includes your bank's own transfer           │
+│  fee.                                        │
 ├──────────────────────────────────────────────┤
 │  這些收據  These receipts                    │
 │  [ ] 松本清 11/04  ~¥   830                  │
@@ -1777,6 +1789,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │  [ 聯絡 J-TaxRefund  Contact ↗ ]             │
 └──────────────────────────────────────────────┘
 ```
+
+**S41's receiving-side fee line follows the same `refundMethodKnown` rule as S22** (PayoutEstimate rather than RefundEstimate, same discriminator): stated as fact when the registration recorded a bank transfer, hedged when no method is recorded, absent when the method is card or e-money. At the operator level the method is usually known, since registering typically means choosing how to be paid — the hedged form is the exception here, not the default, which is the opposite of S22 where operator-not-yet-registered is common.
 
 ---
 
@@ -2048,13 +2062,24 @@ Every operator detail carries the `DR-053` non-endorsement line and the fee obse
 ├──────────────────────────────────────────────┤
 │ 多久算遲  When to call a refund late         │
 │ [ 14 ] 天 days                               │
-│  法律沒有規定入帳時間，這是你自己的          │
-│  標準。There is no legal time limit.         │
-│  This is your own threshold.                 │
+│ 法律沒有規定入帳時間，這是你自己的           │
+│ 標準。There is no legal time limit.          │
+│ This is your own threshold.                  │
+├──────────────────────────────────────────────┤
+│ 銀行收款手續費  Your bank's receiving fee    │
+│ ¥ [ 1,800 ] 保守估計  conservative estimate  │
+│                                              │
+│ 國際匯款的入帳費用因銀行而異，這是保守       │
+│ 估計（約新台幣 300 元）。知道實際金額        │
+│ 可以改這裡，會影響預估淨退的準確度。         │
+│ Transfer fees vary by bank — this is a       │
+│ conservative placeholder. Update it once     │
+│ you know your real figure; it feeds          │
+│ every estimated net on the app.              │
 └──────────────────────────────────────────────┘
 ```
 
-Every derived number shows its inputs. The check-in requirement is the airline's, the buffer is Kaeru's suggestion, and the overdue threshold is the user's own — three different kinds of authority, labelled as such so the user knows which ones they may disagree with.
+Every derived number shows its inputs. The check-in requirement is the airline's, the buffer is Kaeru's suggestion, the overdue threshold is the user's own, and the receiving fee starts as Kaeru's conservative placeholder until the user's own bank corrects it — four different kinds of authority, labelled as such so the user knows which ones they may disagree with.
 
 **S62** — Data: export, import, delete
 

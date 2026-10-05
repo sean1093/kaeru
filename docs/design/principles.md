@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.1 (M0) |
+| Status | v1.2 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -89,6 +89,8 @@ Input happens standing up, one-handed, in bad light, at the end of a 20,000-step
 | **Don't** | Require a shop name, a photo, or a packing location before a receipt can be saved. Those are enrichments for the hotel in the evening. |
 | **Don't** | Validate on every keystroke. Validate on blur and on submit, and never move the cursor for the user. |
 | **Don't** | Use a modal to confirm something harmless. |
+| **Do** | Prefer a mechanism that can't be ignored over one that asks. An autosaved draft beats a "leave without saving?" dialog — the dialog can be dismissed on reflex by someone being pulled away, the autosave can't be, and a browser's own confirm dialog renders in the OS language regardless of the app's locale, which breaks principle 4 on the one screen our i18n layer can't reach. Reach for a confirmation only when the state genuinely cannot be persisted. |
+| **Do** | When removing a mechanism that was telling the user something, find that information a quieter home rather than assuming the need went with it. A guard that warned "you'll lose this" was also the only thing telling the user a receipt was unfinished; remove the guard and the unfinished receipt still needs to surface somewhere calmer — as an ordinary item in tonight's list, not as a dialog at the worst possible moment. |
 
 ## 7. Honest about what Kaeru is and is not
 
