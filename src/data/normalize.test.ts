@@ -51,7 +51,7 @@ describe('normalizeReceipt', () => {
     expect(droppedLineCount()).toBe(0);
     const receipt = normalizeReceipt(stored);
 
-    // The receipt is not withheld — the shop, traveller and status are real — but it is
+    // The receipt is not withheld — the shop, traveler and status are real — but it is
     // down to one line, and that is recorded rather than silently absorbed.
     expect(receipt?.lines).toEqual([
       aLine({ taxRate: 0.08, taxExcludedAmount: 3000, taxIncludedAmount: 3240 }),
@@ -74,5 +74,11 @@ describe('normalizeReceipt', () => {
       ],
     });
     expect(droppedLineCount()).toBe(2);
+  });
+
+  it('DR-012a: withholds a receipt with no usable shopKey rather than grouping it on the raw, un-normalised name', () => {
+    const { shopKey: _omit, ...withoutShopKey } = aReceipt();
+    expect(normalizeReceipt(withoutShopKey)).toBeNull();
+    expect(normalizeReceipt({ ...aReceipt(), shopKey: '   ' })).toBeNull();
   });
 });

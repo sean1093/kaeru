@@ -213,9 +213,22 @@ export function normalizeReceipt(value: unknown): Receipt | null {
   const tripId = record ? readId(record.tripId) : null;
   const travelerId = record ? readId(record.travelerId) : null;
   const purchaseDate = record ? readCalendarDate(record.purchaseDate) : null;
+  // `shopKey` is a normalised grouping identity (DR-012a: trimmed, NFKC, case-folded) —
+  // deriving it is the domain's job, so a record missing it is not addressable for
+  // grouping and is withheld rather than keyed on the raw, un-normalised `shopName`,
+  // which would silently split "BIC CAMERA" and "bic camera" into different groups
+  // (Architect review, #69).
+  const shopKey = record ? readId(record.shopKey) : null;
   // The purchase date decides which tax-free system applies (DR-002); a receipt without a
   // usable one cannot be shown as either, and guessing would guess at someone's refund.
-  if (!record || id === null || tripId === null || travelerId === null || purchaseDate === null) {
+  if (
+    !record ||
+    id === null ||
+    tripId === null ||
+    travelerId === null ||
+    purchaseDate === null ||
+    shopKey === null
+  ) {
     recordUnreadable('receipts');
     return null;
   }
@@ -239,9 +252,7 @@ export function normalizeReceipt(value: unknown): Receipt | null {
     tripId,
     travelerId,
     shopName,
-    // Deriving a key is the domain's job (DR-012a); falling back to the raw name keeps a
-    // repaired record grouping with itself rather than with everything else.
-    shopKey: readText(record.shopKey, shopName),
+    shopKey,
     purchaseDate,
     lines,
     operatorId: readId(record.operatorId),
