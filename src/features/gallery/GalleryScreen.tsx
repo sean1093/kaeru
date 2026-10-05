@@ -23,7 +23,7 @@ export function GalleryScreen(): JSX.Element {
   const t = useMessages(galleryCopy);
 
   return (
-    <div class={styles.gallery} data-screen="DEV-GALLERY" data-gallery-root={GALLERY_MARKER}>
+    <div class={styles.gallery} data-gallery-root={GALLERY_MARKER}>
       <h1>{t('gallery.title')}</h1>
       <p class={styles.intro}>{t('gallery.intro')}</p>
       <CoreSection />

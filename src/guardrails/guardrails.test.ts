@@ -279,6 +279,8 @@ describe('guardrails: rule constants live in the rules document (DR-022, R19)', 
     'content/seeds.ts': 'sample data is written to look like a real trip',
     'data/test-builders.ts':
       'test scaffolding, not product code — belongs under src/test-support/, tracked separately',
+    'ui/Toast.tsx':
+      'a five-second dismissal timeout is a duration in milliseconds, not the yen threshold',
     'features/settings/index.ts':
       'a tab order of 90 is a position in a list, not the 90-day export window',
   };
