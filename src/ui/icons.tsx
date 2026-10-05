@@ -113,6 +113,21 @@ export const ReceiptIcon: Icon = () => (
   </Glyph>
 );
 
+export const HomeIcon: Icon = () => (
+  <Glyph>
+    <path d="M4.5 11.5 12 5l7.5 6.5" />
+    <path d="M6.5 10v9h11v-9" />
+  </Glyph>
+);
+
+export const GuideIcon: Icon = () => (
+  <Glyph>
+    <path d="M5 5.5h6.5v13H5z" />
+    <path d="M12.5 5.5H19v13h-6.5" />
+    <path d="M7.5 9h2.5M7.5 12h2.5" />
+  </Glyph>
+);
+
 /**
  * The Kaeru frog seen from above, reduced to a body arc and two eyes
  * (`visual-language.md` section 9). Decorative; used in empty states only.

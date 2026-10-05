@@ -36,8 +36,13 @@ export interface BottomNavItem {
   icon: Icon;
   active: boolean;
   /**
-   * A dot has no number; a count must be folded into the accessible name
-   * ("Receipts, 3 need action") rather than announced on its own.
+   * A dot has no number and adds nothing to the accessible name. A count's
+   * `accessibleName` is concatenated directly after `label` with no separator the kit
+   * owns — the fragment must carry its own leading connector, already correct for the
+   * caller's locale: `，3 項待處理` (zh-TW) or `, 3 need action` (en), composing to `收據，3
+   * 項待處理` / `Receipts, 3 need action`. Because there is no separator slot, the visible
+   * label is structurally always a prefix of the spoken name (WCAG 2.5.3, Label in
+   * Name) — the kit cannot put the badge first even by accident.
    */
   badge?: { kind: 'dot' } | { kind: 'count'; value: number; accessibleName: string };
 }
@@ -157,7 +162,7 @@ export interface ProgressBarProps {
 export interface StepIndicatorProps {
   current: number;
   total: number;
-  /** The accessible source of truth, e.g. "步驟 2/5 · Step 2 of 5"; the dots are hidden. */
+  /** The accessible source of truth, single-locale, e.g. zh-TW "步驟 2/5" or en "Step 2 of 5"; the dots are hidden. */
   text: string;
 }
 
