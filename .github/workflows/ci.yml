@@ -1,9 +1,19 @@
 name: CI
 
 on:
+  # Documentation changes skip CI entirely: there is no code to typecheck, nothing to
+  # build, and no browser behaviour to exercise, so a run proves only that the previous
+  # commit still passes. Docs pull requests merge on their reviews, as they did in M0.
+  #
+  # `paths-ignore` is a *filter on the push*, not a condition inside a job: a run that is
+  # filtered out never appears, so there is no skipped check to mistake for a passing one.
+  # The corollary is that a pull request mixing docs with code is **not** skipped, because
+  # the filter matches only when every changed path is a doc.
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   workflow_dispatch:
 
 concurrency:
@@ -58,6 +68,16 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Handed to the e2e job rather than built again there. The suite still serves a real
+      # production build with a real service worker; the only thing that changes is which
+      # job produced it.
+      - name: Upload the build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4
@@ -66,9 +86,114 @@ jobs:
           path: coverage/
           retention-days: 7
 
+  # What this run has to exercise, decided from the changed paths rather than from anyone
+  # remembering. A label people are expected to apply is a gate that asks; a path filter is
+  # a gate that cannot be ignored - and `full-e2e` survives as the manual override for the
+  # case nobody predicted.
+  scope:
+    name: Decide the test scope
+    runs-on: ubuntu-latest
+    outputs:
+      project: ${{ steps.decide.outputs.project }}
+      gallery: ${{ steps.decide.outputs.gallery }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - id: decide
+        name: Read the changed paths
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+
+          # Not a pull request: main and manual dispatches always run everything.
+          if [ -z "${BASE}" ]; then
+            echo 'project=all' >> "$GITHUB_OUTPUT"
+            echo 'gallery=true' >> "$GITHUB_OUTPUT"
+            echo 'Not a pull request: full matrix.'
+            exit 0
+          fi
+
+          changed=$(git diff --name-only "${BASE}" "${HEAD}")
+          echo "Changed paths:"
+          echo "${changed}"
+
+          # Where an engine or viewport difference is both most likely and most expensive:
+          # the service worker and offline (engine), Airport Mode (where a mistake costs a
+          # traveller money), app chrome and the UI kit (sticky positioning, focus, inert
+          # and dialog semantics all differ by engine), and storage (IndexedDB behaviour is
+          # genuinely engine-divergent and a loss there is unrecoverable).
+          #
+          # Four more that are not source files and are easy to miss (QALead, #133):
+          #
+          # - **The lockfile and package.json.** A dependency bump - Preact, vite-plugin-pwa,
+          #   Workbox, Playwright itself - is the single most likely cross-engine regression
+          #   we will ever merge, and the one diff whose blast radius nobody can predict by
+          #   reading it.
+          # - **src/styles/**.** tokens.css drives every layout, and the 320 px reflow and
+          #   200% text cases (TC-A11Y-010, TC-A11Y-015) are viewport tests that only the
+          #   three projects run at three widths. A token change is the most layout-relevant
+          #   diff in the repository.
+          # - **index.html and public/**.** The document shell and the manifest: base path,
+          #   scope, icons, meta. Everything the service worker and the install path read.
+          #
+          # And one deliberate omission: `src/domain/**` stays narrow, including
+          # `src/domain/airport.ts`. It is pure logic with no DOM and no engine dependence,
+          # so three browsers would run identical code three times. Do not add it because
+          # the name looks related to Airport Mode.
+          full='^(e2e/|src/app/|src/features/airport/|src/data/|src/ui/|src/styles/|public/|index[.]html|package[.]json|package-lock[.]json|vite[.]config[.]ts|playwright[.]config[.]ts|[.]github/workflows/)'
+          gallery='^(src/ui/|src/features/gallery/|e2e/gallery/)'
+
+          if printf '%s' "${LABELS}" | grep -q 'full-e2e'; then
+            echo 'project=all' >> "$GITHUB_OUTPUT"
+            echo 'Label full-e2e: full matrix.'
+          elif echo "${changed}" | grep -Eq "${full}"; then
+            echo 'project=all' >> "$GITHUB_OUTPUT"
+            echo 'Changed paths require the full matrix.'
+          else
+            echo 'project=iphone-webkit' >> "$GITHUB_OUTPUT"
+            echo 'Narrow run: iphone-webkit only.'
+          fi
+
+          if echo "${changed}" | grep -Eq "${gallery}"; then
+            echo 'gallery=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'gallery=false' >> "$GITHUB_OUTPUT"
+          fi
+
+  # Which browser projects a run exercises, and why that is not the same question on a pull
+  # request as on `main`.
+  #
+  # **A pull request's green check is evidence about one project.** That is chosen, not an
+  # accident, and it stops being acceptable the moment someone reads it as evidence about
+  # three. The project is `iphone-webkit` because it is the only evidence about WebKit this
+  # team can ever produce — there is no iOS device and no Safari here (`test-strategy.md`
+  # section 3.1) — while a Chromium-only break has three other ways to be found, including
+  # one of us opening a browser.
+  #
+  # **`main` runs the full matrix, before the deploy gate.** Pages deploys only on a green
+  # CI run (ADR 0009), so a WebKit or viewport regression blocks the deploy rather than
+  # reaching a traveler. The guarantee is kept; what moves is where it is paid.
+  #
+  # **The `full-e2e` label forces the full matrix on a pull request**, and is mandatory for
+  # anything touching Airport Mode, offline and the service worker, or `src/app` chrome —
+  # the places where an engine or viewport difference is both most likely and most
+  # expensive. Authors add it; reviewers check it.
   e2e:
     name: End-to-end tests
     runs-on: ubuntu-latest
+    # The build comes from `verify`: building the same commit once per job is duplicated
+    # work rather than coverage, and deleting effort is the throughput fix to reach for
+    # before deleting evidence.
+    needs: [verify, scope]
+    env:
+      KAERU_E2E_PROJECT: ${{ needs.scope.outputs.project }}
+      KAERU_E2E_GALLERY: ${{ needs.scope.outputs.gallery }}
+      KAERU_E2E_PREBUILT: 'true'
     steps:
       - uses: actions/checkout@v5
 
@@ -79,7 +204,15 @@ jobs:
 
       - run: npm ci
 
-      # Only the engines we actually have projects for; Firefox is not a target.
+      - name: Fetch the build made by the verify job
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      # Only the engines we have projects for; Firefox is not a target. Chromium is needed
+      # even for a WebKit-only run: the gallery project and the service-worker suite are
+      # Chromium-only, because Playwright's WebKit does not expose the worker lifecycle.
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
 
