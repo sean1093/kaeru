@@ -90,6 +90,7 @@ Worked examples are taken verbatim from `domain-rules.md` §4 and are hard asser
 | TC-DOM-049 | `estimatedNet` at or below zero (¥1,100 tax, NT$40 operator fee, NT$400 inbound FX fee) | Warning that the refund may be worth less than the cost of receiving it | DR-027, UJ-014 | R01 | U, C | P0 `@unconfirmed` |
 | TC-DOM-050 | **Property:** trip totals equal the sum of per-traveler partitions, for 100 seeded receipt sets | Aggregation is partition-stable; no cross-traveler leakage | DR-004, DR-025 | R16 | U | P0 |
 | TC-DOM-051 | Dashboard segmentation | Tax paid / expecting refund / confirmed / received / lost are distinct figures. No single blended number that mixes states | DR-025, UJ-016, UJ-036 | R01 | U, C | P0 |
+| TC-DOM-052 | Rules data `lastReviewed` older than 180 days | A **weekly scheduled** workflow reports it and opens an issue. It is deliberately not part of the pull-request pipeline, so a stale review date never reds a PR on a day nobody pushed | DR-022, DR-051 | R19 | U | P1 |
 
 ### 1.4 Deadline, dates, timezone (DR-031, UR-07)
 
@@ -172,7 +173,7 @@ Formula: `deadline = purchaseDate + 90 calendar days`, deadline day inclusive. O
 | TC-DATA-010 | `navigator.storage.persist()` requested | Request made at a sensible moment; outcome reflected on the data/privacy screen | — | R07 | E | P1 |
 | TC-DATA-011 | Export | Valid versioned JSON containing travelers, receipts, lines, operators, settings | UJ-037, DR-043 | R08 | U, E | P0 |
 | TC-DATA-012 | Export with photos not opted in, and with photos opted in | Photos included **only** on explicit opt-in | DR-042 | R17 | U, E | P0 |
-| TC-DATA-013 | **Property:** export → import into an empty profile → export, for 100 seeded data sets | Second export identical to the first | UJ-037 | R08 | U | P0 |
+| TC-DATA-013 | **Property:** export → import into an empty profile → export, for 100 seeded data sets | The two parsed documents are **deep-equal ignoring the volatile envelope fields** `exportedAt` and `appVersion`. Byte equality is explicitly not the assertion — it would fail on every run | UJ-037 | R08 | U | P0 |
 | TC-DATA-014 | Import a previous-schema export | Migrated and imported; nothing lost | DR-043 | R08 | U | P0 |
 | TC-DATA-015 | Import a truncated or syntactically invalid file | Rejected with a specific error; **existing data untouched** | DR-043 | R08 | U, E | P0 |
 | TC-DATA-016 | Import a well-formed file with an unknown future version | Rejected clearly; existing data untouched | DR-043 | R08 | U | P0 |
@@ -315,7 +316,7 @@ Run against the production build with the service worker active. Airport Mode ha
 
 | Area | Cases | Of which `@unconfirmed` |
 |---|---|---|
-| TC-DOM — domain rules | 91 | 13 |
+| TC-DOM — domain rules | 92 | 13 |
 | TC-DATA — storage and backup | 23 | 0 |
 | TC-AIR — airport, offline, service worker | 23 | 1 |
 | TC-I18N — localization | 14 | 0 |
@@ -323,7 +324,7 @@ Run against the production build with the service worker active. Airport Mode ha
 | TC-PWA — install and platform | 8 | 0 |
 | TC-SEC — privacy | 5 | 0 |
 | TC-UX — flows | 17 | 1 |
-| **Total** | **195** | **15** |
+| **Total** | **196** | **15** |
 
 **Requirement coverage.** Every `DR-0nn`, `UR-nn` and `UJ-0nn` ID published in `domain-rules.md` v1.0 and `user-journey.md` v1.0 is cited by at least one case above. This was checked mechanically against both documents on 2026-10-05 and is re-checked at each milestone exit.
 

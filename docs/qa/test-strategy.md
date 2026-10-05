@@ -56,7 +56,7 @@ Likelihood and Impact on a 1–5 scale. **Risk score = L × I.** Scores ≥ 15 a
 | R16 | **Multi-traveler mix-ups** — a receipt attributed to the wrong passport, totals aggregated across travelers | 2 | 4 | 8 | Domain aggregation tests per traveler; E2E two-traveler scenario | QA |
 | R17 | **Privacy leak** — a third-party font/analytics request, a passport number persisted, data in URL/history | 2 | 5 | 10 | E2E asserts no cross-origin requests; storage snapshot asserts no field matching a full passport pattern; no PII in query strings | QA + Architect |
 | R18 | **GitHub Pages base-path breakage** — app works locally but 404s on `/kaeru/`, SW scope wrong | 3 | 4 | 12 | Production smoke suite runs against the deployed URL after each deploy to `main`; base-path asserted in build output | QA + Architect |
-| R19 | **Rules change and the shipped data is stale** — the 1% food rate for 2027-04-01 to 2029-03-31 is a cabinet decision whose bill has not passed (`UR-08`), and twelve rules are unsettled (`UR-01`…`UR-12`). Likely, but the blast radius is bounded because the values are dated data | 4 | 3 | 12 | Rules live as versioned, dated data resolved by `purchaseDate`; no rate, threshold or deadline constant appears in a conditional under `src/domain`; a test asserts the data's `lastReviewed` date is within 180 days of the build; `@unconfirmed` tests pin behavior to the data file so a rule change is a data change | QA + Travel expert |
+| R19 | **Rules change and the shipped data is stale** — the 1% food rate for 2027-04-01 to 2029-03-31 is a cabinet decision whose bill has not passed (`UR-08`), and twelve rules are unsettled (`UR-01`…`UR-12`). Likely, but the blast radius is bounded because the values are dated data | 4 | 3 | 12 | Rules live as versioned, dated data resolved by `purchaseDate`; no rate, threshold or deadline constant appears in a conditional under `src/domain`; `@unconfirmed` tests pin behavior to the data file so a rule change is a data change. **Freshness is a scheduled check, not a PR gate:** a weekly workflow asserts the rules data `lastReviewed` date is within 180 days and opens an issue when it is not, so a stale date never turns a pull request red on a day nobody pushed | QA + Travel expert |
 | R20 | **Flaky test suite erodes trust** | 3 | 3 | 9 | No arbitrary `waitForTimeout`; role-based locators; one retry in CI only; a test that fails twice without a product cause is quarantined with an issue, never silently skipped | QA |
 
 ### Top 5 by score
@@ -85,9 +85,9 @@ Automation-first. Manual effort is reserved for what machines are bad at: real i
 
 - Domain code is **pure**: no `new Date()`, no `Intl` defaults, no direct storage access. Time and locale are injected. This is a testability requirement, not a style preference — R03 and R12 depend on it.
 - **Boundary cases are mandatory** for every numeric or date rule: `x−1`, `x`, `x+1` on both sides of the documented basis (tax-excluded vs tax-included matters — see `domain-rules.md`).
-- **Property-style cases** using seeded pseudo-random input (`fast-check` if the Architect approves the dependency, otherwise a seeded loop helper in `tests/support/`) for invariants such as:
+- **Property-style cases** using seeded pseudo-random input (`fast-check` if the Architect approves the dependency, otherwise a seeded loop helper in `src/test-support/`) for invariants such as:
   - `extractTax(price, rate)` + net == gross, for all integer prices in range;
-  - export → import → export is byte-identical;
+  - export → import → export round-trips: the parsed documents are deep-equal ignoring volatile envelope fields (`exportedAt`, `appVersion`), which is the real invariant — byte equality would fail on every run;
   - aggregation of a receipt set equals the sum of its per-traveler partitions;
   - a deadline is always ≥ the purchase date and independent of the device timezone.
 - **No floats for yen.** Yen is an integer. Any test that would need `toBeCloseTo` on a money value is a bug report, not a test.
@@ -120,10 +120,10 @@ Automation-first. Manual effort is reserved for what machines are bad at: real i
 
 ## 4. Test data strategy
 
-- **Builders over fixtures.** `tests/support/builders.ts` exposes `aReceipt()`, `aTrip()`, `aTraveler()` with sensible defaults and fluent overrides (`aReceipt().inShop('BIC Camera').yen(5000).reducedRate()`). Tests state only the fields they care about, so adding a field does not break 200 tests.
+- **Builders over fixtures.** `src/test-support/builders.ts` exposes `aReceipt()`, `aTrip()`, `aTraveler()` with sensible defaults and fluent overrides (`aReceipt().inShop('BIC Camera').yen(5000).reducedRate()`). Tests state only the fields they care about, so adding a field does not break 200 tests. Support code lives under `src/` so it shares one TypeScript type graph with the code it builds.
 - **Named scenario fixtures** for the recurring shapes, built from the builders: `emptyTrip`, `singleEligibleReceipt`, `thresholdEdgeTrip` (¥4,999 / ¥5,000 / ¥5,001), `mixedRateReceipt` (8% + 10% on one receipt), `oldSystemTrip` (purchases on 2026-10-31), `expiringTomorrowTrip`, `expiredTrip`.
 - **Persona fixtures** mirroring `user-journey.md`, because they are the shapes that actually break things: `linFamilyTrip` (P1 — 14 receipts, 3-4 operators, 2 travelers, mixed rates, Narita, checked-bag goods, one consumed-item receipt) and `alexTrip` (P2 — 5 receipts, one ¥1,280,000 tax-excluded watch triggering `DR-016`, Kansai, 07:45 departure).
-- **Golden files** (`tests/support/fixtures/`) only where the format is the contract: export v1 JSON, a corrupted export, a previous-schema export, an oversized photo, a HEIC photo, a 300-receipt trip for performance.
+- **Golden files** (`src/test-support/fixtures/`) only where the format is the contract: export v1 JSON, a corrupted export, a previous-schema export, an oversized photo, a HEIC photo, a 300-receipt trip for performance.
 - **Longest-string fixtures** per locale for layout risk (R10): the longest real shop name, a 40-character traveler name, a 7-figure total.
 - **Deterministic by construction:** fixed seed for property tests, injected clock pinned to `2026-11-15T10:00:00+09:00` as the canonical "now", no network, no real device locale. A test that reads the machine clock, the machine timezone, or the machine locale is defective.
 - **No real personal data, ever** — no real passport numbers, no real receipts with identifying content. Sample images are synthetic.
@@ -260,7 +260,7 @@ Run before every release to `main` that users will see. Matrix: **2 languages ×
 - [ ] Network panel shows no third-party requests; storage contains no full passport number.
 
 **Content**
-- [ ] Tax rules data `lastReviewed` date is current and sources resolve.
+- [ ] Tax rules data `lastReviewed` date is current (the weekly freshness check has no open issue) and sources resolve.
 - [ ] Guide content matches `docs/research/` and the live rules.
 
 Sign-off: QA comments the completed checklist on the release issue. No sign-off, no release.
