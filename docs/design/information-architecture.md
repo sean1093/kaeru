@@ -60,7 +60,7 @@ Rationale:
 
 **Back behaviour.** Every pushed screen has a `chevron-left` back in the app bar and honours the hardware or browser back gesture. Bottom sheets close on back, on scrim tap, and on swipe-down. Add receipt is a full-screen flow whose close is an `x` with an unsaved-changes guard.
 
-**Routing.** One route per screen in the inventory under the Pages base path, so every screen is linkable, restorable after a reload, and testable in isolation. Sheet state is in the URL too — `?sheet=<id>` on the current route, e.g. `/receipts/new?sheet=operator` — so browser back closes the sheet rather than leaving the screen. (An earlier draft of this document sketched it as a second fragment, `/receipts/new#operator`; routing is hash-based, so a second `#` cannot survive. The query form is what ships, and each screen whitelists the sheet ids it can open, so a stale or hand-typed `?sheet=` degrades to no sheet rather than a broken dialog.) Because the query carries the sheet, any other deep link into a screen — the FAQ's per-question anchor behind the fee warning's `guide.faq.q11` link, for instance — must be a path segment or a second query key, never a fragment. Airport Mode step is a route, so a backgrounded app resumes exactly where it was (`UJ-023`).
+**Routing.** Every screen is reachable by URL, so it is linkable, restorable after a reload, and testable in isolation. But the inventory is **not one route per screen**: of the 46 screen ids, 33 have a route of their own, nine are states of another screen and four are sheets. Section 3.1 classifies all 46. Sheet state is in the URL too — `?sheet=<id>` on the current route, e.g. `/receipts/new?sheet=operator` — so browser back closes the sheet rather than leaving the screen. (An earlier draft of this document sketched it as a second fragment, `/receipts/new#operator`; routing is hash-based, so a second `#` cannot survive. The query form is what ships, and each screen whitelists the sheet ids it can open, so a stale or hand-typed `?sheet=` degrades to no sheet rather than a broken dialog.) Because the query carries the sheet, any other deep link into a screen — the FAQ's per-question entry behind the fee warning's `guide.faq.q11` link — must be a path segment or a second query key, never a fragment. Airport Mode step is a route, so a backgrounded app resumes exactly where it was (`UJ-023`).
 
 ---
 
@@ -152,6 +152,44 @@ MVP screens. Every screen is drawn in `wireframes.md`.
 ### Cross-cutting
 
 Offline (only where it changes behaviour), form errors, storage write failure, install prompt, empty states.
+
+### 3.1 Routes, states and sheets
+
+A screen id names something the user recognises as a place. A route names something the browser can be at. They are not the same thing, and assuming they are is the kind of mistake that is cheap now and expensive once four tracks have written their links. **Thirty-three of the 46 ids have a route of their own. Nine are states of another screen and four are sheets.**
+
+**States — same URL as another screen, content selected by data:**
+
+| Id | Lives on | Selected by |
+|---|---|---|
+| S11 Home empty | S10 `/` | no trip and no receipts |
+| S12 Home before trip | S10 `/` | departure more than a day away |
+| S13 Home departure day | S10 `/` | departure is today |
+| S14 Home after trip | S10 `/` | departure has passed |
+| S28 Receipt list empty | S20 `/receipts` | no receipts |
+| S29 Old-system receipt | S22 `/receipts/:receiptId` | `purchaseDate <= 2026-10-31` (`DR-003`) |
+| S2B Fee warning | S22 `/receipts/:receiptId` | estimated net below `fee.warnBelowJpy` (`DR-027`) |
+| S34 Green result | S33 airport step 3 | the user reports the terminal's result |
+| S35 Red result | S33 airport step 3 | the user reports the terminal's result |
+
+Home being one route with five faces is the point of the design, not an accident of it: the app already knows the departure date, so the user never has to find the right mode. The same applies to S29 and S2B — a receipt is one place, and whether it is old-system or whether its fee eats the refund is something true *about* that receipt, not somewhere else to go.
+
+**Sheets — `?sheet=<id>` on whichever screen opened them, never a route:**
+
+| Id | Sheet | Opened from |
+|---|---|---|
+| S24 | `operator` | S21, S22, S23 |
+| S25 | `traveler` | S21, S22, S23 |
+| S26 | `packing` | S21, S22, S23 |
+| S2A | `not-claiming` | S22 **and** S17 |
+
+S2A is declared by two screens, because the packing plan's integrity check routes into it with the reason pre-selected (`UJ-018`).
+
+**Routes — everything else.** S27 is a route rather than a sheet because it is full-screen with its own close affordance, and a receipt photo is worth being able to link to.
+
+Two consequences for the router contract:
+
+- **A route may render more than one screen id**, so the id written into `data-screen` is the live screen's, not the route's. QA asserts S13 and S29 by name, and those are among the more interesting things to assert — a Home that fails to notice it is departure day is a real defect with no other symptom.
+- **Link building should accept all 46 ids**, resolving a state-only id to its host route. A link to the fee warning should be expressible as the fee warning; that it happens to render as a block on the receipt detail is a routing detail and not the caller's problem. The alternative — callers knowing which ids are "real" — puts the classification in this table into every call site.
 
 ---
 
