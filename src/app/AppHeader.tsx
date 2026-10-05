@@ -5,6 +5,8 @@ import styles from './AppHeader.module.css';
 import { LanguageSwitcher } from './LanguageSwitcher.tsx';
 import { messages } from './messages.ts';
 import { hrefFor } from './router.ts';
+import { SettingsGlyph } from './SettingsAction.tsx';
+import { pathTo } from './screens.ts';
 
 export function AppHeader(): JSX.Element {
   const t = useMessages(messages);
@@ -18,7 +20,22 @@ export function AppHeader(): JSX.Element {
             <span class={styles.tagline}>{t('app.tagline')}</span>
           </span>
         </a>
-        <LanguageSwitcher />
+        <div class={styles.actions}>
+          <LanguageSwitcher />
+          {/*
+            Settings is an app-bar action rather than a fifth tab (IA section 2): it is
+            visited a handful of times per trip, and four tabs is the maximum that keeps
+            every target >= 64 px wide with English labels un-truncated at 320 px.
+          */}
+          <a
+            class={styles.action}
+            href={hrefFor(pathTo('S60'))}
+            aria-label={t('app.settings')}
+            data-testid="app-bar-settings"
+          >
+            <SettingsGlyph />
+          </a>
+        </div>
       </div>
     </header>
   );

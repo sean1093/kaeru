@@ -36,3 +36,12 @@
   border-radius: var(--radius-full);
   background: var(--color-primary);
 }
+
+/*
+ * The screen's root exists only to carry `data-screen`, which QA asserts to know which of
+ * a route's screen ids is live. `display: contents` keeps it out of layout entirely, so the
+ * children remain direct flex items of the content column exactly as before.
+ */
+.screen {
+  display: contents;
+}

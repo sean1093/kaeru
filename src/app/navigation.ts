@@ -71,6 +71,15 @@ export interface ScreenRoute {
 export interface TabRegistration {
   /** Lower sorts first. Sparse numbering leaves room to insert without renumbering. */
   order: number;
+  /**
+   * The screen the tab opens, resolved through `pathTo`.
+   *
+   * Stated rather than inferred from the feature's first route: a feature that later adds a
+   * route above its main one would otherwise move its own tab silently, and the symptom is
+   * a bar that goes somewhere nobody chose. Naming the screen also makes "a tab cannot need
+   * a parameter nobody can supply" a property of the destination rather than of array order.
+   */
+  screenId: ScreenId;
   /** Key in the feature's own message bundle. */
   labelKey: string;
   icon: Icon;
