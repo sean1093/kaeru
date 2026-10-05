@@ -91,6 +91,7 @@ Worked examples are taken verbatim from `domain-rules.md` §4 and are hard asser
 | TC-DOM-050 | **Property:** trip totals equal the sum of per-traveler partitions, for 100 seeded receipt sets | Aggregation is partition-stable; no cross-traveler leakage | DR-004, DR-025 | R16 | U | P0 |
 | TC-DOM-051 | Dashboard segmentation | Tax paid / expecting refund / confirmed / received / lost are distinct figures. No single blended number that mixes states | DR-025, UJ-016, UJ-036 | R01 | U, C | P0 |
 | TC-DOM-052 | Rules data `lastReviewed` older than 180 days | A **weekly scheduled** workflow reports it and opens an issue. It is deliberately not part of the pull-request pipeline, so a stale review date never reds a PR on a day nobody pushed | DR-022, DR-051 | R19 | U | P1 |
+| TC-DOM-053 | The ¥5,000 threshold, the 90-day window or the 2026-11-01 start changed in the rules data without the guide prose changing | Guardrail suite fails and names both files. The guide keeps literal prose in both languages — the numbers are asserted against the resolved rules behind an explicit allowlist, not interpolated into two grammars | DR-010, DR-023, DR-031 | R19 | U | P0 |
 
 ### 1.4 Deadline, dates, timezone (DR-031, UR-07)
 
@@ -288,6 +289,28 @@ Run against the production build with the service worker active. Airport Mode ha
 | TC-SEC-004 | Operator links | Open outward only; Kaeru submits nothing, scrapes nothing, stores no operator or bank credential | DR-052, DR-044 | R17 | E | P0 |
 | TC-SEC-005 | Export file contents | Only what the user entered; readable and documented; no hidden identifier | UJ-037 | R17 | U | P1 |
 
+### 7.1 Prohibitions discharged by the guardrail suite
+
+Some cases above protect a rule that says something must **not** exist. A prohibition has no runtime surface, so there is often nothing a behavioural test can observe. Those are covered by `src/guardrails.test.ts` (issue #59) under the carve-out in [test-strategy.md](./test-strategy.md) section 3.
+
+Each case below says **who owns it**, because a case with two owners is a case nobody notices is missing. Two modes:
+
+- **Discharged** — the guardrail is the whole test. The owning issue's pinned range excludes the case.
+- **Backstopped** — the behavioural test is authoritative and stays in its owning issue; the guardrail is a static floor that catches a violation the behavioural test cannot see.
+
+(Case ids are in backticks here so this table is not a case row: each id still appears exactly once as a definition and the count check stays honest.)
+
+| Case | Rule | Mode | Guardrail | Behavioural owner |
+|---|---|---|---|---|
+| `TC-DOM-021` | `DR-013` | **Discharged** | 一般物品 and 消耗品 appear nowhere in `src/` or the message bundles except where the content says they are abolished | none — #15's range excludes it. There is no behaviour to observe: the assertion is that a field and a vocabulary do not exist |
+| `TC-DOM-053` | `DR-010`, `DR-023`, `DR-031` | **Discharged** | the three linked numbers in the guide match the resolved rules, behind an explicit allowlist | none |
+| `TC-DOM-106` | `DR-080`; guardrail covers `DR-075`, `DR-078` | **Backstopped** | no validation finding for those two rules carries severity `block` | **#17** — `ValidateReceipt` returns `block` for `DR-070` and `DR-071` only. That is the real assertion and it stays; the guardrail covers only two of the rules the case spans |
+| `TC-DATA-019` | `DR-041` | **Backstopped** | no stored entity field can hold more than four characters of a passport reference | **#22** — truncation or rejection on import is runtime behaviour over hostile input, which a shape check cannot see |
+| `TC-SEC-001` | `DR-040` | **Backstopped** | no `fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon` or `EventSource` outside the outbound-link helper and the service-worker registration | **E2E shell suite** — a static check cannot see a request made by a dependency |
+| `TC-SEC-004` | `DR-044`, `DR-052` | **Backstopped** | no credential field in any entity | **E2E** — that links open outward and nothing is submitted is observable, and worth observing |
+
+The rule of thumb: **discharge only when the assertion is "this does not exist"**. The moment a rule has an input, a user, or a hostile file involved, the behavioural test is authoritative and the guardrail is a floor underneath it.
+
 ---
 
 ## 8. TC-UX — Flow-level checks
@@ -318,7 +341,7 @@ Run against the production build with the service worker active. Airport Mode ha
 
 | Area | Cases | Of which `@unconfirmed` |
 |---|---|---|
-| TC-DOM — domain rules | 92 | 13 |
+| TC-DOM — domain rules | 93 | 13 |
 | TC-DATA — storage and backup | 23 | 0 |
 | TC-AIR — airport, offline, service worker | 23 | 1 |
 | TC-I18N — localization | 14 | 0 |
@@ -326,7 +349,7 @@ Run against the production build with the service worker active. Airport Mode ha
 | TC-PWA — install and platform | 8 | 0 |
 | TC-SEC — privacy | 5 | 0 |
 | TC-UX — flows | 17 | 1 |
-| **Total** | **196** | **15** |
+| **Total** | **197** | **15** |
 
 **Requirement coverage.** Every `DR-0nn`, `UR-nn` and `UJ-0nn` ID published in `domain-rules.md` v1.0 and `user-journey.md` v1.0 is cited by at least one case above. This was checked mechanically against both documents on 2026-10-05 and is re-checked at each milestone exit.
 
