@@ -43,7 +43,7 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | Refund methods | Credit card, QR-code payment, bank account, cash |
 | Fee | Not published |
 | Terminals supported | Smartphone/tablet, POS, PC, dedicated terminal |
-| Status | `reported-media` for the traveler flow (described on the company's own site) |
+| Status | `C-operator` — the registration flow, the QR-on-receipt mechanic and the refund methods are all described on the company's own 免税手続きの流れ page |
 
 ### `pie-vat` — PIE VAT
 
@@ -125,7 +125,7 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | en | Japan Tax Free |
 | zh-TW | 日本免稅 |
 | URL | <https://jptaxfree.com/> |
-| Registration | POS, tablet or dedicated terminal |
+| Registration | **Not itemised publicly.** The association list records only the shop's equipment (POS, tablet, dedicated terminal), which says nothing about what a traveller does |
 | Refund methods | Not published |
 | Fee | Not published |
 | Status | Listed on the association's refund-capable list only |
@@ -138,7 +138,7 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | en | WAmazing |
 | zh-TW | WAmazing |
 | URL | <https://corp.wamazing.com/> |
-| Registration | App or dedicated terminal |
+| Registration | **Not itemised publicly.** The association list records only the shop's equipment (app, dedicated terminal), which says nothing about what a traveller does |
 | Refund methods | Not published |
 | Fee | Not published |
 | Notes | The only one of the ten that declared support for just one of the three refund delegation patterns |
@@ -152,7 +152,7 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | en | Global Tax Free |
 | zh-TW | Global Tax Free |
 | URL | <https://www.global-taxfree.jp/> |
-| Registration | POS, tablet or PC |
+| Registration | **Not itemised publicly.** The association list records only the shop's equipment (POS, tablet, PC), which says nothing about what a traveller does |
 | Refund methods | Not published |
 | Fee | Not published |
 | Status | Listed on the association's refund-capable list only |
@@ -165,7 +165,7 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 | en | Intasect (InTaxFree Refund) |
 | zh-TW | Intasect（InTaxFree） |
 | URL | <https://intapay-payment.intasect.com/intaxfree-refund> |
-| Registration | POS, tablet or PC |
+| Registration | **Not itemised publicly.** The association list records only the shop's equipment (POS, tablet, PC), which says nothing about what a traveller does |
 | Refund methods | Not published |
 | Fee | Not published |
 | Status | Listed on the association's refund-capable list only |
@@ -174,10 +174,11 @@ A shop picks one of three patterns: delegate refunds to its transmitting operato
 
 1. **Never write a fee we have not seen published or reported first-hand.** "Not published" is a legitimate value and the only honest one for five of these ten. Rendering `null` as `0%` would be a lie that costs users money.
 2. **A percentage without a basis is not a fee, it is a guess.** A percentage may be charged on the refund or on the tax-excluded purchase, and the refund is roughly a tenth of the purchase, so the wrong choice is a tenfold error in the user's money. Record the basis from the operator's own wording or record no number at all (`DR-026a`). Only two bases are established today: Tourego (purchase) and Ocean's credit-card route (purchase).
-3. **Every fee carries its observation date.** Ocean's terms changed materially within four weeks. Consumption Tax Act rules do not govern refund procedures at all, so operators may change fees, methods and currencies at any time with no notice.
-4. **Never imply endorsement.** Neither the association, the National Tax Agency, nor Kaeru vouches for any operator.
-5. **Do not promise airport cash.** Cash at the departure port is a method the authorities list as possible. No operator has announced staffed airport cash counters for 2026-11-01.
-6. **The traveler usually cannot choose.** The operator is a property of the shop. Present this catalog as a reference for decoding a receipt, not as a menu.
+3. **The association list describes the shop's equipment, not the traveller's path.** Its columns (スマートフォン・タブレット / POSレジ / パソコン / その他) record what hardware a shop runs the tax-free system on. That is a merchant procurement fact and must never be written into a Registration row, where a reader will take "PC" to mean there is a website they can register on.
+4. **Every fee carries its observation date.** Ocean's terms changed materially within four weeks. Consumption Tax Act rules do not govern refund procedures at all, so operators may change fees, methods and currencies at any time with no notice.
+5. **Never imply endorsement.** Neither the association, the National Tax Agency, nor Kaeru vouches for any operator.
+6. **Do not promise airport cash.** Cash at the departure port is a method the authorities list as possible. No operator has announced staffed airport cash counters for 2026-11-01.
+7. **The traveler usually cannot choose.** The operator is a property of the shop. Present this catalog as a reference for decoding a receipt, not as a menu.
 
 ## Sources
 
