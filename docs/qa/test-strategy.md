@@ -76,6 +76,7 @@ Automation-first. Manual effort is reserved for what machines are bad at: real i
 | **Unit — domain** | Vitest (node env) | Pure functions: tax extraction, eligibility, aggregation, deadlines, formatting, import/export schema | Every push, pre-commit optional |
 | **Unit — storage** | Vitest + `fake-indexeddb` | Repository layer, schema migrations, transactions, quota errors | Every push |
 | **Component** | Vitest (jsdom) + `@testing-library/preact` | Rendering, states (empty/loading/error), interaction, labels, both locales with longest-string fixtures | Every push |
+| **Guardrail** | Vitest (node env) | Prohibition rules that have no runtime surface: forbidden network APIs, abolished vocabulary, severity ceilings, field-length limits, rules-data-to-guide drift | Every push |
 | **E2E** | Playwright | User journeys, offline, service-worker update, persistence, install, locale switch | Every PR |
 | **Accessibility** | `@axe-core/playwright` | Every E2E route and key dialog state | Every PR |
 | **Production smoke** | Playwright against `https://sean1093.github.io/kaeru/` | Deployed build loads, base path, SW registers, manifest, one critical journey | After every deploy to `main` |
@@ -98,6 +99,18 @@ Automation-first. Manual effort is reserved for what machines are bad at: real i
 - Query by role and accessible name first (`getByRole('button', { name: … })`). `data-testid` is the fallback for non-semantic containers only. This keeps accessibility load-bearing: if the test can't find it, a screen reader can't either.
 - Every component test renders in **both locales**, with a "longest realistic string" fixture per locale.
 - Assert observable output, never internal state or props plumbing.
+
+### Guardrail test conventions
+
+Some domain rules are prohibitions rather than features. `DR-013` says the general-goods / consumables split must not exist; `DR-040`, `DR-044` and `DR-052` say the app must not talk to a network it does not own; `DR-041` caps a stored field at four characters; `DR-075` and `DR-078` say a validation finding must never block a save. There is nothing to build for any of them, so there is nothing a behavioural test can observe — and nothing stopping a later pull request from quietly violating one.
+
+These get **guardrail tests**: a small suite that reads the source tree and the bundled content instead of running the app (`src/guardrails.test.ts`, owned by `M1-5d` / issue #59).
+
+- This is the **one** exception to "assert observable output, never implementation". The rule above exists to stop tests pinning wording or internal structure in place of behaviour. A prohibition has no behaviour to pin: static assertion is the only mechanism available, and the thing being protected is a published contract in `domain-rules.md`, not an implementation detail. Nobody may cite the general rule to delete this suite.
+- Every guardrail names the rule id it protects in its test title, so a failure explains itself to someone who has never read this document.
+- A guardrail asserts a **prohibition or an equality**, never a quality judgement. "No `fetch` outside the outbound-link helper" is a guardrail. "The code is clean" is not.
+- **No wall-clock assertions.** A guardrail that fails because a CI runner was busy is a flaky test, and under R20 a flaky test gets quarantined — which is exactly what must not happen to a guardrail. Keep the suite fast; do not assert that it is fast.
+- Where a guardrail needs exceptions, they live in an **explicit, documented allowlist** in the test file. Adding to the allowlist must be a visible diff that a reviewer can argue with. A guardrail with an implicit escape hatch protects nothing.
 
 ### E2E conventions
 
