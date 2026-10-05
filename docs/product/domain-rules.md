@@ -295,7 +295,32 @@ These are the rules no published source settles as of 2026-10-05. Each must be *
 
 ---
 
-## 11. Source index
+## 11. Rules that should be held structurally, not warned about
+
+Most rules in this document are advice: `DR-080` says Kaeru informs and the user decides. A small number are different, and M1 found the test for which ones.
+
+**A rule belongs here when breaking it is both silent and irreversible** — the user cannot tell it happened, and nothing they do afterwards recovers it. For those, a warning is the wrong instrument: warnings are dismissed, conventions are forgotten, and comments saying "never do this" are read by everyone except the person about to do it. The right instrument is an API with no shape for the mistake, so that violating the rule requires editing a contract and therefore passing a reviewer.
+
+Four landed in M1, and the pattern was noticed only after the fourth:
+
+| Rule | Held by | Instead of |
+|---|---|---|
+| `UJ-026`, `DR-032` — the bag-drop warning cannot be dismissed | `Banner` has no `onDismiss` prop at all | A dismissible banner and a convention not to dismiss it |
+| `UJ-023` — Airport Mode is a mode, never a tabbed screen | A route whose `chrome` disagrees with the published inventory **throws at boot**, naming both claimants | A lint rule, or care |
+| `UR-02` — Kaeru may show a shop/day total and must never pronounce a verdict | The group shape carries no `qualifies`, `eligible` or `approved` field, asserted by a test naming the forbidden keys | Copy guidance about not promising |
+| `DR-035` — consumed goods go to a customs officer, never through the kiosk | A receipt routed to the counter is not rendered as a tickable row | A warning on a row the traveller can still tick |
+
+All four protect the same traveller in the same five minutes, which is not a coincidence: the airport is where this product's mistakes stop being recoverable.
+
+**Using it.** When implementing a rule, ask what happens if it is broken. If the answer is "the user sees an error" or "the user can undo it", a warning is right and `DR-080` applies — do not reach for a compile error, because over-constraining costs flexibility for nothing. If the answer is **"the refund is gone and nobody noticed"**, the rule wants a shape rather than a sentence.
+
+Candidates this suggests for M2, not yet built: `DR-030`'s all-or-nothing confirmation should make partial confirmation unrepresentable rather than merely unused; `DR-041`'s passport cap should be unexpressible in the type rather than validated at the boundary alone; and `DR-062`'s user-asserted statuses should have no shape for a status Kaeru could present as independently verified.
+
+The general form, which is not specific to this domain: **when a guarantee lives as one line of configuration or one line of a comment, it is a guarantee until someone edits around it — and nobody finds out, because the thing it protects fails silently.**
+
+---
+
+## 12. Source index
 
 Source IDs `[S1]`–`[S25]` resolve in `docs/research/tax-free-system-2026.md` § Sources, each with a URL and the access date **2026-10-05**. The load-bearing ones for this document:
 
