@@ -26,6 +26,7 @@ export default defineConfig({
         'src/**/*.test.{ts,tsx}',
         'src/**/messages.ts',
         'src/main.tsx',
+        'src/test-support/**',
         'src/vite-env.d.ts',
       ],
       thresholds: {

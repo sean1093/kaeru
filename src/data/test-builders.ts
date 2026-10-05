@@ -69,6 +69,7 @@ export function aRegistration(overrides: Partial<OperatorRegistration> = {}): Op
     operatorId: 'global-tax-free',
     registeredAt: null,
     refundMethod: null,
+    feeOverride: null,
     ...overrides,
   };
 }
