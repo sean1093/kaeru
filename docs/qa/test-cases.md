@@ -354,6 +354,11 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 | TC-UX-022 | Editing `trip.departureDate` — the hotel at 23:00, deciding whether to stay two more days | Every deadline check re-runs and the cost is shown **before** the change is committed: which receipts move into `DR-076` or `DR-076a`, by name. This is the only moment the deadline warning is actionable — customs confirmation happens at departure, so "do customs early" does not exist, and a warning shown at logging time points at a screen where nothing can be done about it | DR-076, DR-076a, UJ-021 | R03 | E | P0 |
 | TC-UX-023 | Eight receipts ticked on the packing checklist at 22:00, reopened at 06:00 | Every tick is still there. The checklist persists, never resets and never expires. A silent reset is indistinguishable from a tick never made, and is worse than a stale one: a stale tick costs a moment of re-verification, a vanished one costs trust in every other tick on the screen | UJ-017, DR-077 | R04, R05 | E | P0 |
 | TC-UX-024 | A receipt with a high-value item, ticked on S17's documents block | That persisted tick **is** `DR-078`'s acknowledgement. No separate `Receipt.documentsAcknowledged` field exists — a stored field would be a second source of truth for the same fact, and the two would drift | DR-078, DR-016, UJ-020 | R01 | U, E | P0 |
+| TC-UX-025 | An operator whose `feeNote` is `null` — we have no fee information for them | The fee line says we do not know, in words. It never renders `¥0`, a blank, or a dash that could read as zero. R21: "no fee will be deducted" is a specific, plausible, wrong answer, and it is the one that encourages claiming a refund that arrives as nothing | DR-051, DR-026a | R21, R01 | U, C | P0 |
+| TC-UX-026 | A receipt under the pre-2026 system, where the 90-day export window does not apply | The deadline area says the rule does not apply to this receipt. It never shows a comfortable deadline, a green state, or `risk: 'none'` rendered as reassurance. "Does not apply" and "is fine" are different states and must look different | DR-001, DR-031 | R21, R03 | U, C | P0 |
+| TC-UX-027 | Export size estimate on a device with no receipts and no photos | Reads as nearly nothing, not as a floor. A minimum shown on an empty device tells the traveler that including photos costs a megabyte, which makes the one choice the figure exists to inform worse rather than better | UJ-030 | R21 | C | P1 |
+| TC-UX-028 | A tab badge selector that cannot yet compute — storage not ready at first paint | **No badge renders.** The selector returns `undefined`; it never returns `0`. A badge reading 0 says "nothing is outstanding" at the moment the honest answer is "we do not know yet", and on departure day the actions it hides are `DR-077` (goods already in checked baggage) and `DR-030` (unconfirmed items) — the two failures that are silent and irreversible once the bag is handed over | DR-077, DR-030, UJ-016 | R21, R05 | U, C | P0 |
+| TC-UX-029 | Every value on a screen that can be unknown or inapplicable, enumerated per screen | Each renders distinguishably from a real value. The assertion is on the unknown case specifically; "renders without error" does not satisfy it. This is the standing case the R21 convention attaches to, so a new value with an unknown state is covered by a habit rather than by someone noticing it in a screenshot | — | R21 | C | P0 |
 
 ---
 
@@ -368,8 +373,8 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 | TC-A11Y — accessibility | 18 | 0 |
 | TC-PWA — install and platform | 8 | 0 |
 | TC-SEC — privacy | 5 | 0 |
-| TC-UX — flows | 24 | 1 |
-| **Total** | **216** | **15** |
+| TC-UX — flows | 29 | 1 |
+| **Total** | **221** | **15** |
 
 **Requirement coverage.** Every `DR-0nn`, `UR-nn` and `UJ-0nn` ID published in `domain-rules.md` v1.0 and `user-journey.md` v1.0 is cited by at least one case above. This was checked mechanically against both documents on 2026-10-05 and is re-checked at each milestone exit.
 

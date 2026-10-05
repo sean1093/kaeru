@@ -58,12 +58,15 @@ Likelihood and Impact on a 1–5 scale. **Risk score = L × I.** Scores ≥ 15 a
 | R18 | **GitHub Pages base-path breakage** — app works locally but 404s on `/kaeru/`, SW scope wrong | 3 | 4 | 12 | Production smoke suite runs against the deployed URL after each deploy to `main`; base-path asserted in build output | QA + Architect |
 | R19 | **Rules change and the shipped data is stale** — the 1% food rate for 2027-04-01 to 2029-03-31 is a cabinet decision whose bill has not passed (`UR-08`), and twelve rules are unsettled (`UR-01`…`UR-12`). Likely, but the blast radius is bounded because the values are dated data | 4 | 3 | 12 | Rules live as versioned, dated data resolved by `purchaseDate`; no rate, threshold or deadline constant appears in a conditional under `src/domain`; `@unconfirmed` tests pin behavior to the data file so a rule change is a data change. **Freshness is a scheduled check, not a PR gate:** a weekly workflow asserts the rules data `lastReviewed` date is within 180 days and opens an issue when it is not, so a stale date never turns a pull request red on a day nobody pushed | QA + Travel expert |
 | R20 | **Flaky test suite erodes trust** | 3 | 3 | 9 | No arbitrary `waitForTimeout`; role-based locators; one retry in CI only; a test that fails twice without a product cause is quarantined with an issue, never silently skipped | QA |
+| R21 | **The reassuring default** — a figure or state whose only purpose is to inform a decision, rendered with a stand-in value when the real one is unknown or does not apply, so the traveler is biased toward the worse decision and has no way to tell. Four instances in one week, in four modules: `feeNote: null` shown as `¥0`; `risk: 'none'` on an old-system receipt shown as a checked, comfortable deadline; an export estimate floored at "about 1 MB" on an empty device; and a tab badge selector that cannot yet compute returning `0`. Never crashes, never blanks, never errors — every existing assertion passes | 4 | 4 | 16 | **For every value that can be unknown or inapplicable, assert the unknown case specifically, and assert it renders distinguishably from a real value** — not that it renders without error. `undefined` means "no badge to show", never "nothing to show a badge about". See section 3.2 | QA + whoever owns the value |
 
-### Top 5 by score
+### Top by score
 
-R01 wrong refund estimate · R02 wrong threshold verdict · R03 wrong deadline · R04 IndexedDB data loss · R05 offline failure at the airport.
+R01 wrong refund estimate (20) · R02 wrong threshold verdict (20) · R03 wrong deadline (20) · **R21 the reassuring default (16)** · then a five-way tie at 15: R04 IndexedDB data loss, R05 offline failure at the airport, R06 stale app served by the service worker, R07 iOS Safari storage eviction, R08 failed import.
 
-These five define the non-negotiable automated coverage for M1 and M2.
+These define the non-negotiable automated coverage for M1 and M2.
+
+R21 entered above the tie on evidence rather than estimate: four instances in one week, none caught by a test, three caught by someone looking at a screenshot. Its likelihood is 4 because the shape is a *habit* — a default written to avoid showing a blank — not a mistake, so it recurs wherever a new value can be unknown.
 
 ---
 
@@ -122,6 +125,41 @@ Written down because a known limit is cheaper than rediscovering it under pressu
 - **A conditional branch is unverified until it has run in the condition it exists for.** Green tests are evidence about the paths those tests take. A branch that exists for a rare case — a filter, a fallback, an error path — is exercised by nothing in a normal run, so an always-false predicate and a working one are indistinguishable in every build we have ever seen. This is not hypothetical: the axe obstruction filter shipped in #91 matched nothing, passed every build, and protected nothing, because `main` produces no `target-size` finding. A rare branch needs a test that **manufactures** the rare case, not a green suite around it.
 - **We cannot reproduce a genuine quota or eviction failure.** `fake-indexeddb` has no quota, so `TC-DATA-006` and `TC-DATA-007` exercise our handling of a simulated error rather than the browser's behaviour when a device actually fills up. `R07` therefore still depends on a real device, and no green suite is evidence about what happens at a real storage ceiling.
 
+### 3.2 The reassuring default (R21)
+
+The failure class our assertions are worst at, because the wrong value is **inside the range of plausible right values**.
+
+> A figure or state whose only purpose is to inform a decision is rendered with a stand-in value when the real one is unknown or does not apply — so the traveler is biased toward the worse decision and has no way to tell.
+
+Four instances in one week, in four modules:
+
+| Where | Shown | Reads as | Why it is invisible |
+|---|---|---|---|
+| `Operator.feeNote: null` | `¥0` | "no fee will be deducted" | some operators genuinely might not charge |
+| `DeadlineStatus.risk: 'none'` on an old-system receipt | a comfortable deadline | "we checked, you are fine" | most receipts do have comfortable deadlines |
+| Export size estimate floored at 1 MB on an empty device | "about 1 MB" | "photos cost a megabyte" | backups with photos are large |
+| A tab badge selector that cannot yet compute returning `0` | `0 need action` | "nothing is outstanding" | most of the time nothing is |
+
+What makes it one class rather than four bugs:
+
+1. **It never crashes, never blanks, never errors.** Every existing assertion passes. There is nothing for "does it render" or "is it non-empty" to catch.
+2. **The traveler cannot detect it.** `¥0` is a number a fee could be; "about 1 MB" is a size a backup could be.
+3. **It is always a shortcut that looks like politeness** — a default, a floor, a coalesce. Nobody writes it carelessly; they write it to avoid showing a blank.
+4. **The harm direction is consistent**: it biases the traveler toward the action we were trying to inform them about. The reassuring answer is the wrong one, so nothing prompts them to question it.
+
+**The convention.** For every value that can be unknown or inapplicable, assert the unknown case **specifically**, and assert that it renders **distinguishably** from a real value. Not "renders without error" — distinguishable. That is the assertion all four would have failed.
+
+Corollaries, each from a real instance:
+
+- A sentinel means one thing. `undefined` means "no badge to show"; it never also means "nothing to show a badge about". A selector that cannot answer returns `undefined`, never `0`.
+- A floor on an estimate is a lie at the bottom of its range. If the honest answer is "nearly nothing", say nearly nothing.
+- "Does not apply" and "is fine" are different states and must render differently. An old-system receipt has no deadline to be comfortable about.
+- A field that means two things is the same defect wearing a type. So is an inherited setting a child can silently *replace* rather than extend — it reads as additive at every call site and is not.
+
+**The badge case is the one still preventable, and it is the most severe.** The other three mislead about money; that one can mislead about the airport. A false `0` at first paint on departure day hides `DR-077` (goods still in checked baggage) and `DR-030` (unconfirmed items) — the two failures that are silent and irreversible, because once the bag is handed over the airline will not retrieve it and nothing afterwards recovers the refund. One paint cycle, on the one screen read while walking into a terminal.
+
+**Why a convention and not three test cases.** Three of the four were caught by a person looking at a 390 px capture. That is luck with good people attached, and it does not scale to the fourth. The point of writing the class down is that the next instance is caught by a habit.
+
 ### E2E conventions
 
 - **Projects:** `iphone-webkit` (iPhone 14, WebKit), `pixel-chromium` (Pixel 7, Chromium), `desktop-chromium`. Locale is a parameter; critical journeys run in both `zh-TW` and `en`.
@@ -132,6 +170,8 @@ Written down because a known limit is cheaper than rediscovering it under pressu
 - No `waitForTimeout`. Wait for a state, not for a duration.
 - **Artifacts:** `trace: 'on-first-retry'`, `screenshot: 'only-on-failure'`, `video: 'retain-on-failure'`. CI uploads `playwright-report/` and `test-results/`. Reporters: `list` + `html` locally; `junit` + `github` added in CI.
 - **Screenshots on PRs:** every UI-affecting PR attaches screenshots in **both** zh-TW and en at a 390 px-wide viewport. Playwright writes them to `test-results/screenshots/`; the author drags them into the PR body.
+- **And the author looks at them before requesting review.** Attaching is not reading. In one week three defects were found this way and by nothing else: an export estimate reading "about 1 MB" on an empty device, a clipped tagline that claimed we *are* the refund service, and a sticky footer covering the "not sure yet" option in the operator list — the one a traveler who cannot find their operator needs most. All three were a value that was **wrong rather than absent**, which is the class an assertion is worst at, because you must already suspect the value to check it (R21, section 3.2). All three were visible in one glance at a capture the PR already had.
+- **Capture the smallest supported width too when a surface is scrollable or has sticky chrome.** 320 px is where a sticky footer eats proportionally the most of a short list, and where font-driven relayout is largest. If a control is reachable there, it is reachable everywhere.
 
 ### Accessibility conventions
 
@@ -190,6 +230,7 @@ Extends the DoD in [team-workflow.md](../process/team-workflow.md). A PR is done
 
 - [ ] Tests added or updated at the right level (domain logic → unit; UI state → component; journey → E2E). A bug fix includes a test that fails without the fix.
 - [ ] New or changed numeric/date rules have boundary tests on both sides of the boundary.
+- [ ] **Every value that can be unknown or inapplicable has a test for that case, asserting it renders distinguishably from a real value** (R21, section 3.2). "It renders without error" does not satisfy this. If a value can only ever be known, say so in the PR.
 - [ ] CI is green, including the full E2E matrix and axe; no new flaky test introduced.
 - [ ] Coverage gate holds (`src/domain` ≥ 90% lines/branches from M1).
 - [ ] UI changes include screenshots in **zh-TW and en** at a phone viewport.
