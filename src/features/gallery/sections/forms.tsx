@@ -95,6 +95,7 @@ export function FormsSection(): JSX.Element {
             <AmountEntry
               id="amount-entry"
               label={t('gallery.field.amountLabel')}
+              accessibleName={t('gallery.field.amountAccessibleName')}
               value={amount}
               onChange={setAmount}
             />
@@ -105,6 +106,7 @@ export function FormsSection(): JSX.Element {
             <AmountEntry
               id="amount-entry-empty"
               label={t('gallery.field.amountLabel')}
+              accessibleName={t('gallery.field.amountAccessibleName')}
               value={emptyAmount}
               onChange={setEmptyAmount}
             />
@@ -115,6 +117,7 @@ export function FormsSection(): JSX.Element {
             <AmountEntry
               id="amount-entry-derived"
               label={t('gallery.field.amountLabel')}
+              accessibleName={t('gallery.field.amountAccessibleName')}
               value={1000}
               onChange={() => {}}
               derivedHint={t('gallery.field.amountDerived')}
@@ -126,6 +129,7 @@ export function FormsSection(): JSX.Element {
             <AmountEntry
               id="amount-entry-error"
               label={t('gallery.field.amountLabel')}
+              accessibleName={t('gallery.field.amountAccessibleName')}
               value={erroredAmount}
               onChange={setErroredAmount}
               error={t('gallery.field.amountError')}

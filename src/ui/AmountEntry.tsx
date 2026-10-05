@@ -14,8 +14,11 @@ import { Field } from './Field.tsx';
  * shows the raw digit string so the caret never jumps over a comma that appears mid-entry;
  * once blurred, it shows the same value formatted with `Intl.NumberFormat` grouping.
  *
- * The `¥` adornment sits outside the editable area and is `aria-hidden`; the field's own
- * `aria-label` carries the currency so a screen reader still hears it.
+ * The `¥` adornment sits outside the editable area and is `aria-hidden`. The accessible
+ * name is `accessibleName` when the caller supplies it — already translated, carrying the
+ * currency word in full — falling back to `label` alone otherwise; this component never
+ * composes bilingual text itself (UX review, #115: a component inventing a mixed-language
+ * string is exactly what "already-translated strings, never message keys" exists to stop).
  *
  * `autoFocus` is applied imperatively on mount rather than via the native attribute: the
  * attribute is a linted anti-pattern everywhere else in this kit for good reason — it
@@ -31,6 +34,7 @@ export function AmountEntry({
   autoFocus,
   error,
   derivedHint,
+  accessibleName,
 }: AmountEntryProps): JSX.Element {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -56,7 +60,7 @@ export function AmountEntry({
           type="text"
           inputMode="numeric"
           autocomplete="off"
-          aria-label={`${label}, 日圓 / yen`}
+          aria-label={accessibleName ?? label}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={describedBy}
           value={displayValue}

@@ -249,6 +249,13 @@ export interface AmountEntryProps {
   error?: string;
   /** The tax-included toggle's derived figure, always labelled as calculated (DR-022). */
   derivedHint?: string;
+  /**
+   * Already translated, carrying the currency word in full — e.g. "Tax-excluded total,
+   * yen" / "未稅金額，日圓". Falls back to `label` alone when absent; the component never
+   * composes a currency word itself; a component inventing bilingual content is exactly
+   * what "already-translated strings, never message keys" exists to prevent (UX review, #115).
+   */
+  accessibleName?: string;
 }
 
 export interface DateFieldProps {

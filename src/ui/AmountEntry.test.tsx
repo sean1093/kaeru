@@ -77,4 +77,22 @@ describe('AmountEntry', () => {
     );
     expect(screen.getByText('Calculated from tax-included amount')).toBeVisible();
   });
+
+  it('UX review, #115: never invents bilingual content — the accessible name is label alone without accessibleName', () => {
+    render(<AmountEntry id="amount" label="Amount" value={null} onChange={vi.fn()} />);
+    expect(screen.getByRole('textbox')).toHaveAccessibleName('Amount');
+  });
+
+  it('uses the caller-supplied, already-translated accessibleName when given', () => {
+    render(
+      <AmountEntry
+        id="amount"
+        label="未稅金額"
+        value={null}
+        onChange={vi.fn()}
+        accessibleName="未稅金額，日圓"
+      />,
+    );
+    expect(screen.getByRole('textbox')).toHaveAccessibleName('未稅金額，日圓');
+  });
 });
