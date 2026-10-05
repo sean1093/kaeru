@@ -293,7 +293,7 @@ In dark theme both shadows are near-invisible, so the same elements additionally
 - **Starting set:** `receipt`, `plus`, `home`, `plane-takeoff`, `book-open`, `settings`, `check`, `check-circle`, `circle-alert`, `clock`, `luggage`, `backpack`, `scan-line`, `camera`, `chevron-right`, `chevron-left`, `x`, `wifi-off`, `download`, `trash-2`, `user`, `yen`.
 - **Accessibility:** decorative icons get `aria-hidden="true"` and `focusable="false"`. An icon that is the only content of a control gets an `aria-label` on the control, never on the `<svg>`.
 - **Never** use an icon alone to convey status. Pair it with a word (principle 2).
-- **Custom:** two icons are drawn in-house because no library has them — the kiosk terminal and the "customs confirmed" seal. Both follow the same 24 px / 1.75 px grid.
+- **Custom:** two icons are drawn in-house because no library has them — the tax-free procedure terminal and the "customs confirmed" seal. Both follow the same 24 px / 1.75 px grid.
 
 ---
 

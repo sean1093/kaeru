@@ -29,7 +29,7 @@ Low-fidelity, structure only. Boxes are a 360 px-wide phone viewport; proportion
 | Solid rule | Section boundary |
 | `[set]` `[cal]` `[time]` `[cam]` `[img]` `[find]` `[net]` | Icon placeholders: settings, date, time, camera, photo library, search, connectivity |
 | `o Name` | Traveler avatar plus label |
-| `GREEN` / `RED` | The kiosk result graphic, rendered as a large icon in the product |
+| `GREEN` / `RED` | The terminal result graphic, rendered as a large icon in the product |
 | `!` | Inline warning icon (`circle-alert`) |
 | `(i)` | Inline info icon |
 | `↗` | Opens an external site in a new tab |
@@ -92,7 +92,7 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │ 出境當天，要先在出境大廳的機台辦             │
 │ 海關確認，然後才去報到、託運行李。           │
 │ On departure day you do the customs          │
-│ step at a kiosk in the departure             │
+│ step at a terminal in the departure          │
 │ lobby first, and only then check in          │
 │ and drop your bags.                          │
 │                                              │
@@ -128,7 +128,7 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │ 出境機場  Departure airport                  │
 │ [ 成田 NRT                  ] v              │
 │  ✓ 這個機場有退稅機台                        │
-│  ✓ This airport has tax-free kiosks          │
+│  ✓ This airport has tax-free terminals       │
 │                                              │
 │ 班機時間  Flight time (optional)             │
 │ [ 18:40                     ] [time]         │
@@ -233,7 +233,7 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 | S01 primary | 60 秒看懂新制 | How it works, in 60 seconds |
 | S05 step 2 title | 海關要在託運之前 | Customs comes before bag drop |
 | S05 step 2 warning | 行李託運後就拿不回來。海關要看東西的時候拿不出來，那張收據就退不成。 | You cannot get a checked bag back. If customs asks to see the goods and you cannot show them, that receipt is lost. |
-| S02 airport hint | 這個機場有退稅機台 | This airport has tax-free kiosks |
+| S02 airport hint | 這個機場有退稅機台 | This airport has tax-free terminals |
 | S02 flight-time helper | 填了就能幫你算幾點要出發 | Lets Kaeru work out when to leave |
 | S02 connection link | 有國內線轉機再飛出日本？ | Connecting domestically first? |
 | S03 intro | 每本護照都是獨立的退稅手續，所以一起旅行的人要分開記。 | Each passport is its own customs procedure, so list everyone. |
@@ -871,7 +871,7 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 ```
 
 
-**Fee warning (DR-025, DR-027).** Triggered when the estimated net approaches the cost of receiving a transfer, not only when it goes below zero — a ¥30 refund is as bad as none, and the user should see it coming. The illustrating figure is deliberately locale-specific: NT$200–400 is a Taiwanese-bank fact and would be wrong to quote to an English-speaking traveler, so the English string carries the same warning without the number. Both link to `guide.faq.q11`.
+**Fee warning (DR-025, DR-027).** Triggered when the estimated net falls below `fee.warnBelowJpy`, default ¥2,000, held as rules data — not only when it goes below zero — a ¥30 refund is as bad as none, and the user should see it coming. The illustrating figure is deliberately locale-specific: NT$200–400 is a Taiwanese-bank fact and would be wrong to quote to an English-speaking traveler, so the English string carries the same warning without the number. Both link to `guide.faq.q11`.
 
 
 **S2A** — Not claiming
@@ -1267,7 +1267,7 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │~~~ 走海關人員櫃檯，不走機台。                │
 │~~~ 1 receipt has goods that were             │
 │~~~ already used. That one goes to a          │
-│~~~ customs officer, not the kiosk. >         │
+│~~~ customs officer, not the terminal.>       │
 ├──────────────────────────────────────────────┤
 │  [ 都帶了，下一步  Next ]                    │
 │  . 有東西找不到  Something is missing .      │
@@ -1338,14 +1338,18 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │  In a few seconds you will see a             │
 │  green or a red result.                      │
 ├──────────────────────────────────────────────┤
-│  機台上應該會顯示                            │
-│  The terminal should show                    │
+│  這位旅客這次要確認的                        │
+│  What you are confirming for this            │
+│  traveler                                    │
 │                                              │
 │   5 張收據  receipts                         │
 │   ¥ 38,700  未稅合計 tax-excluded            │
 │                                              │
-│  對不起來也沒關係，現場以機台為準。          │
-│  If it differs, trust the terminal.          │
+│  這是 Kaeru 自己的紀錄，現場一律以           │
+│  機台和海關為準。                            │
+│  This is Kaeru s own record. On the          │
+│  spot, the terminal and customs              │
+│  decide.                                     │
 ├──────────────────────────────────────────────┤
 │  機台顯示什麼？                              │
 │  What did it show?                           │
@@ -1357,6 +1361,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │  . 機台怪怪的  The terminal is stuck .       │
 └──────────────────────────────────────────────┘
 ```
+
+**S33 shows Kaeru's own record, never a prediction of the terminal screen.** No official source describes what a tax-free procedure terminal displays beyond the inspection-required determination, so the panel is framed as "what you are confirming for this traveler" and defers explicitly: 現場一律以機台和海關為準 / on the spot, the terminal and customs decide. `principles.md` §7 is the rule — do not imply something Kaeru cannot verify.
 
 **S34** — Step 3, green result
 

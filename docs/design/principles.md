@@ -109,5 +109,5 @@ Kaeru is a personal notebook that knows the rules. It does not talk to operators
 | Moment | Governing principle | Design response |
 |---|---|---|
 | Logging a receipt in a shop with bags in hand | 1, 6 | One screen, four fields, three pre-filled. Save is always enabled; missing enrichment becomes a quiet action item. |
-| Standing at the kiosk, offline, 90 minutes to the gate | 1, 2, 3 | Airport Mode: one step per screen, large text, no network, a persistent "do not check your bags yet" banner that only the user can clear. |
+| Standing at the terminal, offline, 90 minutes to the gate | 1, 2, 3 | Airport Mode: one step per screen, large text, no network, a persistent "do not check your bags yet" banner that only the user can clear. |
 | A red customs result with one item missing from a receipt | 2, 7 | A dedicated screen in plain language: what red means, where to go, and the honest consequence — one missing item voids that whole receipt. No blame, one clear next step. |
