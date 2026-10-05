@@ -170,6 +170,7 @@ function estimate(
     operatorFee,
     receivingCharge,
     net,
+    refundMethodKnown: registration?.refundMethod != null,
     feeWarning: net !== null && net < rules.fee.warnBelowJpy,
   };
 }
@@ -189,21 +190,10 @@ export const estimateRefund: EstimateRefund = (
   rules,
 ): RefundEstimate => {
   const gross = grossRefundOf(receipt);
-  const { operatorFee, receivingCharge, net, feeWarning } = estimate(
-    gross,
-    taxExcludedTotalOf(receipt),
-    operator,
-    registration,
-    trip,
-    rules,
-  );
   return {
+    ...estimate(gross, taxExcludedTotalOf(receipt), operator, registration, trip, rules),
     gross,
-    operatorFee,
-    receivingCharge,
     receivingChargeApplies: receivingChargeApplies(operator, registration),
-    net,
-    feeWarning,
   };
 };
 
