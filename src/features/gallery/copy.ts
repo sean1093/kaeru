@@ -68,7 +68,7 @@ export const galleryCopy = defineMessages({
     'gallery.nav.guide': '指南',
     'gallery.progress.label': '打包進度',
     'gallery.progress.value': '3 / 5',
-    'gallery.progress.step': '步驟 2/5 · Step 2 of 5',
+    'gallery.progress.step': '步驟 2/5',
     'gallery.banner.attentionHeading': '還沒確認海關',
     'gallery.banner.attentionBody': '離境前，請先在機場模式完成海關確認，否則退稅可能無法入帳。',
     'gallery.banner.attentionAction': '前往機場模式',
@@ -137,7 +137,7 @@ export const galleryCopy = defineMessages({
     'gallery.nav.guide': 'Guide',
     'gallery.progress.label': 'Packing progress',
     'gallery.progress.value': '3 / 5',
-    'gallery.progress.step': '步驟 2/5 · Step 2 of 5',
+    'gallery.progress.step': 'Step 2 of 5',
     'gallery.banner.attentionHeading': 'Customs not confirmed yet',
     'gallery.banner.attentionBody':
       'Confirm customs in Airport Mode before you leave, or the refund may not arrive.',

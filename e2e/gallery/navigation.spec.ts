@@ -48,10 +48,14 @@ test.describe('UI kit gallery — M1-3b components (#24)', () => {
     await expect(page.locator('[data-gallery="progress-bar"]').getByText('3 / 5')).toBeVisible();
   });
 
-  test('step indicator text is the accessible source of truth; dots are decorative', async ({
+  test('step indicator text is the accessible source of truth, single-locale; dots are decorative', async ({
     page,
   }) => {
-    await expect(page.getByText('步驟 2/5 · Step 2 of 5')).toBeVisible();
+    await expect(page.getByText('Step 2 of 5')).toBeVisible();
+    await expect(page.getByText('步驟 2/5')).toHaveCount(0);
+    await page.getByTestId('language-zh-TW').click();
+    await expect(page.getByText('步驟 2/5')).toBeVisible();
+    await expect(page.getByText('Step 2 of 5')).toHaveCount(0);
   });
 
   test('an attention banner carries a corrective action', async ({ page }) => {

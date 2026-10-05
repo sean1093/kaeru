@@ -21,6 +21,8 @@ describe('GalleryScreen', () => {
     ]) {
       expect(screen.getByRole('heading', { level: 2, name: new RegExp(section) })).toBeVisible();
     }
+    expect(screen.getByText('Step 2 of 5')).toBeVisible();
+    expect(screen.queryByText('步驟 2/5')).toBeNull();
   });
 
   it('renders in Traditional Chinese with no raw message key visible', () => {
@@ -28,6 +30,8 @@ describe('GalleryScreen', () => {
     render(<GalleryScreen />);
     expect(screen.getByRole('heading', { level: 1, name: 'UI 元件庫' })).toBeVisible();
     expect(screen.queryByText(/^gallery\./)).toBeNull();
+    expect(screen.getByText('步驟 2/5')).toBeVisible();
+    expect(screen.queryByText('Step 2 of 5')).toBeNull();
   });
 
   it('carries a stable data-screen attribute for QA', () => {

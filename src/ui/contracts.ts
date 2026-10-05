@@ -162,7 +162,7 @@ export interface ProgressBarProps {
 export interface StepIndicatorProps {
   current: number;
   total: number;
-  /** The accessible source of truth, e.g. "步驟 2/5 · Step 2 of 5"; the dots are hidden. */
+  /** The accessible source of truth, single-locale, e.g. zh-TW "步驟 2/5" or en "Step 2 of 5"; the dots are hidden. */
   text: string;
 }
 

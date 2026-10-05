@@ -48,6 +48,23 @@ describe('BottomNav', () => {
     expect(screen.queryByRole('link', { name: '3', exact: true })).toBeNull();
   });
 
+  it('a count badge with value 0 renders nothing and does not fold into the name', () => {
+    render(
+      <BottomNav
+        label="Main"
+        items={[
+          item({
+            badge: { kind: 'count', value: 0, accessibleName: ', 0 need action' },
+          }),
+        ]}
+      />,
+    );
+    const link = screen.getByTestId('nav-receipts');
+    expect(link).not.toHaveAttribute('aria-label');
+    expect(screen.getByRole('link', { name: 'Receipts' })).toBeVisible();
+    expect(screen.queryByText('0')).toBeNull();
+  });
+
   it('owns no separator: the caller\u2019s fragment carries its own locale-correct leading connector', () => {
     render(
       <BottomNav

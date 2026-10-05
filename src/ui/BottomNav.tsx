@@ -14,10 +14,18 @@ import type { BottomNavItem, BottomNavProps } from './contracts.ts';
  * same as every other string this kit takes. Because concatenation has no separator slot
  * for a caller to exploit, the visible label is structurally always a prefix of the
  * spoken name (WCAG 2.5.3, Label in Name) — not by convention, by construction.
+ *
+ * A count badge with `value <= 0` renders nothing, visible or spoken: a `0` pill is
+ * indistinguishable from an honest zero count only by coincidence, and R21 requires
+ * badges the traveler can trust. If the caller cannot compute a real count, it must not
+ * pass a `count` badge at all rather than pass zero.
  */
-function Badge({ badge }: { badge: NonNullable<BottomNavItem['badge']> }): JSX.Element {
+function Badge({ badge }: { badge: NonNullable<BottomNavItem['badge']> }): JSX.Element | null {
   if (badge.kind === 'dot') {
     return <span class={styles.dot} aria-hidden="true" />;
+  }
+  if (badge.value <= 0) {
+    return null;
   }
   return (
     <span class={styles.count} aria-hidden="true">
@@ -32,8 +40,11 @@ export function BottomNav({ label, items }: BottomNavProps): JSX.Element {
       <ul class={styles.list}>
         {items.map((item) => {
           const Icon = item.icon;
+          const badge = item.badge;
           const accessibleName =
-            item.badge?.kind === 'count' ? `${item.label}${item.badge.accessibleName}` : null;
+            badge?.kind === 'count' && badge.value > 0
+              ? `${item.label}${badge.accessibleName}`
+              : null;
           return (
             <li key={item.id} class={styles.item}>
               <a
