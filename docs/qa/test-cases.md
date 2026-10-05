@@ -271,6 +271,7 @@ Run against the production build with the service worker active. Airport Mode ha
 | TC-A11Y-015 | **Every route, both locales, 320 px viewport:** measure `document.documentElement.scrollWidth <= clientWidth` | No horizontal overflow anywhere (WCAG 1.4.10). Asserted per route **per locale**, never as a spot check: the longest label decides and zh-TW and en wrap differently, so a route can pass in one language and fail in the other. One `evaluate` per route per locale | — | R11, R10 | E | P0 |
 | TC-A11Y-016 | A page taller than the viewport, scrolled to the bottom | Content ends clear of the sticky bottom navigation rather than flush against or beneath it: the nav reserves its own height from content rather than a guessed constant, and isolates its stacking context. This is about the **end** of the scroll — a sticky bar covering content mid-scroll is what sticky positioning is for, and is not a defect | — | R11 | E | P0 |
 | TC-A11Y-017 | **Every interactive control, every route, both locales, 390 px viewport:** `scrollIntoView`, then measure | The control is completely clear of the persistent chrome. This is the authoritative check for WCAG 2.5.8 obscuring, and it is strictly stronger than an axe scan at one scroll offset — which sees only the controls visible at that offset and reports a true statement about a state the user is never stuck in. The property that matters is operability: a control the user can bring into the clear is operable. A control that **cannot** be cleared at any scroll position, typically on a page too short to scroll past the bar, fails — and that is the defect this replaces the noise with | — | R11 | E | P0 |
+| TC-A11Y-018 | **Tab through every control, every route, both locales, 390 px viewport** | Focus never lands underneath the persistent chrome (WCAG 2.2 SC 2.4.11, Focus Not Obscured). Separate from `TC-A11Y-017` and not implied by it: `scrollIntoView` and tabbing scroll by **different machinery**, so a control that can be scrolled clear may still receive focus underneath the bar. The keyboard path is made correct by `scroll-padding-block-end` on the scrolling root, which is one declaration and therefore one deletion away from regressing | — | R11 | E | P0 |
 
 ---
 
@@ -363,11 +364,11 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 | TC-DATA — storage and backup | 23 | 0 |
 | TC-AIR — airport, offline, service worker | 23 | 1 |
 | TC-I18N — localization | 15 | 0 |
-| TC-A11Y — accessibility | 17 | 0 |
+| TC-A11Y — accessibility | 18 | 0 |
 | TC-PWA — install and platform | 8 | 0 |
 | TC-SEC — privacy | 5 | 0 |
 | TC-UX — flows | 24 | 1 |
-| **Total** | **214** | **15** |
+| **Total** | **215** | **15** |
 
 **Requirement coverage.** Every `DR-0nn`, `UR-nn` and `UJ-0nn` ID published in `domain-rules.md` v1.0 and `user-journey.md` v1.0 is cited by at least one case above. This was checked mechanically against both documents on 2026-10-05 and is re-checked at each milestone exit.
 
