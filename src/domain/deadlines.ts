@@ -14,7 +14,7 @@
  * 90 × 86,400 seconds: it crosses daylight-saving boundaries in the traveller's own zone,
  * month lengths and leap days, none of which may move the answer.
  */
-import type { DeadlineStatus, DeadlineStatusOf, ExportDeadlineOf } from './api.ts';
+import type { DeadlineRisk, DeadlineStatus, DeadlineStatusOf, ExportDeadlineOf } from './api.ts';
 import { addDays, daysBetween, JAPAN_TIME_ZONE, today } from './dates.ts';
 
 export const exportDeadlineOf: ExportDeadlineOf = (receipt, rules) =>
@@ -22,14 +22,23 @@ export const exportDeadlineOf: ExportDeadlineOf = (receipt, rules) =>
 
 export const deadlineStatusOf: DeadlineStatusOf = (receipt, trip, rules, clock): DeadlineStatus => {
   const deadline = exportDeadlineOf(receipt, rules);
+  const slackDays = daysBetween(trip.departureDate, deadline);
   const daysRemaining = daysBetween(today(clock, JAPAN_TIME_ZONE), deadline);
-  return {
-    deadline,
-    daysRemaining,
-    // DR-076, strictly before: a deadline that falls *on* the departure date is met by
-    // leaving that day, because the deadline day is inclusive. Warning there would fire on
-    // a receipt that is fine, and a warning that fires when nothing is wrong is noise.
-    atRisk: deadline < trip.departureDate,
-    expired: daysRemaining < 0,
-  };
+
+  // An old-system receipt has no customs step, so it has no deadline to be fine about
+  // (DR-003, DR-064). Reporting `none` would be a claim that we checked and it is in good
+  // shape, which is the one thing S29 exists to deny.
+  let risk: DeadlineRisk = 'not_applicable';
+  if (receipt.purchaseDate >= rules.system.refundSystemStart) {
+    // DR-076, strictly before: a deadline falling *on* the departure date is met by
+    // leaving that day, because the window is inclusive.
+    // DR-076a: but zero slack is not an edge case for our users. A 90-day visa-free stay
+    // and a 90-day export window land on exactly zero, and whoever gets there cannot
+    // extend. The hazard is a flight moving later, and that does not care whether the
+    // margin was zero days or three.
+    risk =
+      slackDays < 0 ? 'missed' : slackDays <= rules.deadline.slackWarnDays ? 'no_margin' : 'none';
+  }
+
+  return { deadline, daysRemaining, slackDays, risk, expired: daysRemaining < 0 };
 };

@@ -47,6 +47,17 @@ export interface ThresholdRule {
 export interface DeadlineRule {
   /** Calendar days from the day after purchase to the last valid export day (DR-031). */
   exportWindowDays: number;
+  /**
+   * How little margin between a receipt's deadline and the departure date counts as none
+   * (`DR-076a`). Default 3.
+   *
+   * Taiwan passport holders get 90 days visa-free and 短期滞在 caps at 90 days, so a
+   * traveller who buys on arrival day and leaves on the last day their status allows lands
+   * on exactly zero slack. That is not a coincidence, it is the boundary of the commonest
+   * long-stay status among our users, and the people who hit it are by definition the ones
+   * who cannot extend. On a five-day trip the slack is about 85 days and nothing fires.
+   */
+  slackWarnDays: number;
 }
 
 export interface HighValueRule {

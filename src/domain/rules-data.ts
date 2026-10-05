@@ -106,10 +106,13 @@ export const kaeruRules: RulesData = {
       effectiveTo: null,
       status: 'confirmed-official',
       source:
-        'DR-031 [S1][S7] — day after purchase to the 90th day, inclusive; refund-method ' +
+        'DR-031, DR-076a [S1][S7] — day after purchase to the 90th day, inclusive; a ' +
+        'margin of 3 days or less against the departure date counts as none, because a ' +
+        '90-day visa-free stay and a 90-day export window land on exactly zero; ' +
+        'refund-method ' +
         'rule, rows before 2026-11-01 exist only so resolution is total and are never read ' +
         'for an old-system receipt (DR-003, DR-064)',
-      value: { exportWindowDays: 90 },
+      value: { exportWindowDays: 90, slackWarnDays: 3 },
     },
   ],
 

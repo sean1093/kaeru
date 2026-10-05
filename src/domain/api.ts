@@ -179,15 +179,35 @@ export type GroupByShopDay = (
 /** Last calendar day the goods may leave Japan: purchase + window, inclusive (DR-031). */
 export type ExportDeadlineOf = (receipt: Receipt, rules: ResolvedRules) => CalendarDate;
 
+/**
+ * How a receipt's export deadline stands against the trip (`DR-031`, `DR-076`, `DR-076a`).
+ *
+ * `risk` is a union rather than a pair of booleans because the states must not be
+ * confusable: a screen that handles `missed` and forgets `no_margin` looks like complete
+ * code and silently says nothing in the case that still has a remedy. A `switch` that
+ * misses a member is a type error.
+ */
+export type DeadlineRisk =
+  /** Old-system receipt: there is no customs step and so no deadline to have (`DR-003`). */
+  | 'not_applicable'
+  /** A deadline exists and there is room: it falls comfortably after the departure date. */
+  | 'none'
+  /** `0 <= slackDays <= slackWarnDays`. Not lost — but no room if the plan moves (`DR-076a`). */
+  | 'no_margin'
+  /** The deadline falls before departure: the goods would have to leave first (`DR-076`). */
+  | 'missed';
+
 export interface DeadlineStatus {
   deadline: CalendarDate;
   daysRemaining: number;
   /**
-   * The deadline falls **strictly before** the departure date, so the goods would have to
-   * leave Japan before the traveller does (`DR-076`). A deadline on the departure date
-   * itself is met by leaving that day, because the window is inclusive.
+   * Calendar days between the deadline and the departure date; negative when the deadline
+   * comes first. The copy needs the figure, not just the band: "your deadline is your
+   * departure day" is `0` and "two days after you leave" is `2`.
    */
-  atRisk: boolean;
+  slackDays: number;
+  risk: DeadlineRisk;
+  /** The deadline has passed **today**, which is a different axis from `risk`. */
   expired: boolean;
 }
 
@@ -198,8 +218,16 @@ export type DeadlineStatusOf = (
   clock: Clock,
 ) => DeadlineStatus;
 
-/** Flight time minus the airline cut-off minus the user's buffer (DR-032, UJ-022). */
-export type LeaveForAirportBy = (trip: Trip) => { time: string; explained: true } | null;
+/**
+ * Flight time minus the airline cut-off minus the user's buffer (`DR-032`, `UJ-022`).
+ *
+ * `dayOffset` is `-1` when the subtraction crosses midnight — a 01:00 flight means leaving
+ * at 23:00 **the night before**, and only this function knows that. A bare "23:00" on a
+ * departure-day screen is twenty-two hours late.
+ */
+export type LeaveForAirportBy = (
+  trip: Trip,
+) => { time: string; dayOffset: 0 | -1; explained: true } | null;
 
 // --- Status lifecycle (DR-060..DR-064) -------------------------------------
 
