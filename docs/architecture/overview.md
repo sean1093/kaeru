@@ -158,6 +158,7 @@ a flash of the wrong language, and the database is never on the critical path to
 | Money | Integer JPY only (`DR-071`). No floats, ever. A `toBeCloseTo` on money is a bug report |
 | Dates | `YYYY-MM-DD` calendar strings with an explicit time zone, never UTC instants (`DR-002`) |
 | State | Local `useState` by default; a signal only when more than one screen needs it |
+| Stored strings | Translate at the boundary, **store the key**. Any user-facing string that outlives the render that produced it — an error, a toast, a pending confirmation, anything held in state or a signal — is held as a message key and translated where it is rendered. A sentence translated when it is produced stops being in the user's language the moment they switch, and the error line is the worst place for that: it is the one sentence they are reading carefully. The companion rule is that `ui/contracts.ts` takes already-translated strings, never keys; together they are complete — components receive sentences, state remembers keys |
 | Errors | Typed error classes with a `code` that maps to a translated message. Never render a raw exception |
 | Styling | Only design tokens. No raw hex, px or duration outside `src/styles/tokens.css` |
 | Accessibility | Role and accessible name first; `data-testid` kebab-case only as a fallback; focus visible everywhere; targets ≥ 44 px |
