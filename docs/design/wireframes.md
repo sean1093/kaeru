@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.1 (M0) |
+| Status | v1.2 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -222,6 +222,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 └──────────────────────────────────────────────┘
 ```
 
+**When a flight time was given in S02, a leave-by line appears right after the buffer control** — same format as S61 and S13: 建議 14:40 到機場 / Be at the airport by 14:40, with the arithmetic available on tap. It is the immediate payoff for the buffer choice the user just made, so it sits directly below that control rather than waiting for S61. When no flight time was given, nothing renders in its place — not a dash, not a placeholder; there is nothing to compute yet, and the field stays correctable later in S61 (`CountdownProps`: omit the whole component when there is no flight time, same rule extended here).
+
 
 ### Onboarding microcopy
 
@@ -374,8 +376,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │=== 先過海關，再託運行李。                    │
 │=== Customs first, bag drop second.           │
 ├──────────────────────────────────────────────┤
-│ 建議 14:40 從飯店出發                        │
-│ Leave your hotel by 14:40                    │
+│ 建議 14:40 到機場                            │
+│ Be at the airport by 14:40                   │
 │ 班機 18:40 − 報到 60 分 − 退稅 60 分         │
 │ Flight 18:40, check-in 60 min,               │
 │ tax-free 60 min. Kaeru 的建議，              │
@@ -524,7 +526,7 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 | Per-operator registration | 一家業者登錄一次就好，之後的收據會自動跟著。 | Register once per operator; later receipts attach automatically. |
 | Empty headline | 還沒有收據 | No receipts yet |
 | Departure banner | 今天出境。先過海關，再託運行李。 | You leave today. Customs first, bag drop second. |
-| Leave-by | 建議 14:40 從飯店出發 | Leave your hotel by 14:40 |
+| Leave-by | 建議 14:40 到機場 | Be at the airport by 14:40 |
 | Leave-by caveat | Kaeru 的建議，不是官方規定。 | Our suggestion, not an official figure. |
 | Checked-bag item | 5 張收據的東西還在託運行李 — 過海關前要拿出來 | 5 receipts: goods in checked bags — take them out before customs |
 | Documents item | 1 張收據要帶證明文件 | 1 receipt needs its documents |
@@ -809,6 +811,8 @@ Grouping is best-effort (`DR-012a`): `shopKey` normalisation collapses whitespac
 │ about ¥60. 手續費是業者自訂，可能            │
 │ 會變。Fees are set by the operator           │
 │ and can change.                              │
+│ 已算入銀行匯款的手續費。                     │
+│ Includes your bank's own transfer fee.       │
 ├──────────────────────────────────────────────┤
 │ 進度  Progress                               │
 │  ✓ 已記錄          Logged                    │
@@ -839,6 +843,8 @@ Grouping is best-effort (`DR-012a`): `shopKey` normalisation collapses whitespac
 │ . 這張不退了  I will not claim this .        │
 └──────────────────────────────────────────────┘
 ```
+
+**The receiving-side fee line is conditional on `RefundEstimate.refundMethodKnown`.** When the user has chosen bank transfer at registration, the line above states it as fact. When no method is chosen yet, the line above is replaced with the hedged form in the microcopy table below — the hedge conditions **which route the user will pick**, not whether a transfer is charged, because the estimate already assumes the charge pessimistically wherever a transfer is possible (same bias as the `DR-027` fee warning). The sentence and the figure beside it must agree on what is already deducted. When a card or e-money method is chosen, the line does not render at all, and the deduction is correctly absent from the figure too — only a bank transfer can carry the receiving-side charge (`DR-027`).
 
 **S22** — Receipt detail, the two attention states
 
@@ -1153,6 +1159,8 @@ Full-bleed, dark scrim regardless of theme so the photo is judged on its own. Th
 | Undo | 復原 | Undo |
 | Delete confirm | 刪除這張收據？這個動作無法復原。 | Delete this receipt? This cannot be undone. |
 | Registration attribution | 已登錄 · 你在 11/04 標記的 | Registered · you marked this on 4 Nov |
+| Receiving fee, method known | 已算入銀行匯款的手續費。 | Includes your bank's own transfer fee. |
+| Receiving fee, method unknown | 如果選銀行匯款，你的銀行會再收一筆手續費；這個估計已經算進去了。 | If you choose a bank transfer, your bank will charge its own fee — this estimate already assumes it. |
 
 
 ---
@@ -1191,25 +1199,27 @@ Full-bleed, dark scrim regardless of theme so the photo is judged on its own. Th
 │ [ 一張一張確認  Check them > ]               │
 ├──────────────────────────────────────────────┤
 │ 要帶證明文件  Bring documents   (1)          │
-│ ● BIC CAMERA 11/03 · ¥ 1,280,000             │
-│   單價 100 萬以上，海關可能會要看            │
-│   鑑定書或保證書                             │
-│   Unit price over ¥1,000,000 —               │
-│   customs may ask for the                    │
-│   certificate or warranty        >           │
+│ [ ] BIC CAMERA 11/03 · ¥ 1,280,000           │
+│     單價 100 萬以上，海關可能會要看          │
+│     鑑定書或保證書                           │
+│     Unit price over ¥1,000,000 —             │
+│     customs may ask for the                  │
+│     certificate or warranty        >         │
 ├──────────────────────────────────────────────┤
 │ 期限檢查  Deadline check                     │
 │ 沒有收據的期限會早於出境日。                 │
 │ No receipt expires before you leave.         │
 ├──────────────────────────────────────────────┤
-│ 幾點出發  When to leave                      │
-│ 建議 14:40 從飯店出發                        │
-│ Leave your hotel by 14:40        >           │
+│ 機場要幾點到  Be at the airport by           │
+│  建議 14:40 到機場                           │
+│  Be at the airport by 14:40        >         │
 └──────────────────────────────────────────────┘
 ```
 
 
 **S17 Packing plan (UJ-017 to UJ-022).** This is where the airport mistake is actually prevented, two hours before the airport. The deadline check reports its own emptiness rather than hiding — the user needs to know it was checked (`DR-076`). The documents reminder fires on `hasHighValueItem` (`DR-016`).
+
+**The documents row is a checkbox, not a navigate-to-detail row, and that's deliberate (`DR-078`).** Ticking it is the acknowledgment the rule asks for — `DR-078` needs a signal that the user has registered "I have this document in hand," and the packing plan already has exactly that signal in the must-be-with-you checklist above it. A new `Receipt` field to hold the same fact would duplicate state that already exists on screen. **Every tick on S17 persists across sessions, and none of them reset or expire.** Someone who ticks eight receipts at 22:00 opening the app again at 06:00 must see them still ticked — anything else re-creates the exact data-loss anxiety the autosave decision on S21 exists to remove, now in a screen that is read, not typed. No tick resets on a new day or a changed departure date either: a stale tick costs the user a moment's re-verification if circumstances changed, which is honest; an invisible silent reset would be worse, because it looks identical to a tick the user never made.
 
 ---
 
@@ -1757,6 +1767,10 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │  from your refund. Fees are not              │
 │  regulated and not always published.         │
 │  資料日期 2026-10-05  as of                  │
+│                                              │
+│  已算入銀行匯款的手續費。                    │
+│  Includes your bank's own transfer           │
+│  fee.                                        │
 ├──────────────────────────────────────────────┤
 │  這些收據  These receipts                    │
 │  [ ] 松本清 11/04  ~¥   830                  │
@@ -1777,6 +1791,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │  [ 聯絡 J-TaxRefund  Contact ↗ ]             │
 └──────────────────────────────────────────────┘
 ```
+
+**S41's receiving-side fee line follows the same `refundMethodKnown` rule as S22** (PayoutEstimate rather than RefundEstimate, same discriminator): stated as fact when the registration recorded a bank transfer, hedged when no method is recorded, absent when the method is card or e-money. At the operator level the method is usually known, since registering typically means choosing how to be paid — the hedged form is the exception here, not the default, which is the opposite of S22 where operator-not-yet-registered is common.
 
 ---
 
@@ -2020,6 +2036,16 @@ Every operator detail carries the `DR-053` non-endorsement line and the fee obse
 │ 出境日期  Departure date                     │
 │ [ 2026 / 11 / 09            ] [cal]          │
 │                                              │
+│=== 這個日期會影響 2 張收據                   │
+│=== This date affects 2 receipts              │
+│===                                           │
+│=== ! 松本清 11/04 — 期限已過，來不及辦       │
+│===   Matsukiyo — deadline has passed,        │
+│===   too late to confirm                     │
+│=== ! BIC CAMERA 11/05 — 期限只剩 0 天緩衝    │
+│===   BIC CAMERA — deadline leaves 0 days     │
+│===   of margin                               │
+│                                              │
 │ 出境機場  Departure airport                  │
 │ [ 成田 NRT                  ] v              │
 │                                              │
@@ -2038,8 +2064,8 @@ Every operator detail carries the `DR-053` non-endorsement line and the fee obse
 │  official figure.                            │
 ├──────────────────────────────────────────────┤
 │ 算出來  Which gives you                      │
-│ 建議 14:40 從飯店出發                        │
-│ Leave your hotel by 14:40                    │
+│ 建議 14:40 到機場                            │
+│ Be at the airport by 14:40                   │
 ├──────────────────────────────────────────────┤
 │ 旅客  Travelers                              │
 │ > o 宜君 · 7431 · 7 張收據      >            │
@@ -2048,13 +2074,26 @@ Every operator detail carries the `DR-053` non-endorsement line and the fee obse
 ├──────────────────────────────────────────────┤
 │ 多久算遲  When to call a refund late         │
 │ [ 14 ] 天 days                               │
-│  法律沒有規定入帳時間，這是你自己的          │
-│  標準。There is no legal time limit.         │
-│  This is your own threshold.                 │
+│ 法律沒有規定入帳時間，這是你自己的           │
+│ 標準。There is no legal time limit.          │
+│ This is your own threshold.                  │
+├──────────────────────────────────────────────┤
+│ 銀行收款手續費  Your bank's receiving fee    │
+│ ¥ [ 1,800 ] 保守估計  conservative estimate  │
+│                                              │
+│ 國際匯款的入帳費用因銀行而異，這是保守       │
+│ 估計（約新台幣 300 元）。知道實際金額        │
+│ 可以改這裡，會影響預估淨退的準確度。         │
+│ Transfer fees vary by bank — this is a       │
+│ conservative placeholder. Update it once     │
+│ you know your real figure; it feeds          │
+│ every estimated net on the app.              │
 └──────────────────────────────────────────────┘
 ```
 
-Every derived number shows its inputs. The check-in requirement is the airline's, the buffer is Kaeru's suggestion, and the overdue threshold is the user's own — three different kinds of authority, labelled as such so the user knows which ones they may disagree with.
+Every derived number shows its inputs. The check-in requirement is the airline's, the buffer is Kaeru's suggestion, the overdue threshold is the user's own, and the receiving fee starts as Kaeru's conservative placeholder until the user's own bank corrects it — four different kinds of authority, labelled as such so the user knows which ones they may disagree with.
+
+**The deadline panel re-runs live, on every edit to the departure date, before the user leaves the field.** Each receipt's 90-day deadline (`DR-031`) is independent of the trip, so changing the date never touches a receipt directly — it only changes which receipts the new date would strand. Two states, deliberately worded so they cannot be mistaken for each other (`DR-076`, `DR-076a`): **已過，來不及辦 / deadline has passed** for a receipt whose deadline now falls before the new date — this one is already lost, full stop — and **只剩 N 天緩衝 / N days of margin** for a receipt whose deadline survives but with little room, which fires only inside a configurable slack window (`slackWarnDays`, default 3) and is common precisely for a near-maximum-length stay, since the 90-day visa-free allowance and the 90-day customs deadline are the same number. The panel is non-blocking and the date change still applies the moment it is made, consistent with autosave-over-guard (principle 6) — there is nothing to confirm, only something to know before the user closes the screen and forgets they changed it. This is the one place in the product a plain date edit can cost real money without any other screen telling the user so, which is why it has to fire here rather than waiting for tonight's list to notice it later.
 
 **S62** — Data: export, import, delete
 
@@ -2259,6 +2298,7 @@ Offered before the trip (UJ-004), not at the airport — Airport Mode has to be 
 | Submit blocked | 還有 2 個欄位要填 | 2 fields still need you |
 | Future date warning | 這個日期還沒到，確定嗎？ | That date has not happened yet. Is it right? |
 | Deadline-before-departure warning | 這張的海關期限在出境日之前，來不及辦。 | This receipt's customs deadline falls before you leave — it cannot be confirmed in time. |
+| Deadline near-boundary warning | 這張的期限只剩 {N} 天緩衝。 | This receipt's deadline leaves {N} days of margin. |
 | Storage error | 存不進去。這支手機的瀏覽器空間滿了，或是在無痕模式。 | Could not save. This browser is out of space, or you are in private browsing. |
 | Install prompt | 加到主畫面之後，開啟更快，而且在機場沒訊號也打得開。 | It opens faster and still works at the airport with no signal. |
 | Generic retry | 再試一次 | Try again |
