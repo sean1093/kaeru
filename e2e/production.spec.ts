@@ -125,6 +125,26 @@ test.describe('deployed build is the one we think it is @content', () => {
     expect(blocking, `${testInfo.project.name}: ${JSON.stringify(blocking, null, 2)}`).toEqual([]);
   });
 
+  /**
+   * The question workflow status can only answer indirectly: is the live site the build this
+   * deploy ran for? Workflow status reports one path to the failure at a time — a cancelled
+   * run, a run that never started, a workflow that failed to parse, a deploy that shipped a
+   * stale artifact. This reads the answer off the site.
+   *
+   * Skipped when `KAERU_EXPECTED_SHA` is absent, so a manual smoke against the live site
+   * still runs; the deploy workflow always sets it, which is where it matters.
+   */
+  test('serves the build the deploy ran for', async ({ page }) => {
+    const expected = process.env.KAERU_EXPECTED_SHA ?? '';
+    test.skip(expected === '', 'no expected commit: run from the deploy workflow to check this');
+    await page.goto(siteBase().toString());
+    const served = await page.locator('meta[name="build-sha"]').getAttribute('content');
+    expect(
+      served,
+      `the live site is serving ${served}, not the commit this deploy built (${expected})`,
+    ).toBe(expected);
+  });
+
   test('makes no third-party request', async ({ page }) => {
     const origin = siteBase().origin;
     const external: string[] = [];

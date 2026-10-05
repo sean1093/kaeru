@@ -95,6 +95,9 @@ jobs:
         continue-on-error: true
         env:
           KAERU_SMOKE_URL: ${{ needs.deploy.outputs.page_url || 'https://sean1093.github.io/kaeru/' }}
+          # The commit this deploy built. The smoke reads the served document's build-sha and
+          # refuses to agree that the site is current when it is not (#113).
+          KAERU_EXPECTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: npm run e2e:smoke
 
       # Reads the report rather than the exit code: a suite that matched zero tests exits 0,
