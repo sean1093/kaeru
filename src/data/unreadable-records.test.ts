@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fixedClock } from '../domain/index.ts';
 import { type KaeruDatabase, openDatabase } from './db.ts';
-import { aTraveler, aTrip } from './test-builders.ts';
+import { receiptRepository } from './receipt-repository.ts';
+import { registrationRepository } from './registration-repository.ts';
+import { aReceipt, aRegistration, aTraveler, aTrip } from './test-builders.ts';
 import { travelerRepository } from './traveler-repository.ts';
 import { tripRepository } from './trip-repository.ts';
 import {
@@ -69,5 +71,22 @@ describe('unreadableRecordCounts', () => {
 
     expect(await travelerRepository.listByTrip(db, 'trip-1')).toEqual([]);
     expect(unreadableRecordCounts().travelers).toBe(1);
+  });
+
+  it('counts a receipt the repository could not address or date, read through the real path', async () => {
+    // Indexed correctly by `tripId` so the query finds it; `purchaseDate` fails to normalise.
+    await db.put('receipts', { ...aReceipt(), purchaseDate: 'whenever', seq: 1 });
+
+    expect(await receiptRepository.get(db, 'receipt-1')).toBeUndefined();
+    expect(await receiptRepository.list(db, { tripId: 'trip-1' })).toEqual([]);
+    expect(unreadableRecordCounts().receipts).toBe(2);
+  });
+
+  it('counts a registration the repository could not address, read through the real path', async () => {
+    // Indexed correctly by `tripId` so the query finds it; `operatorId` fails to normalise.
+    await db.put('registrations', { ...aRegistration(), operatorId: '' });
+
+    expect(await registrationRepository.listByTrip(db, 'trip-1')).toEqual([]);
+    expect(unreadableRecordCounts().registrations).toBe(1);
   });
 });

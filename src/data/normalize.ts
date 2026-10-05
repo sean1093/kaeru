@@ -21,7 +21,7 @@ import type {
   Traveler,
   Trip,
 } from '../domain/model.ts';
-import { recordUnreadable } from './unreadable-records.ts';
+import { recordDroppedLine, recordUnreadable } from './unreadable-records.ts';
 
 /**
  * At most the last 4 characters of a passport number may exist anywhere, in storage or in
@@ -225,7 +225,11 @@ export function normalizeReceipt(value: unknown): Receipt | null {
   if (Array.isArray(record.lines)) {
     for (const entry of record.lines) {
       const line = normalizeLine(entry);
-      if (line) lines.push(line);
+      if (line) {
+        lines.push(line);
+      } else {
+        recordDroppedLine();
+      }
     }
   }
   const photoRef = readId(record.photoRef);
