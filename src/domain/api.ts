@@ -182,7 +182,11 @@ export type ExportDeadlineOf = (receipt: Receipt, rules: ResolvedRules) => Calen
 export interface DeadlineStatus {
   deadline: CalendarDate;
   daysRemaining: number;
-  /** The deadline falls on or before the departure date, so it is actually at risk (DR-076). */
+  /**
+   * The deadline falls **strictly before** the departure date, so the goods would have to
+   * leave Japan before the traveller does (`DR-076`). A deadline on the departure date
+   * itself is met by leaving that day, because the window is inclusive.
+   */
   atRisk: boolean;
   expired: boolean;
 }
@@ -279,8 +283,16 @@ export type ValidateReceipt = (
 
 // --- Trip phase (IA flow D) ------------------------------------------------
 
-/** Which home screen the user gets. The app knows the departure date, so it never asks. */
-export type TripPhase = 'no_trip' | 'before' | 'during' | 'last_day' | 'departure_day' | 'after';
+/**
+ * Which home state the user gets. The app knows the departure date, so it never asks.
+ *
+ * One member per state in the IA's phase table: S11 no trip, S12 before, S17 the day
+ * before departure when the packing plan becomes the hero, S13 departure day, S14 after.
+ * There is no `during`: S10 "Home — during trip" is the **body every phase renders into**,
+ * not a sixth phase, and `Trip` holds only a departure date, so nothing could tell
+ * "not left home yet" from "in Japan shopping" anyway.
+ */
+export type TripPhase = 'no_trip' | 'before' | 'last_day' | 'departure_day' | 'after';
 
 export type TripPhaseOf = (trip: Trip | null, clock: Clock) => TripPhase;
 
