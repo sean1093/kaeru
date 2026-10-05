@@ -41,6 +41,19 @@ export interface ContentBlock {
   /** `table` only: header row then data rows. */
   rows?: readonly (readonly string[])[];
   sourceIds?: readonly string[];
+  /**
+   * Provenance of this specific claim, when it differs from the article's overall
+   * `status`. A caveat is a property of a claim, not of a document: an article that is
+   * mostly `confirmed-official` can still contain one block that rests on a bill that has
+   * not passed (`pending-legislation`) or a rule no source has settled (`unconfirmed`).
+   * Caveating the whole article would make a reader discount everything else in it;
+   * leaving it off would render an uncertain figure exactly like a certain one.
+   *
+   * Resolution: **absent means inherit the article's `status`.** A block never needs to
+   * restate `confirmed-official` — only the exception is marked. The caveat renders with
+   * the block it qualifies, not collected at the top of the section (S51).
+   */
+  status?: SourceStatus | 'pending-legislation';
 }
 
 export interface GuideSection {
@@ -57,7 +70,7 @@ export interface GuideArticle {
   summary: string;
   sections: readonly GuideSection[];
   sources: readonly SourceRef[];
-  /** Shown as a caveat when not `confirmed-official` (S51). */
+  /** The article's default caveat (S51); a block overrides it via `ContentBlock.status`. */
   status: SourceStatus | 'pending-legislation';
   lastReviewed: CalendarDate;
 }
