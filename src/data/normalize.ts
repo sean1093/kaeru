@@ -11,13 +11,17 @@
 import type { CalendarDate } from '../domain/dates.ts';
 import { isCalendarDate } from '../domain/dates.ts';
 import type {
+  FeeBasis,
+  FeeRate,
   NotClaimingReason,
+  OperatorFee,
   OperatorRegistration,
   PackingLocation,
   Receipt,
   ReceiptLine,
   ReceiptStatus,
   RefundMethod,
+  SourceStatus,
   Traveler,
   Trip,
 } from '../domain/model.ts';
@@ -175,6 +179,17 @@ const REFUND_METHODS: Record<RefundMethod, true> = {
   points: true,
 };
 
+const SOURCE_STATUSES: Record<SourceStatus, true> = {
+  'confirmed-official': true,
+  'reported-media': true,
+  unconfirmed: true,
+};
+
+const FEE_BASES: Record<FeeBasis, true> = {
+  refund: true,
+  purchase_tax_excluded: true,
+};
+
 function readMember<T extends string, F>(
   table: Record<T, true>,
   value: unknown,
@@ -268,6 +283,36 @@ export function normalizeReceipt(value: unknown): Receipt | null {
   return photoRef === null ? receipt : { ...receipt, photoRef };
 }
 
+/** A rate can never exist without its basis (the model says so); either both or neither. */
+function normalizeFeeRate(value: unknown): FeeRate | null {
+  const record = readRecord(value);
+  if (!record) return null;
+  const basisPoints = record.basisPoints;
+  const basis = readMember(FEE_BASES, record.basis, null);
+  if (typeof basisPoints !== 'number' || !Number.isFinite(basisPoints) || basis === null)
+    return null;
+  return { basisPoints: Math.trunc(basisPoints), basis };
+}
+
+/**
+ * A traveller's correction to the shipped fee (DR-051). An override with no stated
+ * confidence is not a smaller fact than the catalogue figure — it is unreadable, and an
+ * unreadable override must mean "use the shipped figure", never a free or a zero fee.
+ */
+function normalizeOperatorFee(value: unknown): OperatorFee | null {
+  const record = readRecord(value);
+  if (!record) return null;
+  const status = readMember(SOURCE_STATUSES, record.status, null);
+  if (status === null) return null;
+  return {
+    method: readMember(REFUND_METHODS, record.method, null),
+    rate: normalizeFeeRate(record.rate),
+    fixedJpy: readJpy(record.fixedJpy) ?? 0,
+    minimumJpy: readJpy(record.minimumJpy),
+    status,
+  };
+}
+
 export function normalizeRegistration(value: unknown): OperatorRegistration | null {
   if (value === undefined) return null;
   const record = readRecord(value);
@@ -283,9 +328,6 @@ export function normalizeRegistration(value: unknown): OperatorRegistration | nu
     operatorId,
     registeredAt: typeof record.registeredAt === 'string' ? record.registeredAt : null,
     refundMethod: readMember(REFUND_METHODS, record.refundMethod, null),
-    // The traveller's own correction to the catalogue fee (DR-051). Not read back from a
-    // record yet — FrontendEngB owns the reader — but defaulted rather than left absent,
-    // because an unreadable override must mean "use the shipped figure", never zero.
-    feeOverride: null,
+    feeOverride: normalizeOperatorFee(record.feeOverride),
   };
 }

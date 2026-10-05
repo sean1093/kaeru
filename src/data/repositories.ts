@@ -148,8 +148,13 @@ export type ImportMode = 'merge' | 'replace';
 export interface BackupService {
   estimateSize(db: KaeruDatabase, options: BackupOptions): Promise<number>;
   export(db: KaeruDatabase, options: BackupOptions): Promise<BackupDocumentV2>;
-  /** Parses and validates without writing; throws `BackupError` for a file we will not accept. */
-  preview(text: string): Promise<ImportPreview>;
+  /**
+   * Parses and validates without writing; throws `BackupError` for a file we will not
+   * accept. Takes `db` (M1-2d contract note) because `ImportPreview.conflicts` — entities
+   * already present with the same id — cannot be answered without reading the device the
+   * import would land on.
+   */
+  preview(db: KaeruDatabase, text: string): Promise<ImportPreview>;
   import(db: KaeruDatabase, text: string, mode: ImportMode): Promise<ImportPreview>;
   /** The only destructive action in the app; the UI offers Export first in the same sheet. */
   deleteAll(db: KaeruDatabase): Promise<void>;

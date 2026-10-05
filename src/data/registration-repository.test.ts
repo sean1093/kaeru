@@ -73,4 +73,45 @@ describe('registrationRepository', () => {
     ).rejects.toMatchObject({ code: 'invalid-record' });
     expect(await db.count('registrations')).toBe(0);
   });
+
+  it("DR-051: reads a traveler's fee override, a real correction to the catalogue figure", async () => {
+    const override = {
+      method: 'bank_transfer' as const,
+      rate: { basisPoints: 150, basis: 'refund' as const },
+      fixedJpy: 200,
+      minimumJpy: 500,
+      status: 'unconfirmed' as const,
+    };
+    await registrationRepository.put(db, aRegistration({ feeOverride: override }));
+
+    expect((await registrationRepository.listByTrip(db, 'trip-1'))[0]?.feeOverride).toEqual(
+      override,
+    );
+  });
+
+  it('DR-051: an override with no stated confidence is unreadable, not a free fee', async () => {
+    await db.put('registrations', {
+      ...aRegistration(),
+      feeOverride: { method: null, rate: null, fixedJpy: 0, minimumJpy: null, status: 'a guess' },
+    } as never);
+
+    expect((await registrationRepository.listByTrip(db, 'trip-1'))[0]?.feeOverride).toBeNull();
+  });
+
+  it('a rate with no recognised basis is not a smaller fact — the whole rate reads as absent', async () => {
+    await db.put('registrations', {
+      ...aRegistration(),
+      feeOverride: {
+        method: null,
+        rate: { basisPoints: 150, basis: 'a percentage of something' },
+        fixedJpy: 0,
+        minimumJpy: null,
+        status: 'unconfirmed',
+      },
+    } as never);
+
+    expect((await registrationRepository.listByTrip(db, 'trip-1'))[0]?.feeOverride).toMatchObject({
+      rate: null,
+    });
+  });
 });
