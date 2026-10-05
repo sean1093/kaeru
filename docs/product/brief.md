@@ -16,7 +16,7 @@ From **2026-11-01** Japan changes its tax-free shopping system for visitors. Ins
 What this means for a traveler:
 
 - **Higher cost up front.** The 10% (or 8% reduced-rate) consumption tax is paid first and comes back later.
-- **Many refund operators.** About 12 companies process refunds; Taiwanese travelers mostly meet four of them (J&J Tax Free / J-TaxRefund, PIE VAT, Smart Detax / JPrefund, Global Blue). Each has its own website or app, registration steps, and refund method. Travelers worry about juggling all of them.
+- **Many refund operators.** About a dozen companies are approved to operate tax-free systems, and ten have declared they will handle refunds; Taiwanese travelers mostly meet four of them (J&J Tax Free / J-TaxRefund, PIE VAT, Smart Detax / JPrefund, Global Blue). Each has its own website or app, registration steps, and refund method. Travelers worry about juggling all of them.
 - **A strict departure procedure.** Customs confirmation happens at a kiosk *before* checking luggage. Customs may ask to see the goods, and a missing item can void the whole receipt. Travelers must leave Japan within 90 days of the purchase.
 - **Tracking falls on the traveler.** Which operator handles which receipt, whether it was registered, where the goods are packed, and whether the money ever arrived — often for several family members with separate passports.
 
