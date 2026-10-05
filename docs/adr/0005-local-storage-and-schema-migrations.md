@@ -10,7 +10,7 @@
 
 Everything the user enters stays on the device (ADR 0002). What has to be stored:
 
-- Trips, travellers, receipts and receipt lines (see the planned data model in
+- Trips, travelers, receipts and receipt lines (see the planned data model in
   `docs/architecture/overview.md`, derived from `docs/product/domain-rules.md`).
 - **Receipt photos** — binary blobs, potentially several megabytes each, dozens per trip.
 - Settings: language, theme.
@@ -29,7 +29,7 @@ user must be able to get their data out and back in.
   `pendingMigrations(oldVersion, newVersion)` selects the steps to run, in order, inside the
   `versionchange` transaction. A released migration is never edited.
 - v1 creates two stores: `meta` (holds `{ schemaVersion, createdAt }`) and `settings`.
-  M1 adds trips, travellers, receipts and photos as new stores in migration v2.
+  M1 adds trips, travelers, receipts and photos as new stores in migration v2.
 - `idb` (~1.2 KB gzip) is used instead of raw IndexedDB: it gives promises and real
   generic types for store names, keys and values, so a typo in a store name is a compile
   error rather than a runtime `DOMException`.

@@ -2,7 +2,7 @@ import type { JSX } from 'preact';
 
 /**
  * The Kaeru mark: a calm rounded square with an arrow coming back up — the tax
- * returning to the traveller. Decorative here; the app name next to it carries meaning.
+ * returning to the traveler. Decorative here; the app name next to it carries meaning.
  */
 export function BrandMark({ size = 28 }: { size?: number }): JSX.Element {
   return (

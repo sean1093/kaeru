@@ -51,7 +51,7 @@ cannot and must not control anything else on `sean1093.github.io`.
 3. **Update now** calls `skipWaiting` and reloads into the new build.
 4. **Later** dismisses the banner. The update still applies on the next natural cold start.
 
-The reason for not auto-reloading is the same reason the product exists: a traveller may be
+The reason for not auto-reloading is the same reason the product exists: a traveler may be
 halfway through logging a receipt in a shop, or stepping through the airport checklist.
 Reloading the page under them is unacceptable. The flip side — R06, a user sitting on a
 stale build with an outdated tax rule — is handled by making the banner persistent and

@@ -17,7 +17,7 @@ path `/kaeru/`. GitHub Pages is a plain static file server:
   rewrites the URL into a query string, redirect to `index.html`, and restore the path with
   `history.replaceState`.
 
-We also need deep links to survive **offline**: a traveller opens the app from the home
+We also need deep links to survive **offline**: a traveler opens the app from the home
 screen with no network, and the service worker has to be able to answer the navigation.
 
 ## Decision

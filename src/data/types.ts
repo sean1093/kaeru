@@ -21,7 +21,7 @@ export interface MetaRecord {
 }
 
 /**
- * v1 holds only what the shell needs. Trips, travellers, receipts and refunds arrive
+ * v1 holds only what the shell needs. Trips, travelers, receipts and refunds arrive
  * in M1 as new stores plus a new migration — existing stores are never rewritten.
  */
 export interface KaeruDB extends DBSchema {

@@ -14,7 +14,7 @@ Constraints that actually decide this:
   precached for offline use. Budget: **initial JS ≤ 100 KB gzip**, and we would like to be
   far under it so that feature code has room to grow.
 - **Strict typing.** Money, dates and deadlines are the product. The type system is the
-  cheapest place to catch a mistake that would otherwise cost a traveller a refund.
+  cheapest place to catch a mistake that would otherwise cost a traveler a refund.
 - **Team familiarity.** Frontend engineers join in M2 and must be productive immediately.
   React-shaped components and hooks are the common denominator.
 - **Testability.** QA requires component tests with Testing Library and a jsdom environment.
