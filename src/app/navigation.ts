@@ -48,8 +48,8 @@ export type Chrome = 'tabs' | 'fullscreen' | 'mode';
 
 export interface ScreenRoute {
   pattern: RoutePattern;
-  /** The design's screen id, e.g. `S20`. Carried into `data-screen` so QA can assert it. */
-  screenId: string;
+  /** The design's screen id. Carried into `data-screen` so QA can assert it. */
+  screenId: ScreenId;
   chrome: Chrome;
   screen: ComponentType<{ params: Readonly<Record<string, string>> }>;
   /** Sheet ids this screen is allowed to open, so an unknown `?sheet=` is ignored. */
@@ -87,10 +87,60 @@ export interface FeatureV2 {
 }
 
 /**
- * The design's screen id, e.g. `S20`. Narrowed to the published inventory by M1-5a so a
- * typo is a type error.
+ * The published screen inventory — `information-architecture.md` section 3, 46 ids, fixed
+ * since M0. Declared as a union here rather than left as `string`, so `pathTo('S99')` is a
+ * compile error today instead of an acceptance criterion M1-5a has to remember.
+ *
+ * M1-5a narrows the second argument per screen from its route map, so a missing
+ * `receiptId` also becomes a compile error.
  */
-export type ScreenId = string;
+export type ScreenId =
+  | 'S01'
+  | 'S02'
+  | 'S03'
+  | 'S04'
+  | 'S05'
+  | 'S10'
+  | 'S11'
+  | 'S12'
+  | 'S13'
+  | 'S14'
+  | 'S15'
+  | 'S16'
+  | 'S17'
+  | 'S20'
+  | 'S21'
+  | 'S22'
+  | 'S23'
+  | 'S24'
+  | 'S25'
+  | 'S26'
+  | 'S27'
+  | 'S28'
+  | 'S29'
+  | 'S2A'
+  | 'S2B'
+  | 'S30'
+  | 'S31'
+  | 'S32'
+  | 'S33'
+  | 'S34'
+  | 'S35'
+  | 'S36'
+  | 'S37'
+  | 'S38'
+  | 'S39'
+  | 'S40'
+  | 'S41'
+  | 'S50'
+  | 'S51'
+  | 'S52'
+  | 'S53'
+  | 'S54'
+  | 'S60'
+  | 'S61'
+  | 'S62'
+  | 'S63';
 
 /**
  * The one place a route path is written down.

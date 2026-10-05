@@ -70,7 +70,17 @@ export interface RefundEstimate {
    * safe direction. The true figure for a group is `EstimateOperatorPayout`.
    */
   net: Jpy | null;
-  /** True when `net` is below `rules.fee.warnBelowJpy` and the warning must show (DR-027, S2B). */
+  /**
+   * True when `net` is below `rules.fee.warnBelowJpy` (DR-027, S2B).
+   *
+   * **Precedence:** this is the right warning only when no group is visible. Where the
+   * receipt's operator is known and has other receipts on the trip, the screen must show
+   * `PayoutEstimate.feeWarning` instead. A warning is not just a number — it invites the
+   * user to stop claiming — and a pessimistic per-receipt figure would fire on small
+   * receipts whose operator is in fact sending one transfer worth claiming. That either
+   * trains the user to ignore the warning or talks them into abandoning a good refund,
+   * which is the exact harm DR-027 exists to prevent.
+   */
   feeWarning: boolean;
 }
 

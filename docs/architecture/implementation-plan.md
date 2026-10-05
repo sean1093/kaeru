@@ -90,7 +90,7 @@ everything owns it. If the PM would rather spawn a fifth engineer, the slice is
 self-contained and hands over cleanly.
 
 **2. The guide moves from the Airport track to the onboarding track in M2.** The suggestion
-paired Airport Mode (ten screens) with the Guide (five). Airport Mode is the flow where a
+paired Airport Mode with the Guide (five screens). Airport Mode is the flow where a
 mistake costs a traveller real money, it is the one that must work offline in a queue, and
 it carries QA risk R05 at the top of the register. It gets a track to itself. The Guide is
 five read-mostly screens over bundled content with no domain logic, which sits naturally

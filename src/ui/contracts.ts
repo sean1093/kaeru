@@ -184,8 +184,15 @@ export interface ChecklistRowProps {
   /** Rows routed to a human counter render as a linked panel, not a checkbox (DR-035). */
   excluded?: { reason: string; href: string };
   /**
-   * Per-row marker the traveller has to act on before ticking: "goods are in a checked
-   * bag" (DR-032) or "bring the certificate" for a high-value receipt (DR-016, UJ-020).
+   * Per-row marker the traveller has to act on before ticking: 標記為託運 / "marked as
+   * checked" (DR-032), or 要帶證明文件 / "bring the documents" for a high-value receipt
+   * (DR-016, UJ-020).
+   *
+   * The second marker is deliberately generic. `DR-016` is a certificate of authenticity
+   * (鑑定書) **or** a warranty (保證書) depending on the goods — a watch has a warranty, a
+   * gemstone has an appraisal — and naming the wrong one sends someone who just spent
+   * ¥1,280,000 hunting for the wrong paper, at which point they stop looking. The specific
+   * words belong on S17 and the S21 prompt, which are read sitting at a table.
    */
   warning?: { tone: 'attention' | 'info'; text: string };
 }
