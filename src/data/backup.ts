@@ -135,13 +135,24 @@ function findPassportLikeValuesInEntity(
 }
 
 /**
+ * Reads one string field out of a value with no assumed shape — used on records that have
+ * already failed to normalise, which is precisely the data least entitled to an assumed
+ * shape (Architect review, #93).
+ */
+function rawStringField(entry: unknown, key: string): string | null {
+  if (typeof entry !== 'object' || entry === null || !(key in entry)) return null;
+  const value = (entry as Record<string, unknown>)[key];
+  return typeof value === 'string' ? value : null;
+}
+
+/**
  * Best-effort id for a record that failed to normalise at all, so a rejection reads
  * `receipt:r-1 (unreadable)` rather than `receipt (unreadable)` — the difference between a
  * user being able to find the record in their own backup file and not (QA review, #93).
  */
 function rawIdOf(entry: unknown): string | null {
-  const id = (entry as { id?: unknown } | null)?.id;
-  return typeof id === 'string' && id.trim() !== '' ? id.trim() : null;
+  const id = rawStringField(entry, 'id');
+  return id !== null && id.trim() !== '' ? id.trim() : null;
 }
 
 // --- Raw document shape (what `JSON.parse` can hand back) -------------------
@@ -311,11 +322,9 @@ function validateRegistrations(raw: unknown, rejectedKeys: string[]): OperatorRe
   for (const entry of raw) {
     const registration = normalizeRegistration(entry);
     if (!registration) {
-      const rawTripId = (entry as { tripId?: unknown } | null)?.tripId;
-      const rawOperatorId = (entry as { operatorId?: unknown } | null)?.operatorId;
-      rejectedKeys.push(
-        `registration:${typeof rawTripId === 'string' ? rawTripId : 'unknown'}/${typeof rawOperatorId === 'string' ? rawOperatorId : 'unknown'} (unreadable)`,
-      );
+      const rawTripId = rawStringField(entry, 'tripId') ?? 'unknown';
+      const rawOperatorId = rawStringField(entry, 'operatorId') ?? 'unknown';
+      rejectedKeys.push(`registration:${rawTripId}/${rawOperatorId} (unreadable)`);
       continue;
     }
     const findings = findPassportLikeValuesInEntity(
@@ -490,15 +499,6 @@ async function buildDocument(
   return { ...document, photos };
 }
 
-const V2_STORE_NAMES = [
-  'photos',
-  'receipts',
-  'registrations',
-  'travelers',
-  'trips',
-  'settings',
-] as const;
-
 export const backupService: BackupService = {
   /**
    * Structural size without reading a single photo blob — `photoRepository.totalBytes()`
@@ -571,7 +571,21 @@ export const backupService: BackupService = {
   },
 };
 
-const CORE_STORE_NAMES = ['trips', 'travelers', 'receipts', 'registrations', 'settings'] as const;
+/**
+ * Everything a `replace` import must clear. `photos` is in scope for the clear only — the
+ * photo *writes* stay the best-effort step after this transaction, because a photo failing
+ * to store is not the risk this transaction protects against (Architect review, #93: a
+ * `replace` that cleared the core stores but not `photos` left every photo from the
+ * replaced data orphaned, attached to receipt ids that no longer exist).
+ */
+const CORE_STORE_NAMES = [
+  'trips',
+  'travelers',
+  'receipts',
+  'registrations',
+  'settings',
+  'photos',
+] as const;
 
 /**
  * One transaction over every core store, covering the `replace` clear and every write.
@@ -637,8 +651,8 @@ async function writeImportedCore(
 }
 
 async function clearV2Stores(db: KaeruDatabase): Promise<void> {
-  const tx = db.transaction(V2_STORE_NAMES, 'readwrite');
-  await Promise.all(V2_STORE_NAMES.map((name) => tx.objectStore(name).clear()));
+  const tx = db.transaction(CORE_STORE_NAMES, 'readwrite');
+  await Promise.all(CORE_STORE_NAMES.map((name) => tx.objectStore(name).clear()));
   await tx.done;
 }
 

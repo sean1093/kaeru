@@ -497,6 +497,30 @@ describe('TC-DATA-020: import into a non-empty profile', () => {
     expect((await tripRepository.list(db)).map((t) => t.id)).toEqual(['imported']);
   });
 
+  it('Architect review, #93: replace also clears photos, not only the core entities', async () => {
+    // A replace whose document carries no photos, against a device that had one, is
+    // exactly the case that catches a clear scoped to the wrong set of stores: the old
+    // photo has no receipt to belong to the moment the clear runs, and would otherwise
+    // survive, orphaned and still counting against quota.
+    await seedTripWithData();
+    expect(await db.count('photos')).toBeGreaterThan(0);
+
+    const document = JSON.stringify({
+      format: 'kaeru.backup',
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: '2026-11-01T00:00:00.000Z',
+      settings: {},
+      trips: [aTrip({ id: 'imported' })],
+      travelers: [],
+      receipts: [],
+      registrations: [],
+    });
+
+    await backupService.import(db, document, 'replace');
+
+    expect(await db.count('photos')).toBe(0);
+  });
+
   it('reports conflicts — entities already present with the same id', async () => {
     await tripRepository.put(db, aTrip({ id: 'trip-1' }));
     const document = JSON.stringify({
