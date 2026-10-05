@@ -323,14 +323,25 @@ describe('estimateRefund — what actually reaches the traveller (DR-025, DR-027
     expect(estimate.net).toBeNull();
   });
 
-  it('assumes a transfer is coming while the payout route is still unchosen', () => {
+  it('separates an assumed bank charge from a chosen one', () => {
     const operator = anOperator({
       refundMethods: ['bank_transfer', 'credit_card'],
       fees: [aFee({ rate: { basisPoints: 150, basis: 'refund' } })],
     });
-    expect(estimateRefund(receipt, operator, null, aTrip(), atLaunch).receivingChargeApplies).toBe(
-      true,
+    const assumed = estimateRefund(receipt, operator, null, aTrip(), atLaunch);
+    expect(assumed.receivingChargeApplies).toBe(true);
+    expect(assumed.refundMethodKnown).toBe(false);
+
+    const chosen = estimateRefund(
+      receipt,
+      operator,
+      aRegistration({ refundMethod: 'bank_transfer' }),
+      aTrip(),
+      atLaunch,
     );
+    expect(chosen.receivingChargeApplies).toBe(true);
+    expect(chosen.refundMethodKnown).toBe(true);
+
     const cardOnly = anOperator({ refundMethods: ['credit_card'], fees: operator.fees });
     expect(estimateRefund(receipt, cardOnly, null, aTrip(), atLaunch).receivingChargeApplies).toBe(
       false,

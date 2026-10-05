@@ -65,8 +65,21 @@ export interface RefundEstimate {
    * transfer. Null when unknown or not applicable (`DR-025`).
    */
   receivingCharge: Jpy | null;
-  /** True when the payout route is a bank transfer, so a receiving charge is coming. */
+  /**
+   * True when the receiving charge is part of the estimate. It is a fact once the
+   * traveller has chosen a bank transfer, and an assumption before then — see
+   * `refundMethodKnown`, which is the field a screen must read before wording it.
+   */
   receivingChargeApplies: boolean;
+  /**
+   * Whether the payout route is known, i.e. the traveller has registered a destination.
+   *
+   * The deduction is assumed wherever the operator could send a transfer, because
+   * assuming it away is the optimistic direction and the bank charge is the larger bite in
+   * the evidence. But "your bank will take a cut" and "if you take this by bank transfer,
+   * your bank will take a cut" are different sentences, and only this field separates them.
+   */
+  refundMethodKnown: boolean;
   /**
    * Gross minus everything known. Null when any deduction is unknown, because an honest
    * "fee unknown" beats a confident wrong number (`DR-025`, `DR-051`, `UJ-014`).
@@ -115,6 +128,8 @@ export interface PayoutEstimate {
   /** Applied once for the whole payout, not once per receipt. */
   receivingCharge: Jpy | null;
   net: Jpy | null;
+  /** Whether the payout route is known; see `RefundEstimate.refundMethodKnown`. */
+  refundMethodKnown: boolean;
   feeWarning: boolean;
 }
 
