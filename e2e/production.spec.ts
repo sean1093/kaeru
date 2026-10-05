@@ -24,6 +24,27 @@ import { expect, test } from '@playwright/test';
 
 const SMOKE_URL = process.env.KAERU_SMOKE_URL ?? '';
 
+/**
+ * Inert, rather than explosive, when this file is run without a target.
+ *
+ * `playwright.config.ts` already excludes this spec, and `playwright.smoke.config.ts`
+ * already refuses to start without a reachable `KAERU_SMOKE_URL`, so neither of those is
+ * what this guard is for. It is for the third case, which actually happened: a branch
+ * rewrote `playwright.config.ts` for its own reasons, the exclusion did not survive the
+ * edit, and every pull request on that branch ran this file with no URL set and got 27
+ * failures that looked like somebody else's bug.
+ *
+ * A config-level exclusion is one line in a file other people legitimately edit. This makes
+ * the spec's own behaviour correct in that case instead of depending on the line surviving,
+ * and it weakens no guarantee: a skip here can only ever mean the file was picked up by a
+ * config that was never meant to run it, because the smoke's own config fails loudly when
+ * the variable is missing rather than skipping.
+ */
+test.skip(
+  SMOKE_URL === '',
+  'KAERU_SMOKE_URL is not set: the production smoke only runs against a deployed site.',
+);
+
 /** The site's own origin plus base path, e.g. `https://sean1093.github.io/kaeru/`. */
 function siteBase(): URL {
   const base = new URL(SMOKE_URL);
