@@ -38,7 +38,7 @@ const EXPECTED_BG: Record<(typeof THEMES)[number], string> = {
 };
 
 async function setLocale(page: Page, locale: (typeof LOCALES)[number]): Promise<void> {
-  await page.getByTestId(`language-${locale}`).click();
+  await page.locator(GALLERY_ROOT).getByTestId(`language-${locale}`).click();
   // The gallery's own `<h1>` is a direct child of the gallery root; several AppBar
   // specimens inside it render their own demo `<h1>` ("Receipts"), so an unscoped
   // `getByRole('heading', { level: 1 })` is ambiguous on this page.
