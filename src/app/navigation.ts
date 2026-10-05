@@ -94,6 +94,23 @@ export interface FeatureV2 {
 }
 
 /**
+ * The shape of a feature module, and the reason `feature` is optional.
+ *
+ * The registration glob is eager, so every `index.ts` under `src/features` is imported
+ * into the bundle whether or not its feature is wanted there. A development-only feature
+ * — the UI kit gallery — therefore registers as
+ * `export const feature = import.meta.env.DEV ? defineFeature({ … }) : undefined`: Vite
+ * replaces the condition at build time, so Rollup drops the module and everything it
+ * imports out of the production build. A runtime check would ship the gallery to users.
+ *
+ * The registry skips modules that export nothing. That filter is load-bearing, not dead
+ * code.
+ */
+export interface FeatureModule {
+  feature?: FeatureV2;
+}
+
+/**
  * The published screen inventory — `information-architecture.md` section 3, 46 ids, fixed
  * since M0. Declared as a union here rather than left as `string`, so `pathTo('S99')` is a
  * compile error today instead of an acceptance criterion M1-5a has to remember.
