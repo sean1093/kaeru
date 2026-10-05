@@ -277,6 +277,9 @@ describe('estimateRefund — what actually reaches the traveller (DR-025, DR-027
 
   it('applies a published minimum and a flat charge per payout', () => {
     // Ocean from 2026-07-16: card 0.5% of the tax-excluded price, minimum 180 yen.
+    // The PayPal row's `refund` basis is a fixture choice to exercise the other basis, not
+    // a claim about Ocean: DR-026a says that figure has no determinable basis, so the
+    // shipped catalogue carries `fees: []` for it (#82). Same for the superseded 2.2%.
     const ocean = anOperator({
       refundMethods: ['credit_card', 'paypal'],
       fees: [
