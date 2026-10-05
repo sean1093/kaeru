@@ -170,14 +170,26 @@ describe('airportReadinessOf (DR-030, DR-079, UJ-019)', () => {
       'blocker.itemsNotConfirmed',
     ]);
 
-    // Each receipt is listed under exactly one blocker. S30 shows a count beside each row,
-    // so a receipt in two rows is counted twice in the one list whose job is telling a
-    // traveller how much is left to do — and 'maybe' matches both unanswered rules.
-    const listed = readiness.blockers.flatMap((blocker) => blocker.receiptIds);
-    expect([...new Set(listed)]).toEqual(listed);
+    // The two rows that ask the same question are mutually exclusive: a receipt whose
+    // presence is unanswered appears under exactly one of them, never both. S30 shows a
+    // count beside each blocker, so listing it twice would double-count it in the one list
+    // whose job is telling a traveller how much is left to do.
+    //
+    // Deliberately **not** a global uniqueness claim. A receipt legitimately appears under
+    // more than one blocker when the blockers have different remedies — a ¥1,200,000 watch
+    // in a checked bag belongs under `checkedBag` and `documentsNeeded` both, because
+    // taking it out of the bag and finding its certificate are two separate things the
+    // traveller has to do (JapanExpert and QALead on review: the first version of this
+    // asserted a property the function does not have and should not).
+    const byKey = (key: string) =>
+      readiness.blockers.find((blocker) => blocker.key === key)?.receiptIds ?? [];
+    expect(byKey('blocker.itemsNotConfirmed')).toEqual(['unanswered']);
+    expect(byKey('blocker.usedInJapanUnanswered')).toEqual(['maybe']);
     expect(
-      readiness.blockers.find((b) => b.key === 'blocker.itemsNotConfirmed')?.receiptIds,
-    ).toEqual(['unanswered']);
+      byKey('blocker.itemsNotConfirmed').filter((id) =>
+        byKey('blocker.usedInJapanUnanswered').includes(id),
+      ),
+    ).toEqual([]);
   });
 
   it('ranks an expired deadline above every delay, because it is a total loss', () => {
