@@ -12,64 +12,20 @@
  * Sources: `docs/design/wireframes.md` S62, `docs/qa/test-cases.md` TC-DATA-015..021.
  */
 import { expect, type Page, test } from '@playwright/test';
+import { backupDocument } from './support/seed.ts';
 
-/** A schema v2 backup, written out the way the exporter writes one. */
-function aBackup(trips: number, receipts: number): string {
-  return JSON.stringify({
-    format: 'kaeru.backup',
-    schemaVersion: 2,
-    exportedAt: '2026-11-20T00:00:00.000Z',
-    appVersion: '0.1.0',
-    settings: { locale: 'zh-TW', theme: 'system' },
-    trips: Array.from({ length: trips }, (_, index) => ({
-      id: `trip-${index + 1}`,
-      departureDate: '2026-11-20',
-      departureAirport: 'NRT',
-      checkInMinutes: 60,
-      airportBufferMinutes: 60,
-      overdueThresholdDays: 30,
-      receivingChargeJpy: null,
-      archived: false,
-    })),
-    travelers: [{ id: 'traveler-1', tripId: 'trip-1', displayName: '宜君' }],
-    receipts: Array.from({ length: receipts }, (_, index) => ({
-      id: `receipt-${index + 1}`,
-      tripId: 'trip-1',
-      travelerId: 'traveler-1',
-      shopName: 'ビックカメラ',
-      shopKey: 'ビックカメラ',
-      purchaseDate: '2026-11-10',
-      lines: [
-        {
-          taxRate: 0.1,
-          taxExcludedAmount: 20000,
-          taxIncludedAmount: null,
-          maxUnitPriceTaxExcluded: null,
-          amountsAreDerived: false,
-        },
-      ],
-      operatorId: null,
-      status: 'logged',
-      packingLocation: 'with_me',
-      allItemsPresent: null,
-      willUseInJapan: null,
-      hasHighValueItem: null,
-      amountReceived: null,
-      notClaimingReason: null,
-      statusChangedAt: '2026-11-10T10:00:00.000Z',
-    })),
-    registrations: [],
+/** Three receipts on one trip, built by the shared fixture so it cannot drift. */
+const aBackup = (receipts: number): string =>
+  backupDocument({
+    receipts: Array.from({ length: receipts }, (_, index) => ({ id: `receipt-${index + 1}` })),
   });
-}
 
 async function chooseBackup(page: Page, contents: string): Promise<void> {
-  await page
-    .getByTestId('import-backup')
-    .setInputFiles({
-      name: 'kaeru-backup-2026-11-20.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(contents),
-    });
+  await page.getByTestId('import-backup').setInputFiles({
+    name: 'kaeru-backup-2026-11-20.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(contents),
+  });
 }
 
 test.describe('S62 — your data', () => {
@@ -89,7 +45,7 @@ test.describe('S62 — your data', () => {
   test('TC-DATA-016: an import is described before anything is written, and cancelling writes nothing', async ({
     page,
   }) => {
-    await chooseBackup(page, aBackup(1, 3));
+    await chooseBackup(page, aBackup(3));
 
     const preview = page.getByTestId('import-preview');
     await expect(preview).toBeVisible();
@@ -99,20 +55,20 @@ test.describe('S62 — your data', () => {
     await expect(preview).toBeHidden();
 
     // Nothing was written: a second file sees no collisions with the first.
-    await chooseBackup(page, aBackup(1, 3));
+    await chooseBackup(page, aBackup(3));
     await expect(page.getByTestId('import-conflicts')).toHaveCount(0);
   });
 
   test('TC-DATA-017: confirming writes, and the result is reported in the user\u2019s language', async ({
     page,
   }) => {
-    await chooseBackup(page, aBackup(1, 3));
+    await chooseBackup(page, aBackup(3));
     await page.getByTestId('confirm-import').click();
 
     await expect(page.getByTestId('data-notice')).toContainText('3');
     // The receipts are on the device now: re-importing the same file collides with itself,
     // which is the cheapest proof that the write actually happened.
-    await chooseBackup(page, aBackup(1, 3));
+    await chooseBackup(page, aBackup(3));
     await expect(page.getByTestId('import-conflicts')).toBeVisible();
   });
 
@@ -125,7 +81,7 @@ test.describe('S62 — your data', () => {
   });
 
   test('TC-SEC-005: deleting everything takes a second, deliberate step', async ({ page }) => {
-    await chooseBackup(page, aBackup(1, 3));
+    await chooseBackup(page, aBackup(3));
     await page.getByTestId('confirm-import').click();
     await expect(page.getByTestId('data-notice')).toContainText('3');
 
@@ -138,7 +94,7 @@ test.describe('S62 — your data', () => {
     await page.getByTestId('confirm-delete').click();
     await expect(page.getByTestId('data-notice')).not.toBeEmpty();
     // Gone: the same file imports cleanly again, with nothing to collide with.
-    await chooseBackup(page, aBackup(1, 3));
+    await chooseBackup(page, aBackup(3));
     await expect(page.getByTestId('import-conflicts')).toHaveCount(0);
   });
 });
