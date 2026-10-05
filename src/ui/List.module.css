@@ -1,0 +1,110 @@
+/* components.md section 5. The 72 px minimum row height is --space-11 + --space-3:
+   three bilingual lines plus padding, and it grows from there. */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  position: relative;
+}
+
+/* The divider is inset to the text start, and the last row never draws one. */
+.row:not(.last)::after {
+  content: "";
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: var(--space-5) 0;
+  block-size: 1px;
+  background: var(--color-border);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  inline-size: 100%;
+  min-block-size: calc(var(--space-11) + var(--space-3));
+  padding: var(--space-4) var(--space-5);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+}
+
+a.inner,
+button.inner {
+  cursor: pointer;
+  transition: background-color var(--duration-instant) var(--ease-standard);
+}
+
+.inner:focus-visible {
+  /* Inset so a row at the edge of a card is not clipped by the card's radius. */
+  outline: 2px solid var(--color-focus);
+  outline-offset: calc(var(--space-1) * -1);
+}
+
+a.inner:active,
+button.inner:active {
+  background: var(--color-bg-sunken);
+}
+
+@media (hover: hover) {
+  a.inner:hover,
+  button.inner:hover {
+    background: var(--color-bg-sunken);
+  }
+}
+
+.selected .inner {
+  background: var(--color-primary-soft);
+}
+
+.selectedMark {
+  display: inline-flex;
+  flex: none;
+  font-size: var(--text-lg);
+  color: var(--color-primary);
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  min-inline-size: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.primary {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  line-height: var(--leading-normal);
+  /* A long shop name wraps and may clamp to two lines; the detail screen has all of it. */
+  overflow-wrap: anywhere;
+}
+
+.secondary {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.status {
+  display: inline-flex;
+}
+
+.chevron {
+  display: inline-flex;
+  flex: none;
+  font-size: var(--text-lg);
+  color: var(--color-text-subtle);
+}

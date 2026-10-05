@@ -128,9 +128,12 @@ describe('feature modules', () => {
 });
 
 describe('the real registration', () => {
-  it('registers home and settings through the v2 contract', () => {
-    expect(features.map((feature) => feature.id)).toEqual(['home', 'settings']);
-    expect(routes.map((entry) => entry.pattern)).toEqual(['/', '/settings']);
+  it('registers home, settings and the dev-only gallery through the v2 contract', () => {
+    // Vitest runs with import.meta.env.DEV = true, so the gallery (M1-3, #65) registers
+    // here same as it would in `npm run dev`; its absence from a production build is
+    // proved separately in `e2e/production-bundle.spec.ts` (#27), where DEV is false.
+    expect(features.map((feature) => feature.id)).toEqual(['gallery', 'home', 'settings']);
+    expect(routes.map((entry) => entry.pattern)).toEqual(['/dev/gallery', '/', '/settings']);
   });
 
   it('makes settings an app-bar route rather than a fifth tab', () => {

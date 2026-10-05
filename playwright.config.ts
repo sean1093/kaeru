@@ -4,13 +4,31 @@ const CI = !!process.env.CI;
 const PORT = 4173;
 const BASE_URL = `http://localhost:${PORT}/kaeru/`;
 
+/**
+ * The UI kit gallery (`src/features/gallery/**`) only registers in a development build
+ * (`import.meta.env.DEV`) and is absent from the production bundle by construction — see
+ * `src/features/gallery/index.ts` and the bundle-absence test in M1-3e (#27). A preview
+ * server serving the production build therefore 404s on it; the gallery can only be
+ * reached from `npm run dev`.
+ */
+const GALLERY_PORT = 5174;
+const GALLERY_BASE_URL = `http://localhost:${GALLERY_PORT}/kaeru/`;
+
+/** Never run on a pull request: the production smoke needs a deployed target. */
+const IGNORED = ['**/production.spec.ts'];
+
 export default defineConfig({
   // Disjoint from Vitest: Playwright owns e2e/**, Vitest owns src/**.
   testDir: 'e2e',
   testMatch: '**/*.spec.ts',
   // The production smoke has its own config and its own target; a pull request must never
   // run it and must never be slowed by it.
-  testIgnore: '**/production.spec.ts',
+  //
+  // Repeated on every project below, and that is not redundancy: a project's `testIgnore`
+  // **replaces** this one rather than adding to it, so the moment any project declared its
+  // own (for the gallery carve-out) this line stopped applying to it and the smoke started
+  // running on pull requests with no target URL. Anything added here must be added there.
+  testIgnore: IGNORED,
   fullyParallel: true,
   forbidOnly: CI,
   retries: CI ? 1 : 0,
@@ -34,22 +52,57 @@ export default defineConfig({
   projects: [
     {
       name: 'iphone-webkit',
+      testIgnore: [...IGNORED, '**/gallery/**'],
       use: { ...devices['iPhone 14'] },
     },
     {
       name: 'pixel-chromium',
+      testIgnore: [...IGNORED, '**/gallery/**'],
       use: { ...devices['Pixel 7'] },
     },
     {
       name: 'desktop-chromium',
+      testIgnore: [...IGNORED, '**/gallery/**'],
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      /**
+       * Carve-out from `test-strategy.md` section 3 ("E2E runs against the production
+       * build … never the dev server"), recorded there and here together (#71): the
+       * gallery does not exist in a production build, so there is no preview server to
+       * test it against. This project is for component conformance and the M1-3e
+       * capture matrix ONLY.
+       *
+       * It is NOT evidence for any accessibility claim about a real screen — axe on the
+       * three production projects above is the gate that counts. It asserts nothing
+       * about offline, the service worker or caching: `devOptions.enabled` is `false` in
+       * `vite.config.ts`, so there is no worker here to test. Any other dev-server
+       * project needs a reason this specific ("the thing under test does not exist in
+       * the production bundle"), stated in its own pull request.
+       *
+       * Scoped twice, belt and braces: `testDir`/`testMatch` here, `testIgnore` on the
+       * three production projects above, so a future `testMatch` widening up there does
+       * not silently pull `e2e/gallery/**` into a preview-server run, where it 404s.
+       */
+      name: 'gallery-dev',
+      testDir: 'e2e/gallery',
+      testMatch: '**/*.spec.ts',
+      use: { ...devices['Desktop Chrome'], baseURL: GALLERY_BASE_URL },
+    },
   ],
-  // Test the production build so the service worker and base path are real.
-  webServer: {
-    command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
-    url: BASE_URL,
-    reuseExistingServer: !CI,
-    timeout: 180_000,
-  },
+  // Two servers: production for the three real projects, dev for the gallery only.
+  webServer: [
+    {
+      command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
+      url: BASE_URL,
+      reuseExistingServer: !CI,
+      timeout: 180_000,
+    },
+    {
+      command: `npm run dev -- --port ${GALLERY_PORT} --strictPort`,
+      url: GALLERY_BASE_URL,
+      reuseExistingServer: !CI,
+      timeout: 60_000,
+    },
+  ],
 });

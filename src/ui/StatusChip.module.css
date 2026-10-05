@@ -1,0 +1,57 @@
+/* components.md section 6. Height 24 px is --space-7; the icon is --text-base (16 px)
+   beside --text-sm text, and both scale together. */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--space-7);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-tight);
+  /* Chips wrap with their row rather than cutting the word in half. */
+  overflow-wrap: anywhere;
+}
+
+.icon {
+  display: inline-flex;
+  flex: none;
+  font-size: var(--text-base);
+}
+
+.logged,
+.not_claiming {
+  background: var(--color-bg-sunken);
+  color: var(--color-text-muted);
+}
+
+.registered,
+.refund_pending {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.customs_confirmed,
+.refunded {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.rejected,
+.refund_disputed {
+  background: var(--color-attention-soft);
+  color: var(--color-attention);
+}
+
+/* The two advisory chips: one asks for action, one admits we do not know. */
+.needs_action {
+  background: var(--color-attention-soft);
+  color: var(--color-attention);
+}
+
+.operator_unknown {
+  background: var(--color-bg-sunken);
+  color: var(--color-text-muted);
+}
