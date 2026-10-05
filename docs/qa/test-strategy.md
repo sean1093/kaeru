@@ -336,10 +336,13 @@ Run before every release to `main` that users will see. Matrix: **2 languages ×
 - [ ] No truncation or overflow at 320 px and at 200% text size.
 - [ ] Dates, currency, and numbers formatted correctly for the locale.
 
-**Per device class (iPhone Safari, Android Chrome, desktop)**
+**Per emulated device class (`iphone-webkit`, `pixel-chromium`, `desktop-chromium`)**
+
+Emulation, not hardware. These three are Playwright projects: a viewport, a user agent and an engine. Read every box below as "passes under emulation".
+
 - [ ] Core journey: create trip → log receipt → see pending refund → airport checklist → mark refunded.
-- [ ] Install to home screen works; standalone launch keeps the data; safe areas respected.
-- [ ] Photo/file input works, including HEIC on iOS, and failure is graceful.
+- [ ] Install to home screen works; standalone launch keeps the data; safe areas respected. **Emulated only** — real iOS install behaviour is `R14` and is unverified.
+- [ ] Photo/file input works and failure is graceful. **HEIC on real iOS is not covered** (`R15`); the fixture is a file, not a camera.
 
 **Offline**
 - [ ] Airplane mode: cold start, airport checklist, logging a receipt, switching language — all work.
@@ -347,9 +350,21 @@ Run before every release to `main` that users will see. Matrix: **2 languages ×
 
 **Accessibility**
 - [ ] axe: zero serious/critical on every route.
-- [ ] Accessibility-tree snapshot reviewed for every screen in both locales. **State in the report that no screen reader was run**, and that a VoiceOver and TalkBack pass is the first thing a human tester should do.
+- [ ] Accessibility-tree snapshot reviewed for every screen in both locales.
 - [ ] Keyboard-only traversal; visible focus everywhere; target size ≥ 24 px.
 - [ ] Contrast verified against the final palette, including disabled and error states.
+
+**Not performed by this team, and not to be implied**
+
+Every ticked box above is evidence about emulation. These are the gaps, and they are the first work a human tester should do, in this order:
+
+- [ ] **Real iPhone (Safari) and real Android (Chrome).** Nobody here has a device. Emulation does not reproduce iOS Safari storage eviction, PWA install behaviour, the camera and HEIC file input, safe-area insets on hardware, or memory pressure.
+- [ ] **VoiceOver and TalkBack.** An accessibility-tree snapshot shows what a screen reader is *handed*; it cannot show what it announces, how gestures navigate, or whether a live region is heard at the moment it matters.
+- [ ] **Airplane mode on hardware.** `setOffline` is a network emulation, not a radio.
+- [ ] **A real storage ceiling.** `fake-indexeddb` has no quota (`R07`); we exercise our handling of a simulated error, never the browser's behaviour at a real limit.
+- [ ] **Service-worker update on WebKit** (`R06`). Playwright's WebKit does not expose the worker lifecycle, so the update suite is Chromium-only. iOS is unverified.
+
+**The release report repeats this list rather than citing it.** A reader who sees only the ticked boxes would conclude a device pass happened, and nobody would know to look. That is the one failure this document exists to prevent: an honest gap is recoverable by whoever picks it up, a false claim is not.
 
 **Data and privacy**
 - [ ] Export → fresh profile → import restores everything exactly.
