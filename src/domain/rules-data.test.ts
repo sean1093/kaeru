@@ -57,6 +57,7 @@ describe('the rules document is the only place a rule constant lives', () => {
       'dates.ts',
       'index.ts',
       'model.ts',
+      'money.ts',
       'resolve-rules.ts',
       'rules.ts',
     ]);
