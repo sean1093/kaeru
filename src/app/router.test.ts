@@ -1,10 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setActiveLocale } from '../i18n/index.ts';
 import type { ScreenRoute } from './navigation.ts';
 import { collectFeatures } from './registry.ts';
 import {
   appNavigator,
-  currentLocation,
   currentPath,
   currentRoute,
   hrefFor,
@@ -128,7 +126,6 @@ describe('router', () => {
   let stop: (() => void) | undefined;
 
   beforeEach(() => {
-    setActiveLocale('en');
     registerRoutes([
       route('/'),
       route('/settings'),
@@ -254,6 +251,10 @@ describe('router', () => {
     window.location.hash = hrefFor('/settings');
     await until(() => window.location.hash === '#/', 'the address bar to be put back');
     expect(currentPath.value).toBe('/');
+    // Deliberate: replaceState restores the URL without adding a history entry, but it
+    // overwrites the entry the user just arrived at. Pressing back again from here skips
+    // the step that would otherwise have been "/settings" — the least-bad option available,
+    // noted per Architect review of #77, not a bug to fix.
   });
 
   it('does not guard opening a sheet on the screen the user is already on', async () => {
@@ -267,21 +268,14 @@ describe('router', () => {
     expect(guard).not.toHaveBeenCalled();
   });
 
-  it('shows the feature wording for the guard key, falling back to the shell wording', () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    registerRoutes([route('/', { guard: () => 'app.update.message' }), route('/settings')]);
-    stop = startRouter();
+  it('refuses to register a guarded route with no confirmation wired up', () => {
+    // A guard that cannot ask is worse than no guard: it looks protected and is not. This
+    // also means the shell can never fall back to `window.confirm`, whose buttons render in
+    // the OS language regardless of the app's locale.
     setLeaveConfirm(null);
-
-    appNavigator.go('/settings');
-    expect(confirm).toHaveBeenCalledWith('A new version is available.');
-
-    registerRoutes([route('/', { guard: () => 'no.such.key' }), route('/settings')]);
-    currentLocation.value = { path: '/', sheet: null };
-    appNavigator.go('/settings');
-    expect(confirm).toHaveBeenLastCalledWith(
-      'You have unsaved changes on this screen. Leave anyway?',
-    );
+    expect(() =>
+      registerRoutes([route('/receipts/new', { guard: () => 'draft.unsaved' })]),
+    ).toThrow(/"\/receipts\/new" declares a guard but no leaveConfirm is registered/);
   });
 });
 

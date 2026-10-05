@@ -14,7 +14,6 @@ export const messages = defineMessages({
     'app.update.action': '立即更新',
     'app.update.dismiss': '稍後再說',
     'app.offlineReady': '已經可以離線使用。',
-    'app.guard.unsavedChanges': '這個畫面有還沒儲存的內容，確定要離開嗎？',
   },
   en: {
     'app.name': 'Kaeru',
@@ -29,6 +28,5 @@ export const messages = defineMessages({
     'app.update.action': 'Update now',
     'app.update.dismiss': 'Later',
     'app.offlineReady': 'Ready to use offline.',
-    'app.guard.unsavedChanges': 'You have unsaved changes on this screen. Leave anyway?',
   },
 });

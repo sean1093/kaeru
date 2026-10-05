@@ -1,7 +1,4 @@
 import { computed, type ReadonlySignal, signal } from '@preact/signals';
-import { allBundles } from '../i18n/catalogs.ts';
-import { activeLocale, translate } from '../i18n/index.ts';
-import { messages } from './messages.ts';
 import type {
   Navigator as NavigatorContract,
   PathTo,
@@ -169,8 +166,22 @@ export const currentPath: ReadonlySignal<string> = computed(() => currentLocatio
 
 const routes = signal<readonly ScreenRoute[]>([]);
 
-/** Registered by the feature registry at startup; the router owns no route list of its own. */
+/**
+ * Registered by the feature registry at startup; the router owns no route list of its own.
+ *
+ * Throws naming the route if any of `next` declares a `guard` and no `leaveConfirm` has
+ * been registered yet: a guard that cannot ask is strictly worse than no guard at all,
+ * because it looks protected and is not. Call `setLeaveConfirm` before registering any
+ * guarded route.
+ */
 export function registerRoutes(next: readonly ScreenRoute[]): void {
+  const unconfirmed = leaveConfirm === null && next.find((route) => route.guard);
+  if (unconfirmed) {
+    throw new Error(
+      `Route "${unconfirmed.pattern}" declares a guard but no leaveConfirm is registered. ` +
+        'Call setLeaveConfirm before registering it.',
+    );
+  }
   routes.value = next;
 }
 
@@ -188,37 +199,21 @@ export const currentRoute: ReadonlySignal<MatchedRoute | null> = computed(() =>
 /**
  * Asked before a screen with unsaved work is left. Receives the message key the screen's
  * guard returned; returning false keeps the user where they are.
+ *
+ * There is no default implementation backed by `window.confirm`: a native dialog renders
+ * its buttons in the OS language, so a zh-TW user would see "Leave site? / OK / Cancel" in
+ * English regardless of the app's locale — the one surface this app's i18n layer cannot
+ * reach. `registerRoutes` enforces that every guarded route has a real confirmation wired
+ * up before it can be navigated to, rather than silently falling back to that dialog or,
+ * worse, silently allowing the navigation.
  */
 export type LeaveConfirm = (messageKey: string) => boolean;
 
-/**
- * A guard returns a key from its own feature's bundle, so the message belongs to the screen
- * that has the unsaved work rather than to the shell. The key is looked up across the
- * registered bundles; an unknown key falls back to the shell's generic wording instead of
- * showing a raw key to someone who is about to lose work.
- */
-function resolveGuardMessage(messageKey: string): string {
-  const locale = activeLocale.value;
-  for (const bundle of allBundles) {
-    if (messageKey in bundle.messages[locale]) {
-      return translate(bundle.messages, locale, messageKey);
-    }
-  }
-  return translate(messages, locale, 'app.guard.unsavedChanges');
-}
+let leaveConfirm: LeaveConfirm | null = null;
 
-const DEFAULT_LEAVE_CONFIRM: LeaveConfirm = (messageKey) =>
-  window.confirm(resolveGuardMessage(messageKey));
-
-let leaveConfirm: LeaveConfirm = DEFAULT_LEAVE_CONFIRM;
-
-/**
- * Replace the confirmation, or pass null to restore the default. The default is
- * `window.confirm`, which is synchronous and therefore the only thing that can answer a
- * `hashchange` that has already happened; a styled replacement must stay synchronous too.
- */
+/** Replace the confirmation, or pass null to clear it (what the shell is not using). */
 export function setLeaveConfirm(confirm: LeaveConfirm | null): void {
-  leaveConfirm = confirm ?? DEFAULT_LEAVE_CONFIRM;
+  leaveConfirm = confirm;
 }
 
 /** True when the move is allowed: no guard, no unsaved work, or the user said leave. */
@@ -227,7 +222,13 @@ function mayLeave(target: AppLocation): boolean {
   const guard = currentRoute.value?.route.guard;
   if (!guard) return true;
   const messageKey = guard();
-  return messageKey === null || leaveConfirm(messageKey);
+  if (messageKey === null) return true;
+  if (!leaveConfirm) {
+    throw new Error(
+      `Route "${currentRoute.value?.pattern}" declares a guard but no leaveConfirm is registered.`,
+    );
+  }
+  return leaveConfirm(messageKey);
 }
 
 // --- Navigation -------------------------------------------------------------
