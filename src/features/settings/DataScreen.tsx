@@ -129,7 +129,19 @@ export function DataScreen(): JSX.Element {
     setNotice({ key: 'data.delete.done' });
   }
 
-  const megabytes = sizeBytes === null ? null : Math.max(1, Math.round(sizeBytes / 1_000_000));
+  /**
+   * Rounded to whole megabytes above 1 MB and whole kilobytes below it.
+   *
+   * Never floored at "about 1 MB": on a device with nothing stored that would be a false
+   * statement about the cost of a checkbox, which is the one thing this figure exists to
+   * tell the truth about.
+   */
+  const size =
+    sizeBytes === null
+      ? null
+      : sizeBytes >= 1_000_000
+        ? { key: 'data.export.size' as const, mb: Math.round(sizeBytes / 1_000_000) }
+        : { key: 'data.export.sizeKb' as const, mb: Math.max(1, Math.round(sizeBytes / 1000)) };
 
   return (
     <div class={styles.screen} {...screenAttrs('S62')}>
@@ -147,9 +159,7 @@ export function DataScreen(): JSX.Element {
           <span>
             {t('data.export.photos')}
             <span class={styles.meta} data-testid="export-size">
-              {megabytes === null
-                ? t('data.export.sizing')
-                : t('data.export.size', { mb: megabytes })}
+              {size === null ? t('data.export.sizing') : t(size.key, { mb: size.mb })}
             </span>
           </span>
         </label>
@@ -258,7 +268,11 @@ export function DataScreen(): JSX.Element {
             </div>
           </section>
         ) : (
-          <Button data-testid="delete-all" onClick={() => setConfirmingDelete(true)}>
+          <Button
+            variant="quiet"
+            data-testid="delete-all"
+            onClick={() => setConfirmingDelete(true)}
+          >
             {t('data.delete.action')}
           </Button>
         )}
