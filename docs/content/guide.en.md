@@ -84,7 +84,7 @@ Do these in order. The order is the whole point.
 
 - [ ] Every item you want refunded is in a bag **you will still be carrying** at the airport — not in a suitcase you are about to hand over.
 - [ ] Each traveler has their own passport and their own pile. Refunds are tied to the passport the purchase was made on.
-- [ ] Any receipt where you have eaten, opened or lost an item is already marked "not claiming", so it does not surprise you in the queue.
+- [ ] Any receipt where you have eaten, opened or lost an item is already marked **Not claiming** in the app, so it does not surprise you in the queue.
 - [ ] For anything costing ¥1,000,000 or more before tax: bring the certificate of authenticity or the warranty. Customs may ask.
 - [ ] Leave early. Allow about an hour on top of your airline's normal check-in time. There is no official figure, but customs expects queues.
 
@@ -172,7 +172,7 @@ Yes. For goods with a pre-tax unit price of ¥1,000,000 or more, the shop record
 
 ### `guide.faq.q15` — Do I have to claim at all?
 
-No. You paid tax like a resident; claiming is your choice. If the fees would leave you with almost nothing, it is reasonable to skip it. Kaeru lets you mark a receipt as "not claiming" and will stop reminding you about it.
+No. You paid tax like a resident; claiming is your choice. If the fees would leave you with almost nothing, it is reasonable to skip it. Tap **Don't claim this one** and the receipt is marked **Not claiming**: Kaeru stops reminding you about it and the airport steps skip it.
 
 ### `guide.faq.q16` — Does Kaeru get my refund for me?
 

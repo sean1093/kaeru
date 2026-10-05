@@ -35,6 +35,7 @@ Engineer-facing specification. Every rule has an ID (`DR-0nn`), an exact stateme
 | `flightTime` | time, optional | Drives the airport countdown (`DR-032`) |
 | `travelers` | Traveler[] | At least one |
 | `airportBufferMinutes` | int | Default 60 (`DR-032`) |
+| `checkInMinutes` | int | The airline's check-in / bag-drop cut-off before departure, in minutes. Default 60. Needed as the middle term of the `UJ-022` arithmetic (`DR-032`); airlines and airports differ, so it is a per-trip value the user can correct |
 
 ### 1.2 Traveler
 
@@ -53,14 +54,16 @@ The central entity. One Receipt models **one purchase transaction (one receipt)*
 | `id` | id | |
 | `tripId` | id | |
 | `travelerId` | id | The eligible purchaser whose passport the purchase is under (`DR-004`) |
-| `shopName` | string | Required |
+| `shopName` | string | Required. Free text as entered |
+| `shopKey` | string | Normalised grouping identity derived from `shopName` (`DR-012a`). Two receipts group only when their `shopKey` matches |
 | `purchaseDate` | date (JST) | Defaults to today in JST (`DR-002`) |
 | `lines` | ReceiptLine[] | One per tax rate present (`DR-020`) |
 | `operatorId` | id, nullable | Null = "not sure", a valid persistent state (`DR-050`) |
 | `status` | enum | See §6 |
 | `packingLocation` | enum | `with_me` \| `checked_bag` \| `unknown`. Default `with_me`. |
-| `allItemsPresent` | bool, nullable | Null until asked (`UJ-018`) |
-| `hasHighValueItem` | bool | Derived or user-set (`DR-016`) |
+| `allItemsPresent` | bool, nullable | Null until asked. Past-tense fact, set on the last day or at the airport (`UJ-018`) |
+| `willUseInJapan` | bool, nullable | Null until asked. **Future intent**, set at logging time (`UJ-008`). Distinct from `allItemsPresent`: this one is a prediction made in the shop that drives advice ("buy these separately next time"), the other is a fact established before the kiosk. Setting it does not change `status` |
+| `hasHighValueItem` | bool | Derived from `max(lines[].maxUnitPriceTaxExcluded) >= 1000000` where that figure is present; user-settable otherwise, and user-set always wins (`DR-016`) |
 | `amountReceived` | int (JPY), nullable | What actually arrived (`UJ-034`) |
 | `notClaimingReason` | enum, nullable | `consumed` \| `missing` \| `fee_not_worth_it` \| `old_system` \| `other` |
 | `photoRef` | local ref, optional | On-device only |
@@ -70,11 +73,14 @@ The central entity. One Receipt models **one purchase transaction (one receipt)*
 | Field | Type | Notes |
 |---|---|---|
 | `taxRate` | decimal | `0.10`, `0.08`, `0.01` (`DR-023`) |
-| `taxExcludedAmount` | int (JPY), nullable | Authoritative for the threshold (`DR-011`) |
-| `taxIncludedAmount` | int (JPY), nullable | |
-| `amountsAreDerived` | bool | True when one was computed from the other (`DR-022`) |
+| `taxExcludedAmount` | int (JPY), nullable | Line total. Authoritative for the threshold (`DR-011`) |
+| `taxIncludedAmount` | int (JPY), nullable | Line total |
+| `maxUnitPriceTaxExcluded` | int (JPY), nullable | Tax-excluded unit price of the most expensive **single item** on this line. Null when unknown, which is the normal case — Kaeru does not model individual items. Exists solely so `DR-016` can fire without an item breakdown: the user enters it only when prompted, and the prompt only appears for a line whose total already reaches ¥1,000,000 |
+| `amountsAreDerived` | bool | True when one amount was computed from the other (`DR-022`) |
 
 At least one of `taxExcludedAmount` / `taxIncludedAmount` must be present (`DR-061`).
+
+Kaeru deliberately does **not** model individual items. Customs confirms whole receipts (`DR-030`), so an item list would add entry cost at the worst moment and buy nothing. `maxUnitPriceTaxExcluded` is the single concession to `DR-016`, and it is asked for only when a line total makes it possible.
 
 ### 1.5 Operator
 
@@ -103,11 +109,12 @@ See §8 for the catalog and §7 for the data shape.
 |---|---|---|---|
 | **DR-010** | A purchase qualifies when the **tax-excluded total is ¥5,000 or more** — i.e. `total >= 5000`, inclusive. ¥5,000 exactly qualifies; ¥4,999 does not. | `confirmed-official` | `[S1]`, `[S5]`, `[S7]` |
 | **DR-011** | The threshold is judged on the **tax-excluded** amount, never the tax-inclusive amount. Where Kaeru only holds a derived tax-excluded figure (`DR-022`), the threshold result must be marked as an estimate. | `confirmed-official` | `[S7]` |
-| **DR-012** | Scope of the threshold: **same shop, same calendar day (JST)**. Receipts are grouped by `(shopName, purchaseDate, travelerId)` for the indicator. | `confirmed-official` for shop+day; `unconfirmed` for per-traveler (UR-01) and for whether multiple receipts actually aggregate (UR-02) | `[S1]`, `[S5]` |
+| **DR-012** | Scope of the threshold: **same shop, same calendar day (JST)**. Receipts are grouped by `(shopKey, purchaseDate, travelerId)` for the indicator. | `confirmed-official` for shop+day; `unconfirmed` for per-traveler (UR-01) and for whether multiple receipts actually aggregate (UR-02) | `[S1]`, `[S5]` |
+| **DR-012a** | `shopKey` is derived from `shopName` by: trimming, collapsing internal whitespace, NFKC normalisation (so full-width and half-width forms collapse), and case folding for Latin text. It does **not** attempt to equate different scripts or branch names — 松本清, マツキヨ and 松本清 新宿東口店 remain three distinct keys. **Grouping is therefore best-effort and nothing downstream may treat it as authoritative.** Two mitigations are required: the receipt form offers recent shops from the current trip so repeat visits reuse one spelling, and the user can merge two shop groups manually. A missed grouping only weakens an advisory indicator (`UJ-007`); it can never cause a wrong refund figure, because the threshold indicator is advice and `DR-075` never blocks. | n/a (product decision) | — |
 | **DR-013** | From 2026-11-01 the **general goods / consumables distinction is abolished**. There is one combined total. Kaeru must not model the two categories for post-reform receipts. | `confirmed-official` | `[S1]`, `[S5]`, `[S7]` |
 | **DR-014** | There is **no upper limit**. The ¥500,000 consumables cap is abolished, as is the special sealed packaging requirement and the "not for business use" check. | `confirmed-official` | `[S5]`, `[S7]` |
 | **DR-015** | Quantity is limited to what the purchaser **can personally carry out of Japan at departure**. This is not a number and must never be implemented as one. | `confirmed-official` | `[S1]`, `[S2]`, `[S5]` |
-| **DR-016** | A line item with **tax-excluded unit price ¥1,000,000 or more** (`>= 1000000`, inclusive) causes the shop to transmit product details including serial numbers, and customs **may** ask for a certificate of authenticity or warranty. Kaeru flags the receipt and adds a documents reminder (`UJ-020`). | `confirmed-official` | `[S2]`, `[S5]`, `[S7]` |
+| **DR-016** | A line item with **tax-excluded unit price ¥1,000,000 or more** (`>= 1000000`, inclusive) causes the shop to transmit product details including serial numbers, and customs **may** ask for a certificate of authenticity or warranty. Kaeru flags the receipt and adds a documents reminder (`UJ-020`). Detection: when a line's tax-excluded **total** reaches ¥1,000,000 the form asks for `maxUnitPriceTaxExcluded`, since only then can a single item possibly qualify; the flag is derived from that answer. The user may also set the flag directly, and a user-set flag always wins — a ¥1,200,000 line could be two ¥600,000 items, and only the user knows. Below a ¥1,000,000 line total the flag is unreachable and is not prompted for. | `confirmed-official` | `[S2]`, `[S5]`, `[S7]` |
 | **DR-017** | Excluded from tax-free goods: ① gold and platinum **bullion**; ② gold **coins** and platinum **coins** (newly excluded from 2026-11-01); ③ goods not subject to consumption tax. | `confirmed-official` | `[S1]`, `[S5]` |
 | **DR-018** | Abolishing the sealed packaging does **not** permit use in Japan. Food, drink and cosmetics **consumed in Japan** cannot receive customs confirmation. | `confirmed-official` | `[S1]`, `[S2]` |
 | **DR-019** | Self-posted separate shipment (別送) was abolished on **2025-03-31** and does not exist under the refund method. Shop-operated direct shipping (直送) is handled under Consumption Tax Act Article 7 and involves **no** tax-free sales procedure and no purchase record — so such goods are outside Kaeru's model entirely. | `confirmed-official` | `[S2]`, `[S5]`, `[S7]` |
@@ -125,7 +132,7 @@ See §8 for the catalog and §7 for the data shape.
 | **DR-024** | Kaeru's own rounding for **estimates**: compute per line in integer yen and **round down** (`floor`) to the yen, then sum. Rounding down means Kaeru never promises more than arrives, which is the correct bias for a refund estimate. This is a product choice, not a legal rule, and must be documented wherever a figure is shown. | n/a (product decision) | — |
 | **DR-025** | Estimated refund: <br>`grossRefund = Σ tax(line)` <br>`estimatedNet = grossRefund − operatorFee − receivingSideCharges` <br>where `operatorFee` comes from the operator catalog (`DR-051`) when known, and `receivingSideCharges` is user-supplied because it depends on their own bank. When either is unknown, show the gross **and** say the net is unknown. Never present gross as what will arrive. | `confirmed-official` that no legal rule governs refund amounts beyond "the amount equivalent to consumption tax" and that fees are unregulated | `[S1]`, `[S3]`, `[S7]` |
 | **DR-026** | Operator fees are **not capped, not standardised and not required to be disclosed** by law. Treat every fee figure as volatile data with a recorded date. | `confirmed-official` | `[S3]` |
-| **DR-027** | Receiving-side charges can exceed the refund. Documented real case: ¥19,805 purchase (≈¥1,980 tax) refunded via a bank transfer netted **NT$77**; a ¥1,100 tax case netted **zero** after NT$40 operator fee and NT$400 inbound FX fee. Taiwanese banks commonly charge **NT$200–400+** to receive a foreign remittance, and refusing a transfer also incurs a fee. Kaeru must warn when `estimatedNet` approaches or falls below zero. | `reported-media` (first-hand traveler accounts) | `[S18]`, `[S19]`, `[S20]` |
+| **DR-027** | Receiving-side charges can exceed the refund. Documented real case: ¥19,805 purchase (≈¥1,980 tax) refunded via a bank transfer netted **NT$77**; a ¥1,100 tax case netted **zero** after NT$40 operator fee and NT$400 inbound FX fee. Taiwanese banks commonly charge **NT$200–400+** to receive a foreign remittance, and refusing a transfer also incurs a fee. Kaeru must warn when `estimatedNet` falls below `fee.warnBelowJpy`, **default ¥2,000**, not merely when it reaches zero — a ¥30 refund is as bad as none. The default is sized to the top of the NT$200–400 band (roughly ¥900–1,900 at recent rates), so that the warning would have fired on the ¥1,980 case that motivated it; a ¥1,000 floor would not have. Configurable, because the rate and bank practice both move. | `reported-media` (first-hand traveler accounts) | `[S18]`, `[S19]`, `[S20]` |
 
 **Worked examples** (QA may use these directly):
 
@@ -148,7 +155,7 @@ See §8 for the catalog and §7 for the data shape.
 |---|---|---|---|
 | **DR-030** | Customs confirmation is performed **per single purchase transaction (one receipt)**. If **any one** tax-free item on that receipt is not in the purchaser's possession, **no** item on that receipt can be confirmed and that receipt's consumption tax is not refunded. **There is no partial refund of a receipt.** | `confirmed-official` | `[S1]`, `[S2]` |
 | **DR-031** | The customs-confirmation deadline is **90 days from the purchase date**, counted as "the day following the date of purchase to the 90th day". Implementation: `deadline = purchaseDate + 90 calendar days`, and the deadline day is **inclusive**. Official worked example: purchase **2026-11-01** → deadline **2027-01-30**. Each receipt has its own deadline; there is no trip-level deadline. | `confirmed-official` | `[S1]`, `[S7]` |
-| **DR-032** | Customs confirmation, **including any inspection**, must be completed **before baggage check-in**. Checked baggage **cannot** be retrieved for a tax-free procedure. Abandoning an inspection for personal reasons such as a closing check-in counts as **not having received confirmation**, and neither the airline nor customs compensates a missed departure. Kaeru's airport-time recommendation defaults to **60 minutes** on top of the airline's check-in requirement and must be labelled as Kaeru's advice: **no official figure exists**. | Rule `confirmed-official`; the 60-minute figure `unconfirmed` (UR-03) | `[S1]`, `[S2]`, `[S24]`; 45–60 min media guidance `[S21]` |
+| **DR-032** | Customs confirmation, **including any inspection**, must be completed **before baggage check-in**. Checked baggage **cannot** be retrieved for a tax-free procedure. Abandoning an inspection for personal reasons such as a closing check-in counts as **not having received confirmation**, and neither the airline nor customs compensates a missed departure. Kaeru's departure-time recommendation is `flightTime − trip.checkInMinutes − trip.airportBufferMinutes`, where `airportBufferMinutes` defaults to **60** and `checkInMinutes` defaults to **60**. Both are per-trip and user-correctable, and the arithmetic must be shown rather than just its result: a recommendation the user cannot audit is one they will ignore. The whole figure must be labelled as Kaeru's advice — **no official figure exists**. | Rule `confirmed-official`; the buffer figure `unconfirmed` (UR-03) | `[S1]`, `[S2]`, `[S24]`; 45–60 min media guidance `[S21]` |
 | **DR-033** | The procedure happens at a **tax-free procedure terminal (免税手続用の端末 — kiosk or electronic terminal)** in the **international departure lobby, landside, before baggage drop**. Passport read to result takes a few seconds. At **Narita, Haneda, Kansai, Chubu, Fukuoka, New Chitose and Naha**, **Visit Japan Web** may be used instead, but only inside the dedicated procedure Wi-Fi area of the international departure lobby, **before the security checkpoint**. | `confirmed-official` | `[S1]`, `[S2]` |
 | **DR-034** | Kiosk result values: **green** (グリーン判定) = no inspection, confirmation complete; **red** (レッド判定) = present the goods at the customs inspection point. Red is a routing decision, not a failure. No inspection probability is published. | Result semantics `confirmed-official`; probability `unconfirmed` (UR-04) | `[S1]` |
 | **DR-035** | If all or part of a consumable has been consumed in Japan, the purchaser must **not** use the kiosk for that receipt and must instead **declare it to a customs officer at the counter**. Kaeru must route the user to the counter, never to the machine. | `confirmed-official` | `[S1]`, `[S2]` |
@@ -174,7 +181,7 @@ See §8 for the catalog and §7 for the data shape.
 | ID | State | Meaning | Entry condition |
 |---|---|---|---|
 | **DR-060a** | `logged` | Receipt captured. Operator may be unknown. | Created (`UJ-005`) |
-| **DR-060b** | `registered` | The user says they completed the operator's refund-destination registration. | User action (`UJ-012`); requires `operatorId` |
+| **DR-060b** | `registered` | The user says they completed the operator's refund-destination registration. **Registration is a property of the operator, not of the receipt** (`UJ-013`): a receipt in this state is reflecting its operator's registration, not its own. Marking one receipt registered marks the operator, and every other receipt sharing that operator follows automatically — including receipts added later. Implementing this per receipt would make an 11-receipt trip an 11-times chore and is explicitly wrong. | User action (`UJ-012`); requires `operatorId`, since an unknown operator cannot have been registered with |
 | **DR-060c** | `customs_confirmed` | The user says the kiosk gave a green result, or an inspection passed. | User action in Airport Mode (`UJ-029`) |
 | **DR-060d** | `refund_pending` | Confirmed, money not yet recorded as received. | Automatic on `customs_confirmed` |
 | **DR-060e** | `refunded` | `amountReceived` recorded. | User action (`UJ-034`) |

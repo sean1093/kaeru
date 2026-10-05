@@ -71,7 +71,7 @@ What he cares about: not missing his 07:45 flight, and getting the watch refund 
   - If the user only has the tax-inclusive total, accept that instead and derive the rest, clearly labelled as an estimate (`DR-021`, `DR-022`). The threshold is legally judged on the tax-excluded figure, so the UI must never pretend a derived number is the real one.
 - **UJ-006 — Mixed-rate line.** One optional second amount for a different rate on the same receipt, because a drugstore basket is routinely part 8% food and part 10% cosmetics (`DR-020`). Collapsed by default; one tap to open.
 - **UJ-007 — Threshold indicator.** For the shop-and-day group, show either "qualifies" or "¥X more today at this shop" (`DR-011`, `DR-012`). This is the one place Kaeru can still change the user's behaviour, because she is standing in the shop.
-- **UJ-008 — "I will use this in Japan" marker.** One tap at logging time. If set, Kaeru warns that this receipt will not be refundable and that next time these items belong in a separate transaction (`DR-034`, PP-08, PP-02). The warning must land as advice, not scolding.
+- **UJ-008 — "I will use this in Japan" marker.** One tap at logging time, persisted as `willUseInJapan`. This is **future intent**, deliberately distinct from the past-tense `allItemsPresent` check in UJ-018: it is a prediction made in the shop, and its job is advice, not status. If set, Kaeru warns that this receipt will probably not be refundable and that next time these items belong in a separate transaction (`DR-018`, `DR-030`, PP-08, PP-02). It does not change the receipt's status — the traveler may still change their mind and carry the snacks home. The warning must land as advice, not scolding.
 - **UJ-009 — Receipt photo.** Optional, one tap, stored on device. This is the recovery path for everything the user did not type, including the operator QR.
 - **UJ-010 — Operator deferred.** "Not sure" is the default and is never an error state (PP-04). Kaeru shows a quiet "resolve tonight" item instead of blocking the save.
 
@@ -115,7 +115,7 @@ What he cares about: not missing his 07:45 flight, and getting the watch refund 
 - **UJ-019 — Grouping by traveler.** Two piles, two checklists, because each passport is confirmed separately (`DR-004`, PP-09). Yi-chun needs to hand Chih-hao his own list, not read hers aloud in a queue.
 - **UJ-020 — Documents reminder.** Receipts with tax-excluded unit price ≥ ¥1,000,000 get "bring the certificate / warranty" (`DR-016`, PP-15). Alex sees this the night before, not at the counter.
 - **UJ-021 — Deadline check.** Flags any receipt whose 90-day deadline falls before the departure date (`DR-031`). For a five-day trip this is silent, and it should be silent — a countdown that never fires is noise. It exists for long stays and changed flights.
-- **UJ-022 — Departure time plan.** Flight time minus airline check-in requirement minus the user's tax-free buffer = "leave for the airport by". Labelled as Kaeru's recommendation (`DR-032`, PP-06).
+- **UJ-022 — Departure time plan.** `flightTime − trip.checkInMinutes − trip.airportBufferMinutes` = "leave for the airport by". Both terms default to 60 minutes and both are user-correctable, because airlines and airports differ. Show the arithmetic, not just the answer: a recommendation the user cannot audit is one they will ignore. Labelled as Kaeru's recommendation, because no official figure exists (`DR-032`, PP-06).
 
 ---
 
@@ -170,6 +170,14 @@ Kaeru cannot fix a red result. What it can do is make sure that by the time a re
 - **UJ-035 — Overdue nudge.** After a user-configurable period with no money, surface the operator's contact link and the facts needed to chase: purchase date, shop, amount, confirmation date (`DR-036`). Kaeru does not contact anyone on the user's behalf.
 - **UJ-036 — Trip summary.** Tax paid, confirmed, received, lost, and why anything was lost. The honest version. This is also the screen that teaches the user how to shop better next time, which is the only real fix for PP-02 and PP-08.
 - **UJ-037 — Export / delete.** The user can take their data out and can wipe it. No server ever had it.
+
+---
+
+## Cross-cutting — receipts from the old system
+
+Not a stage: this can appear at any point from Stage 2 onwards, and it will be most common in exactly the launch cohort — anyone whose trip straddles 2026-10-31 / 11-01.
+
+- **UJ-038 — Old-system receipts.** A receipt with a purchase date on or before **2026-10-31** followed the old system: the tax was already deducted at the till and there is nothing to do at the airport (`DR-001`, `DR-003`, `DR-064`, PP-18). Kaeru detects this from the purchase date alone and says so plainly on the receipt, excludes it from every airport checklist, and still counts it towards trip spend so the user's cost picture stays whole. This needs its own visible explanation rather than silent exclusion: a receipt that quietly does nothing at the airport looks like the app lost it, and a traveler holding two kinds of receipt in one trip has no way to tell them apart otherwise.
 
 ---
 
