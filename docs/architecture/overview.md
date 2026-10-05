@@ -25,7 +25,7 @@ the device.
 
 ```mermaid
 flowchart LR
-  user([Traveller<br/>phone, often offline])
+  user([Traveler<br/>phone, often offline])
 
   subgraph device [Device]
     app[Kaeru PWA<br/>app shell + features]
