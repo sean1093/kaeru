@@ -73,19 +73,21 @@ Worked examples are taken verbatim from `domain-rules.md` §4 and are hard asser
 | TC-DOM-032 | Tax-included ¥7,128 at 10% | tax-excluded ¥6,480; tax ¥648 | DR-021 | R01 | U | P0 |
 | TC-DOM-033 | Tax-included ¥1,080 at 8% | tax-excluded ¥1,000; tax ¥80 | DR-021 | R01 | U | P0 |
 | TC-DOM-034 | Tax-included ¥1,000 at 8% | tax-excluded ¥925 (floor of 925.925…); tax ¥75; `amountsAreDerived == true` | DR-021, DR-022, DR-024 | R01, R13 | U | P0 |
-| TC-DOM-035 | Rounding direction on every non-divisible amount | Always **floor**, never round-half-up, never ceiling — a ceiling implementation over-promises and fails this case | DR-024 | R01 | U | P0 |
+| TC-DOM-035 | Rounding direction on every non-divisible amount | `DR-024` is a **direction, not an operation**: round so the figure understates what reaches the traveller. Amounts paid to the user are floored; **deductions are ceiled**, because flooring a fee inflates the net. An implementation that floors everything fails this case just as surely as one that ceils everything | DR-024 | R01 | U | P0 |
 | TC-DOM-036 | **Property:** for all integer tax-included amounts 1…2,000,000 at each configured rate | `taxExcluded + tax == taxIncluded`, both non-negative integers, `taxExcluded == floor(incl × 100/(100+r))` | DR-021, DR-024 | R01 | U | P0 |
 | TC-DOM-037 | Mixed receipt ¥3,000 @ 8% + ¥2,500 @ 10%, tax-excluded | tax ¥240 + ¥250 = ¥490; threshold total ¥5,500 qualifies. A single blended rate applied to ¥5,500 fails this case | DR-020, DR-010 | R01 | U | P0 |
-| TC-DOM-038 | A receipt holding two lines at the same rate | Rejected or merged per the model — one line per rate (`DR-020`) | DR-020 | R01 | U | P1 |
+| TC-DOM-038 | A receipt holding two lines at the same rate | Rejected by **form validation**, not by the arithmetic: summing two 10% lines is not wrong, it is a model the form should not produce. Owned by #40, not by the money module | DR-020 | R01 | C | P1 |
 | TC-DOM-039 | Receipt prints its own tax amount and the user enters it | The printed figure wins over Kaeru's calculation; `amountsAreDerived == false` | DR-022 | R01 | U | P0 |
-| TC-DOM-040 | Any derived figure shown in the UI | Labelled as an estimate wherever it appears — total, receipt, threshold indicator | DR-022 | R01 | C, E | P0 |
+| TC-DOM-040 | `lineAmountsOf` sets `derived` | True on every path where Kaeru computed a figure, false when the receipt's own printed amounts are present. This is the signal the label is computed from, so it is the half that has to be right | DR-022 | R01 | U | P0 |
+| TC-DOM-040a | Any derived figure shown in the UI | Labelled as an estimate wherever it appears — total, receipt, threshold indicator. Rendering, owned by #41; the domain supplies `derived` (`TC-DOM-040`) and the screen supplies the word | DR-022 | R01 | C, E | P0 |
 | TC-DOM-041 | Food line, tax-included ¥1,010, `purchaseDate` 2027-04-02 | Rate **1%** → tax-excluded ¥1,000, tax ¥10. Not ¥75 | DR-023, UR-08 | R01 | U | P0 `@unconfirmed` |
 | TC-DOM-042 | Food line dated 2027-03-31 vs 2027-04-01 | 8% on 2027-03-31, 1% on 2027-04-01 — rate resolution is by `purchaseDate`, inclusive on the effective-from day | DR-023, UR-08 | R01, R03 | U | P0 `@unconfirmed` |
 | TC-DOM-043 | Food line dated 2029-03-31 vs 2029-04-01 | 1% then back to 8% at the end of the window | DR-023, UR-08 | R01 | U | P0 `@unconfirmed` |
 | TC-DOM-044 | Newspaper-on-subscription line during 2027-04-01…2029-03-31 | Stays at 8% while food drops to 1% | DR-023 | R01 | U | P1 `@unconfirmed` |
 | TC-DOM-045 | Rate table is data, not code | Adding, retiring or re-dating a rate requires no change under `src/domain` beyond the data file; a test drives the resolver from a fixture rate table | DR-023, DR-022 | R19 | U | P0 |
 | TC-DOM-046 | Gross refund for a trip | `grossRefund = Σ tax(line)` across all claimable receipts, per traveler and in total | DR-025 | R01, R16 | U | P0 |
-| TC-DOM-047 | Operator fee known (e.g. Tourego 1.5%) | `estimatedNet = gross − operatorFee − receivingSideCharges`; fee shown separately with its observation date | DR-025, DR-026, DR-051, UJ-014 | R01 | U | P0 `@unconfirmed` |
+| TC-DOM-047 | Operator fee known (e.g. Tourego 1.5%) | `estimatedNet = gross − operatorFee − receivingSideCharges`; fee shown separately with its observation date. Every percentage fee carries an explicit **basis** (`DR-026a`) — 1.5% of the refund and 1.5% of the tax-excluded sale are different numbers, and a percentage with no basis is not a fee we can compute | DR-025, DR-026, DR-026a, DR-051, UJ-014 | R01 | U | P0 `@unconfirmed` |
+| TC-DOM-047a | Operator catalog entry whose fee basis is unknown | Stored as `fees: []`, not as a percentage with a guessed basis. The payout then reports an unknown net rather than a confident wrong one (`TC-DOM-048`) | DR-026a, DR-051 | R01, R19 | U | P0 |
 | TC-DOM-048 | Operator unknown or fee unknown | Gross shown **and** net stated as unknown. Gross is never presented as the amount that will arrive, and an unknown fee is never treated as zero | DR-025, DR-051, UJ-014 | R01 | U, C | P0 |
 | TC-DOM-049 | `estimatedNet` at or below zero (¥1,100 tax, NT$40 operator fee, NT$400 inbound FX fee) | Warning that the refund may be worth less than the cost of receiving it | DR-027, UJ-014 | R01 | U, C | P0 `@unconfirmed` |
 | TC-DOM-050 | **Property:** trip totals equal the sum of per-traveler partitions, for 100 seeded receipt sets | Aggregation is partition-stable; no cross-traveler leakage | DR-004, DR-025 | R16 | U | P0 |
@@ -106,8 +108,12 @@ Formula: `deadline = purchaseDate + 90 calendar days`, deadline day inclusive. O
 | TC-DOM-059 | Purchases on 2026-12-31, 2027-02-27, 2028-02-28 (leap year), 2028-12-02 | Calendar-correct across month lengths, year boundaries and a leap day | DR-031 | R03 | U | P0 |
 | TC-DOM-060 | **Property:** 500 seeded purchase dates | Deadline is always exactly `purchaseDate + 90` days, always ≥ the purchase date, and identical under `TZ=UTC`, `TZ=Asia/Taipei`, `TZ=Asia/Tokyo`, `TZ=Pacific/Kiritimati` | DR-031, UR-07 | R03, R12 | U | P0 |
 | TC-DOM-061 | Each receipt in a trip has its own deadline | No trip-level deadline exists; the earliest is surfaced, not substituted | DR-031 | R03 | U | P0 |
-| TC-DOM-062 | `purchaseDate + 90 days < trip.departureDate` | Prominent warning (deadline passes before departure) | DR-076, UJ-021 | R03 | U, C | P0 |
-| TC-DOM-063 | Five-day trip with no at-risk receipt | The deadline check is **silent** — a countdown that never fires is noise | UJ-021 | — | E | P1 |
+| TC-DOM-062 | `exportDeadline` **strictly before** `trip.departureDate` | `DR-076`: prominent warning. The receipt cannot be confirmed — the refund is already lost | DR-076, UJ-021 | R03 | U, C | P0 |
+| TC-DOM-062a | `exportDeadline` falls **exactly on** `trip.departureDate` | `DR-076a`, **not** `DR-076` and **not** silent: the window is inclusive so the receipt is valid, but it has zero margin. Quiet warning with a **different message key** — "this receipt's deadline is your departure day", never "this will expire". Not an exotic input: Taiwan passport holders get 90 days visa-free and 短期滞在 caps at 90 days, so buying on arrival day and leaving on the last permitted day hits this exactly | DR-076a, DR-031 | R03 | U, C | P0 |
+| TC-DOM-062b | Deadline 1, 2, 3 and 4 days after departure, `deadlineSlackWarnDays` at its default of 3 | Quiet at +1, +2 and +3; **silent** at +4. The boundary is read from the deadline rules data, never from a literal | DR-076a | R03, R19 | U | P0 |
+| TC-DOM-062c | The two findings compared | They carry **different message keys**, not merely different severities. One says the refund is already lost, the other says there is no room if the plan changes — a shared string collapses the distinction the split exists to make | DR-076, DR-076a | R03, R09 | U | P0 |
+| TC-DOM-062d | Old-system receipt (`purchaseDate <= 2026-10-31`), any departure date | The deadline finding is `not_applicable`, **never `'none'`**. `'none'` is a claim about a deadline and this receipt does not have one: `DR-031`'s window is a refund-method rule that does not apply to it at all. A screen must not render a reassuring "deadline fine" state for a receipt that was never in the game — that is the one thing S29 exists to deny. Same family as `fees: []` meaning unknown rather than zero: *"we checked and it is fine"* and *"there is nothing to check"* look identical on a screen and license opposite conclusions | DR-003, DR-064, DR-031, UJ-038 | R01, R03 | U, C | P0 |
+| TC-DOM-063 | Ordinary five-day trip, roughly 85 days of slack | Silent. `DR-076a` can only fire on a near-maximum stay, which is exactly when it is informative; a warning that fires on every trip is noise | UJ-021, DR-076a | — | E | P1 |
 | TC-DOM-064 | Days-remaining computed at 23:59 and 00:01 device-local | Changes by exactly one at the calendar-day boundary, never by zero or two | DR-031, UR-07 | R12 | U | P0 |
 | TC-DOM-065 | A stored date reloaded with the device timezone changed from Asia/Taipei to Asia/Tokyo | Calendar date unchanged — dates persist as calendar dates, never as UTC instants | DR-002, UR-07 | R12, R04 | S | P0 |
 | TC-DOM-066 | E2E with Playwright `timezoneId` Asia/Taipei, Asia/Tokyo, UTC, Pacific/Kiritimati | Deadline, countdown and default purchase date render identically in all four | UR-07 | R12 | E | P0 |
@@ -342,6 +348,9 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 | TC-UX-019 | A draft that is never completed | Counted **nowhere** a `Receipt` is counted: not in a shop-day threshold group, not in trip totals or the pending-refund figure, not in any deadline check, and above all not in an Airport Mode checklist. A half-typed amount is not a claim about anything | DR-012, DR-030, DR-031, DR-076, UJ-016 | R01, R05 | U, E | P0 |
 | TC-UX-020 | An abandoned draft, that evening | Surfaces in tonight's list as an ordinary action item — "an unfinished receipt from 松本清" — not as an alert. Removing the leave prompt removed the only thing telling the user they had not finished; the recovery has to happen at 22:00 with the receipt still in the bag, not at the kiosk | UJ-005, UJ-011 | R01 | E | P0 |
 | TC-UX-021 | A photo attached to a draft that is then discarded | Nothing was ever written to the photo store, so there is no orphan blob counting against quota and invisible to both cascade deletes | DR-042, UJ-009 | R04 | U, E | P0 |
+| TC-UX-022 | Editing `trip.departureDate` — the hotel at 23:00, deciding whether to stay two more days | Every deadline check re-runs and the cost is shown **before** the change is committed: which receipts move into `DR-076` or `DR-076a`, by name. This is the only moment the deadline warning is actionable — customs confirmation happens at departure, so "do customs early" does not exist, and a warning shown at logging time points at a screen where nothing can be done about it | DR-076, DR-076a, UJ-021 | R03 | E | P0 |
+| TC-UX-023 | Eight receipts ticked on the packing checklist at 22:00, reopened at 06:00 | Every tick is still there. The checklist persists, never resets and never expires. A silent reset is indistinguishable from a tick never made, and is worse than a stale one: a stale tick costs a moment of re-verification, a vanished one costs trust in every other tick on the screen | UJ-017, DR-077 | R04, R05 | E | P0 |
+| TC-UX-024 | A receipt with a high-value item, ticked on S17's documents block | That persisted tick **is** `DR-078`'s acknowledgement. No separate `Receipt.documentsAcknowledged` field exists — a stored field would be a second source of truth for the same fact, and the two would drift | DR-078, DR-016, UJ-020 | R01 | U, E | P0 |
 
 ---
 
@@ -349,15 +358,15 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 
 | Area | Cases | Of which `@unconfirmed` |
 |---|---|---|
-| TC-DOM — domain rules | 93 | 13 |
+| TC-DOM — domain rules | 99 | 13 |
 | TC-DATA — storage and backup | 23 | 0 |
 | TC-AIR — airport, offline, service worker | 23 | 1 |
 | TC-I18N — localization | 15 | 0 |
 | TC-A11Y — accessibility | 16 | 0 |
 | TC-PWA — install and platform | 8 | 0 |
 | TC-SEC — privacy | 5 | 0 |
-| TC-UX — flows | 21 | 1 |
-| **Total** | **204** | **15** |
+| TC-UX — flows | 24 | 1 |
+| **Total** | **213** | **15** |
 
 **Requirement coverage.** Every `DR-0nn`, `UR-nn` and `UJ-0nn` ID published in `domain-rules.md` v1.0 and `user-journey.md` v1.0 is cited by at least one case above. This was checked mechanically against both documents on 2026-10-05 and is re-checked at each milestone exit.
 
