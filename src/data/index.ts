@@ -1,5 +1,13 @@
-export type { BackupFile } from './backup.ts';
-export { BACKUP_FORMAT, BackupError, exportBackup, importBackup, parseBackup } from './backup.ts';
+export type { BackupErrorCode, BackupFile } from './backup.ts';
+export {
+  APP_VERSION,
+  BACKUP_FORMAT,
+  BackupError,
+  backupService,
+  exportBackup,
+  importBackup,
+  parseBackup,
+} from './backup.ts';
 export type { KaeruDatabase } from './db.ts';
 export { closeDatabase, getDatabase, openDatabase } from './db.ts';
 export type { StorageErrorCode } from './errors.ts';
@@ -13,6 +21,7 @@ export { registrationRepository } from './registration-repository.ts';
 export type {
   BackupDocumentV2,
   BackupOptions,
+  BackupService,
   EstimateStorage,
   ImportMode,
   ImportPreview,
