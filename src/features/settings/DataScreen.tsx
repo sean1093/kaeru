@@ -1,5 +1,6 @@
 import type { JSX } from 'preact';
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
+import { hrefFor } from '../../app/router.ts';
 import { pathTo, screenAttrs } from '../../app/screens.ts';
 import {
   BackupError,
@@ -346,7 +347,7 @@ export function DataScreen(): JSX.Element {
       </Card>
 
       <p class={styles.meta}>
-        <a href={pathTo('S60')}>{t('data.back')}</a>
+        <a href={hrefFor(pathTo('S60'))}>{t('data.back')}</a>
       </p>
 
       <p role="status" class={styles.meta} data-testid="data-notice">

@@ -107,6 +107,9 @@ test.describe('app shell', () => {
     await page.getByTestId('language-en').click();
     await page.getByTestId('app-bar-settings').click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Settings');
+    // Export lives on S62 now, not on the settings index: one screen owns the backup
+    // surface so there is one import path rather than two.
+    await page.getByTestId('open-data').click();
     await page.getByTestId('export-backup').click();
     await page.goto('./#/no-such-route');
     await expect(page.getByTestId('not-found')).toBeVisible();

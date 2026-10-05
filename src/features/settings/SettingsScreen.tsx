@@ -1,5 +1,6 @@
 import type { JSX } from 'preact';
 import { LanguageSwitcher } from '../../app/LanguageSwitcher.tsx';
+import { hrefFor } from '../../app/router.ts';
 import { pathTo, screenAttrs } from '../../app/screens.ts';
 import { setTheme, settings } from '../../app/settings-store.ts';
 import { SCHEMA_VERSION, THEME_PREFERENCES, type ThemePreference } from '../../data/index.ts';
@@ -57,7 +58,7 @@ export function SettingsScreen(): JSX.Element {
           surface so there is one import path rather than two — the v1 path on this screen
           wrote settings only, which looked like an import and was not one.
         */}
-        <a class={styles.dataLink} href={pathTo('S62')} data-testid="open-data">
+        <a class={styles.dataLink} href={hrefFor(pathTo('S62'))} data-testid="open-data">
           {t('settings.data.open')}
         </a>
       </Card>
