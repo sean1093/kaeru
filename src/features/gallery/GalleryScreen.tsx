@@ -2,6 +2,7 @@ import type { JSX } from 'preact';
 import { useMessages } from '../../i18n/index.ts';
 import { galleryCopy } from './copy.ts';
 import styles from './Gallery.module.css';
+import { AirportSection } from './sections/airport.tsx';
 import { CoreSection } from './sections/core.tsx';
 import { NavigationSection } from './sections/navigation.tsx';
 
@@ -28,6 +29,7 @@ export function GalleryScreen(): JSX.Element {
       <p class={styles.intro}>{t('gallery.intro')}</p>
       <CoreSection />
       <NavigationSection />
+      <AirportSection />
     </div>
   );
 }
