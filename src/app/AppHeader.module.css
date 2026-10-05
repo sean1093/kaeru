@@ -22,21 +22,36 @@
   gap: var(--space-3);
   color: inherit;
   text-decoration: none;
+  /*
+   * The header holds one decorative thing and one control. At 320 px they do not both fit,
+   * and the brand is the one that can give way: `min-inline-size: 0` lets this flex item
+   * shrink past its own content so the name and tagline clip, instead of the page gaining a
+   * horizontal scrollbar (WCAG 2.2 SC 1.4.10). The app bar already clips rather than
+   * overflows by design — design/components.md section 1.
+   */
+  min-inline-size: 0;
 }
 
 .text {
   display: flex;
   flex-direction: column;
+  min-inline-size: 0;
 }
 
 .name {
   font-size: var(--text-lg);
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tagline {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   line-height: var(--leading-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

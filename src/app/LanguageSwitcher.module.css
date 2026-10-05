@@ -2,7 +2,15 @@
   margin: 0;
   padding: 0;
   border: 0;
-  min-inline-size: 0;
+  /*
+   * Never shrink below the two buttons' own width. A flex item's default `min-inline-size`
+   * of `auto` is what let the header squeeze this to 108 px while its content needed 128,
+   * pushing the overflow onto the page rather than onto the one thing in the header that
+   * can afford to give way — the brand's decorative text, see `AppHeader.module.css`. Each
+   * button carries a 44 px tap target, so there is nothing to reclaim here.
+   */
+  flex: 0 0 auto;
+  min-inline-size: min-content;
 }
 
 .options {
