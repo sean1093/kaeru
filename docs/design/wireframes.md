@@ -574,7 +574,9 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │ │     Combined at this shop today. │         │
 │ │     Whether a shop combines      │         │
 │ │     separate receipts is up to   │         │
-│ │     the shop.                    │         │
+│ │     the shop.                              │
+│ │     . 這兩筆不是同一家店？分開 .           │
+│ │     . Not the same shop? Split . │         │
 │ └──────────────────────────────────┘         │
 │                                              │
 ├──────────────────────────────────────────────┤
@@ -585,6 +587,8 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 
 
 **S20 Receipt list.** Grouped by purchase date, newest first. Same-shop same-day receipts carry a combined-subtotal footer that **states the total and the shop's discretion, never qualification** — whether separate transactions aggregate towards ¥5,000 is `UR-02`, unconfirmed. A single receipt at or above ¥5,000 is `DR-010` and may state qualification plainly.
+
+Grouping is best-effort (`DR-012a`): `shopKey` normalisation collapses whitespace and width but will never equate 松本清, マツキヨ and 松本清 新宿東口店. The UI therefore carries both mitigations the rule requires — the add-receipt form suggests shops already used on this trip so repeat visits reuse one spelling, and the user can **merge two shop groups manually** from the group footer's overflow, or split a wrongly merged one. A missed grouping only weakens an advisory indicator; it can never produce a wrong refund figure.
 
 
 **S21** — Add receipt, the 20-second path
@@ -705,6 +709,40 @@ Microcopy below each group is final UI copy, not placeholder. Tone: warm, short,
 │ [ 儲存  Save ]                               │
 └──────────────────────────────────────────────┘
 ```
+
+**S21** — Add receipt, high-value prompt
+
+```
+┌──────────────────────────────────────────────┐
+│ ✕        記一筆  Add receipt                 │
+├──────────────────────────────────────────────┤
+│ 未稅金額  Tax-excluded total   *             │
+│  ¥ [ 1,280,000                  ]            │
+├──────────────────────────────────────────────┤
+│~~~ 這筆超過 100 萬日圓。裡面最貴的           │
+│~~~ 「單一商品」是多少？                      │
+│~~~ This line is over ¥1,000,000.             │
+│~~~ What is the most expensive                │
+│~~~ single item in it?                        │
+│~~~                                           │
+│~~~  ¥ [ 1,280,000              ]             │
+│~~~  . 不確定，先跳過  Skip for now .         │
+│~~~                                           │
+│~~~ 只有單價滿 100 萬的商品，海關才           │
+│~~~ 可能要你出示鑑定書或保證書。              │
+│~~~ Customs may ask for a certificate         │
+│~~~ or warranty only for a single item        │
+│~~~ at or above ¥1,000,000.                   │
+│~~~ . 這是什麼  Why we ask . >                │
+├──────────────────────────────────────────────┤
+│ 店家  Shop                      *            │
+│ [ 髙島屋 日本橋店               ]            │
+├──────────────────────────────────────────────┤
+│ [ 儲存  Save ]                               │
+└──────────────────────────────────────────────┘
+```
+
+**Only asked when a line total already reaches ¥1,000,000** (`DR-016`), because only then can a single item qualify — so the overwhelming majority of receipts never see this field. Skipping is free and the flag stays user-settable from the receipt detail; a user-set flag always wins, since a ¥1,200,000 line could be two ¥600,000 items and only the user knows. Answering it is what makes the documents reminder fire on S17 and S31.
 
 **S23** — Edit receipt
 

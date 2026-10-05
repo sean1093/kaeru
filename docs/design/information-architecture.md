@@ -190,6 +190,10 @@ Required: tax-excluded total, shop, traveler (`DR-010` judges the threshold on t
 
 **Threshold indicator (`UJ-007`, `DR-075`).** Inline, soft, non-blocking, in the logging flow (answer to open question 4 — it is only valuable while the user is still in the shop). Under ¥5,000 it gives **behavioural** advice: 這家店今天再加 ¥900 就到 ¥5,000。同一筆結帳買滿最保險。 / "¥900 more at this shop today reaches ¥5,000. Buying it in the same transaction is the sure way." It never predicts that a second receipt will merge, because whether separate transactions aggregate is `UR-02`, unconfirmed. On the list, same-shop same-day receipts carry a combined-subtotal footer that states the total **and the shop's discretion**, never qualification. A single receipt at or above ¥5,000 states qualification plainly (`DR-010`).
 
+**High-value prompt (`DR-016`).** When a line's tax-excluded total reaches ¥1,000,000, and only then, the form asks for the most expensive single item on that line — because only then can a single item possibly qualify. Skipping is free; the flag remains user-settable from the receipt detail and a user-set flag always wins, since a ¥1,200,000 line could be two ¥600,000 items. Answering it is what makes the documents reminder fire in the packing plan (S17) and Airport Mode step 1 (S31).
+
+**Shop grouping (`DR-012a`).** Grouping is best-effort and never authoritative. The UI carries both required mitigations: recent-shop suggestions in the form, so repeat visits reuse one spelling, and a manual merge/split on the group footer. A missed grouping weakens an advisory indicator and nothing else.
+
 **The 20-second budget.** Open 1 s → amount 5 s → shop, mostly from suggestions 6 s → traveler 2 s → save 1 s = 15 s. Nothing in the required path needs scrolling or a second screen.
 
 ### Flow C — Receipt detail and status (journey stage 3, `UJ-012`–`UJ-015`)
