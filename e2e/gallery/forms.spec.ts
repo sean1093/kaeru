@@ -59,9 +59,7 @@ test.describe('UI kit gallery — M1-3c components (#25)', () => {
     ).toBeVisible();
   });
 
-  test('the tax-rate segmented control is keyboard-operable as native radios', async ({
-    page,
-  }) => {
+  test('the tax-rate segmented control is keyboard-operable as native radios', async ({ page }) => {
     const group = page.locator('[data-gallery="segmented-tax-rate"]');
     const first = group.getByRole('radio').first();
     await first.focus();
