@@ -111,6 +111,7 @@ Formula: `deadline = purchaseDate + 90 calendar days`, deadline day inclusive. O
 | TC-DOM-062a | `exportDeadline` falls **exactly on** `trip.departureDate` | `DR-076a`, **not** `DR-076` and **not** silent: the window is inclusive so the receipt is valid, but it has zero margin. Quiet warning with a **different message key** — "this receipt's deadline is your departure day", never "this will expire". Not an exotic input: Taiwan passport holders get 90 days visa-free and 短期滞在 caps at 90 days, so buying on arrival day and leaving on the last permitted day hits this exactly | DR-076a, DR-031 | R03 | U, C | P0 |
 | TC-DOM-062b | Deadline 1, 2, 3 and 4 days after departure, `deadlineSlackWarnDays` at its default of 3 | Quiet at +1, +2 and +3; **silent** at +4. The boundary is read from the deadline rules data, never from a literal | DR-076a | R03, R19 | U | P0 |
 | TC-DOM-062c | The two findings compared | They carry **different message keys**, not merely different severities. One says the refund is already lost, the other says there is no room if the plan changes — a shared string collapses the distinction the split exists to make | DR-076, DR-076a | R03, R09 | U | P0 |
+| TC-DOM-062d | Old-system receipt (`purchaseDate <= 2026-10-31`), any departure date | The deadline finding is `not_applicable`, **never `'none'`**. `'none'` is a claim about a deadline and this receipt does not have one: `DR-031`'s window is a refund-method rule that does not apply to it at all. A screen must not render a reassuring "deadline fine" state for a receipt that was never in the game — that is the one thing S29 exists to deny. Same family as `fees: []` meaning unknown rather than zero: *"we checked and it is fine"* and *"there is nothing to check"* look identical on a screen and license opposite conclusions | DR-003, DR-064, DR-031, UJ-038 | R01, R03 | U, C | P0 |
 | TC-DOM-063 | Ordinary five-day trip, roughly 85 days of slack | Silent. `DR-076a` can only fire on a near-maximum stay, which is exactly when it is informative; a warning that fires on every trip is noise | UJ-021, DR-076a | — | E | P1 |
 | TC-DOM-064 | Days-remaining computed at 23:59 and 00:01 device-local | Changes by exactly one at the calendar-day boundary, never by zero or two | DR-031, UR-07 | R12 | U | P0 |
 | TC-DOM-065 | A stored date reloaded with the device timezone changed from Asia/Taipei to Asia/Tokyo | Calendar date unchanged — dates persist as calendar dates, never as UTC instants | DR-002, UR-07 | R12, R04 | S | P0 |
@@ -347,6 +348,8 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 | TC-UX-020 | An abandoned draft, that evening | Surfaces in tonight's list as an ordinary action item — "an unfinished receipt from 松本清" — not as an alert. Removing the leave prompt removed the only thing telling the user they had not finished; the recovery has to happen at 22:00 with the receipt still in the bag, not at the kiosk | UJ-005, UJ-011 | R01 | E | P0 |
 | TC-UX-021 | A photo attached to a draft that is then discarded | Nothing was ever written to the photo store, so there is no orphan blob counting against quota and invisible to both cascade deletes | DR-042, UJ-009 | R04 | U, E | P0 |
 | TC-UX-022 | Editing `trip.departureDate` — the hotel at 23:00, deciding whether to stay two more days | Every deadline check re-runs and the cost is shown **before** the change is committed: which receipts move into `DR-076` or `DR-076a`, by name. This is the only moment the deadline warning is actionable — customs confirmation happens at departure, so "do customs early" does not exist, and a warning shown at logging time points at a screen where nothing can be done about it | DR-076, DR-076a, UJ-021 | R03 | E | P0 |
+| TC-UX-023 | Eight receipts ticked on the packing checklist at 22:00, reopened at 06:00 | Every tick is still there. The checklist persists, never resets and never expires. A silent reset is indistinguishable from a tick never made, and is worse than a stale one: a stale tick costs a moment of re-verification, a vanished one costs trust in every other tick on the screen | UJ-017, DR-077 | R04, R05 | E | P0 |
+| TC-UX-024 | A receipt with a high-value item, ticked on S17's documents block | That persisted tick **is** `DR-078`'s acknowledgement. No separate `Receipt.documentsAcknowledged` field exists — a stored field would be a second source of truth for the same fact, and the two would drift | DR-078, DR-016, UJ-020 | R01 | U, E | P0 |
 
 ---
 
@@ -354,15 +357,15 @@ The rule of thumb: **discharge only when the assertion is "this does not exist"*
 
 | Area | Cases | Of which `@unconfirmed` |
 |---|---|---|
-| TC-DOM — domain rules | 97 | 13 |
+| TC-DOM — domain rules | 98 | 13 |
 | TC-DATA — storage and backup | 23 | 0 |
 | TC-AIR — airport, offline, service worker | 23 | 1 |
 | TC-I18N — localization | 15 | 0 |
 | TC-A11Y — accessibility | 16 | 0 |
 | TC-PWA — install and platform | 8 | 0 |
 | TC-SEC — privacy | 5 | 0 |
-| TC-UX — flows | 22 | 1 |
-| **Total** | **209** | **15** |
+| TC-UX — flows | 24 | 1 |
+| **Total** | **212** | **15** |
 
 **Requirement coverage.** Every `DR-0nn`, `UR-nn` and `UJ-0nn` ID published in `domain-rules.md` v1.0 and `user-journey.md` v1.0 is cited by at least one case above. This was checked mechanically against both documents on 2026-10-05 and is re-checked at each milestone exit.
 
