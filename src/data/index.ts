@@ -8,6 +8,8 @@ export type { Migration } from './migrations.ts';
 export { migrations, pendingMigrations, runMigrations } from './migrations.ts';
 export { normalizePassportRef, PASSPORT_REF_MAX_LENGTH } from './normalize.ts';
 export { MAX_PHOTO_BYTES, photoRepository } from './photo-repository.ts';
+export { receiptRepository } from './receipt-repository.ts';
+export { registrationRepository } from './registration-repository.ts';
 export type {
   BackupDocumentV2,
   BackupOptions,
@@ -35,4 +37,4 @@ export { tripRepository } from './trip-repository.ts';
 export type { AppSettings, MetaRecord, ThemePreference } from './types.ts';
 export { DB_NAME, META_KEY, SCHEMA_VERSION, SETTINGS_KEY, THEME_PREFERENCES } from './types.ts';
 export type { UnreadableRecordStore } from './unreadable-records.ts';
-export { unreadableRecordCounts } from './unreadable-records.ts';
+export { droppedLineCount, unreadableRecordCounts } from './unreadable-records.ts';
