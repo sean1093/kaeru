@@ -112,6 +112,13 @@ These get **guardrail tests**: a small suite that reads the source tree and the 
 - **No wall-clock assertions.** A guardrail that fails because a CI runner was busy is a flaky test, and under R20 a flaky test gets quarantined — which is exactly what must not happen to a guardrail. Keep the suite fast; do not assert that it is fast.
 - Where a guardrail needs exceptions, they live in an **explicit, documented allowlist** in the test file. Adding to the allowlist must be a visible diff that a reviewer can argue with. A guardrail with an implicit escape hatch protects nothing.
 
+### What the suite currently cannot prove
+
+Written down because a known limit is cheaper than rediscovering it under pressure, and because both of these have already produced a defect.
+
+- **A conditional branch is unverified until it has run in the condition it exists for.** Green tests are evidence about the paths those tests take. A branch that exists for a rare case — a filter, a fallback, an error path — is exercised by nothing in a normal run, so an always-false predicate and a working one are indistinguishable in every build we have ever seen. This is not hypothetical: the axe obstruction filter shipped in #91 matched nothing, passed every build, and protected nothing, because `main` produces no `target-size` finding. A rare branch needs a test that **manufactures** the rare case, not a green suite around it.
+- **We cannot reproduce a genuine quota or eviction failure.** We *can* inject a mid-write failure — patching `IDBObjectStore.prototype.put` to throw for one store drives the abort path precisely, and #93 uses it to prove the import rolls back — so an atomicity claim about a multi-write path **is** falsifiable by a test, and a review that makes one should ask for that test rather than accept control-flow reasoning. What remains out of reach is the real condition: `fake-indexeddb` has no quota, so `TC-DATA-006` and `TC-DATA-007` exercise our handling of a simulated error rather than the browser's behaviour when a device actually fills up. `R07` therefore still depends on the manual iOS pass, and no green suite is evidence about what happens at a real storage ceiling.
+
 ### E2E conventions
 
 - **Projects:** `iphone-webkit` (iPhone 14, WebKit), `pixel-chromium` (Pixel 7, Chromium), `desktop-chromium`. Locale is a parameter; critical journeys run in both `zh-TW` and `en`.
@@ -168,7 +175,7 @@ Minimum device/browser support matrix: iOS Safari (latest and latest−1), Andro
 | **M0 — Discovery & Design** | Research, UX, architecture, and this strategy merged. Risk register reviewed by the team. Tooling agreed with the Architect (#4). Issue and PR templates live. Initial test cases drafted and traced to requirement IDs. |
 | **M1 — Foundation** | Domain rules implemented as pure functions with **≥ 90% line and branch coverage on `src/domain`**, every boundary in `domain-rules.md` covered by a test, storage migrations tested with `fake-indexeddb`, i18n key-parity test green, CI running all levels, E2E skeleton green on all three projects, axe green on the app shell. Zero open S1/S2. |
 | **M2 — MVP Features** | Every MVP journey has an E2E test in both locales; offline suite green (cold start, deep link, airport checklist, recovery); SW update test green; export/import round-trip green; axe zero serious/critical on every route; screenshots in both locales attached to every UI PR. Zero open S1/S2; S3 count agreed with the PM. |
-| **M3 — Launch** | Full release checklist (§10) passed on the live site; manual iOS + Android device pass done; manual screen-reader pass done; production smoke green; QA sign-off comment on the release issue. Zero open S1/S2, no unresolved S3 in a critical journey. |
+| **M3 — Launch** | **Zero `test.fixme` remain anywhere in the suite** — a case written ahead of its screen and never turned on reads as coverage in a report while asserting nothing, so the release pass counts them and a non-zero count blocks. Full release checklist (§10) passed on the live site; manual iOS + Android device pass done; manual screen-reader pass done; production smoke green; QA sign-off comment on the release issue. Zero open S1/S2, no unresolved S3 in a critical journey. |
 
 **Stop-the-line rule:** any defect that can cause a traveler to lose a refund (wrong amount, wrong eligibility, wrong deadline, lost data, airport mode unusable offline) is S1 by definition and blocks the next merge to `main` until fixed or reverted.
 
