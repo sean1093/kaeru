@@ -8,8 +8,8 @@
 
 ## Context
 
-Kaeru helps travellers track tax-free receipts: shop names, amounts, passport-linked
-traveller records, receipt photos. The product brief sets hard constraints: no accounts,
+Kaeru helps travelers track tax-free receipts: shop names, amounts, passport-linked
+traveler records, receipt photos. The product brief sets hard constraints: no accounts,
 no server, no analytics, no storage of full passport numbers, works offline, free.
 
 The decisive context is *where* the app is used. The critical moment is the departure
@@ -52,7 +52,7 @@ Kaeru is a **static, local-first Progressive Web App** deployed to GitHub Pages 
   but introduces accounts, a privacy surface, a cost, an operational burden, and a
   dependency at exactly the moment the app matters most (airport, poor network). Rejected.
 - **Native apps.** Better camera and storage guarantees on iOS, but two codebases, store
-  review latency for a rule change that may land days before travellers need it, and a
+  review latency for a rule change that may land days before travelers need it, and a
   much higher barrier to "a friend sent me a link". Rejected for MVP.
 - **Static site with a serverless function for refund-operator lookups.** No operator
   offers a usable public API, and the brief explicitly forbids scraping operators.

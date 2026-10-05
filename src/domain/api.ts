@@ -54,7 +54,7 @@ export interface RefundEstimate {
   /** The operator's cut. Null when unknown; zero is a claim we are not entitled to make. */
   operatorFee: Jpy | null;
   /**
-   * The traveller's own bank charge for an inbound transfer, from `Trip.receivingChargeJpy`.
+   * The traveler's own bank charge for an inbound transfer, from `Trip.receivingChargeJpy`.
    * Present only when it actually applies — that is, when the operator will pay by bank
    * transfer. Null when unknown or not applicable (`DR-025`).
    */
@@ -85,7 +85,7 @@ export interface RefundEstimate {
 }
 
 /**
- * Estimate what reaches the traveller for one receipt. An unknown deduction yields
+ * Estimate what reaches the traveler for one receipt. An unknown deduction yields
  * `net: null` rather than an optimistic number.
  */
 export type EstimateRefund = (
@@ -128,7 +128,7 @@ export type HasHighValueItemOf = (receipt: Receipt, rules: ResolvedRules) => boo
 
 // --- Threshold and eligibility (DR-010..DR-016, UR-01, UR-02) --------------
 
-/** Receipts that share a shop, a purchase date and a traveller (DR-012). */
+/** Receipts that share a shop, a purchase date and a traveler (DR-012). */
 export interface ShopDayGroup {
   shopKey: string;
   purchaseDate: CalendarDate;
@@ -186,7 +186,7 @@ export type CanTransition = (
 /** Old-system receipts skip customs entirely and never appear in a checklist (DR-003, DR-064). */
 export type IsOldSystem = (receipt: Receipt, rules: ResolvedRules) => boolean;
 
-/** A receipt the traveller is still trying to get money back for. */
+/** A receipt the traveler is still trying to get money back for. */
 export type IsClaimable = (receipt: Receipt, rules: ResolvedRules) => boolean;
 
 /** The operator's registration state, which every receipt of that operator shares (UJ-013). */

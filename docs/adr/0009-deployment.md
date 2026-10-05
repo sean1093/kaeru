@@ -45,7 +45,7 @@ rule shipped that way is an S1 defect. `workflow_run` gives the gate without the
 - A merge to `main` is a release. There is no staging environment and no manual promotion,
   which suits a free static app with no backend and no data migration risk on the server
   side (client schema migrations are handled in ADR 0005).
-- Deploy time is roughly a minute, so a rule fix can reach travellers the same day — which
+- Deploy time is roughly a minute, so a rule fix can reach travelers the same day — which
   matters when the rules themselves are still moving.
 - Rolling back means reverting the commit and letting `main` redeploy. There is no artefact
   promotion mechanism to roll back to a previous build.

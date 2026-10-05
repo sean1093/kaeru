@@ -91,7 +91,7 @@ self-contained and hands over cleanly.
 
 **2. The guide moves from the Airport track to the onboarding track in M2.** The suggestion
 paired Airport Mode with the Guide (five screens). Airport Mode is the flow where a
-mistake costs a traveller real money, it is the one that must work offline in a queue, and
+mistake costs a traveler real money, it is the one that must work offline in a queue, and
 it carries QA risk R05 at the top of the register. It gets a track to itself. The Guide is
 five read-mostly screens over bundled content with no domain logic, which sits naturally
 beside onboarding and settings — the other calm, form-and-prose track.
@@ -138,7 +138,7 @@ Durable local storage for the whole model, and the only way data leaves the devi
 
 | Issue | Key | What | Depends on |
 |---|---|---|---|
-| [#19](../../issues/19) | `M1-2a` | schema v2 migration with trip and traveller repositories | none |
+| [#19](../../issues/19) | `M1-2a` | schema v2 migration with trip and traveler repositories | none |
 | [#20](../../issues/20) | `M1-2b` | receipt and registration repositories | [#19](../../issues/19) |
 | [#21](../../issues/21) | `M1-2c` | photo blob store, quota handling and persistent storage | [#19](../../issues/19) |
 | [#22](../../issues/22) | `M1-2d` | backup v2 — export, preview, import, delete all | [#19](../../issues/19), [#20](../../issues/20), [#21](../../issues/21) |
@@ -212,7 +212,7 @@ First run, the settings surface, and the guide the whole app links into.
 
 | Issue | Key | What | Depends on |
 |---|---|---|---|
-| [#34](../../issues/34) | `M2-A1` | welcome, explainer, trip setup, travellers, ready — S01 S05 S02 S03 S04 | [#33](../../issues/33), [#25](../../issues/25), [#19](../../issues/19) |
+| [#34](../../issues/34) | `M2-A1` | welcome, explainer, trip setup, travelers, ready — S01 S05 S02 S03 S04 | [#33](../../issues/33), [#25](../../issues/25), [#19](../../issues/19) |
 | [#35](../../issues/35) | `M2-A2` | settings index, trip settings and privacy — S60 S61 S63 | [#33](../../issues/33), [#25](../../issues/25), [#19](../../issues/19) |
 | [#36](../../issues/36) | `M2-A3` | data screen — export, import with preview, delete all — S62 | [#22](../../issues/22), [#33](../../issues/33) |
 | [#37](../../issues/37) | `M2-A4` | guide index, article and FAQ — S50 S51 S54 | [#29](../../issues/29), [#30](../../issues/30), [#33](../../issues/33), [#23](../../issues/23) |
@@ -223,14 +223,14 @@ First run, the settings surface, and the guide the whole app links into.
 **Owner: FrontendEngB** · owns `src/features/receipts/**`
 **Reviewers:** Architect (code) · UXDesigner (screens) · QALead (verification) · JapanExpert (rule rendering)
 
-The thing the traveller does fifteen times a trip, in under twenty seconds each.
+The thing the traveler does fifteen times a trip, in under twenty seconds each.
 
 | Issue | Key | What | Depends on |
 |---|---|---|---|
 | [#39](../../issues/39) | `M2-B1` | receipt list with shop-day grouping and empty state — S20 S28 | [#15](../../issues/15), [#20](../../issues/20), [#33](../../issues/33), [#23](../../issues/23), [#25](../../issues/25) (money rendering: `ListRowProps.amount` is `AmountDisplayProps`) |
 | [#40](../../issues/40) | `M2-B2` | the twenty-second add screen with its defaults sheets — S21 S24 S26 | [#14](../../issues/14), [#15](../../issues/15), [#17](../../issues/17), [#20](../../issues/20), [#25](../../issues/25), [#33](../../issues/33) |
 | [#41](../../issues/41) | `M2-B3` | detail, status timeline, fee warning and old-system receipts — S22 S2B S29 | [#39](../../issues/39), [#14](../../issues/14), [#17](../../issues/17), [#30](../../issues/30) |
-| [#42](../../issues/42) | `M2-B4` | edit, traveller chooser, not-claiming and photo view — S23 S25 S2A S27 | [#40](../../issues/40), [#41](../../issues/41), [#21](../../issues/21), [#26](../../issues/26) |
+| [#42](../../issues/42) | `M2-B4` | edit, traveler chooser, not-claiming and photo view — S23 S25 S2A S27 | [#40](../../issues/40), [#41](../../issues/41), [#21](../../issues/21), [#26](../../issues/26) |
 
 ### M2-C — Home, packing plan and refunds
 
@@ -345,7 +345,7 @@ and every M2 track depends on all of M1 rather than on another track.
 
 | # | Decision | Where it lands |
 |---|---|---|
-| 7 | `RefundEstimate` models **both** deductions in `DR-025`, not just the operator fee. `Trip.receivingChargeJpy` is the traveller's own bank charge, applied only to a bank-transfer payout and **once per transfer** — so `EstimateRefund` assumes a solo payout (the safe direction) and `EstimateOperatorPayout` is the honest figure for a group. Evidence: PP-03, a ¥19,805 purchase that arrived as NT$77, where the operator's 2.2% was the smaller bite | `src/domain/api.ts` — `M1-1b`, rendered by `M2-C4` |
+| 7 | `RefundEstimate` models **both** deductions in `DR-025`, not just the operator fee. `Trip.receivingChargeJpy` is the traveler's own bank charge, applied only to a bank-transfer payout and **once per transfer** — so `EstimateRefund` assumes a solo payout (the safe direction) and `EstimateOperatorPayout` is the honest figure for a group. Evidence: PP-03, a ¥19,805 purchase that arrived as NT$77, where the operator's 2.2% was the smaller bite | `src/domain/api.ts` — `M1-1b`, rendered by `M2-C4` |
 | 8 | `Receipt.hasHighValueItem` is `boolean \| null`: null derives, non-null is the user's answer and always wins. A plain boolean could not survive a recompute after a line edit, and the override is the whole point (`DR-016`) | `src/domain/model.ts` — `M1-1b` |
 | 9 | `UR-07` gets acceptance criteria rather than two doc comments. A device on US Pacific reads a 23:30 JST purchase on 31 October as 30 October, which would silently route a refund-method receipt into the old system | `M1-1a`, `M1-1d`, `M2-B2` |
 | 10 | Guide prose keeps its literal numbers; the three that must not drift from the rules data are **asserted**, not interpolated. Templating a threshold through two grammars buys a brittle string for a number that has not moved since 2018 | `M1-5d` |
@@ -358,7 +358,7 @@ and every M2 track depends on all of M1 rather than on another track.
 
 - **A rule changes before M2 ends.** The dated-data design absorbs a value change without a
   code change. A change to the *shape* of a rule — for example, a threshold that depends on
-  something other than shop, day and traveller — invalidates `M1-1c` and the receipt list,
+  something other than shop, day and traveler — invalidates `M1-1c` and the receipt list,
   and would need a new ADR.
 - **Photo storage turns out to be unusable on iOS.** `M1-2c` is the canary. If quota or
   eviction makes photos unreliable, the photo becomes genuinely optional everywhere and

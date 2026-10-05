@@ -184,7 +184,7 @@ export interface ChecklistRowProps {
   /** Rows routed to a human counter render as a linked panel, not a checkbox (DR-035). */
   excluded?: { reason: string; href: string };
   /**
-   * Per-row marker the traveller has to act on before ticking: 標記為託運 / "marked as
+   * Per-row marker the traveler has to act on before ticking: 標記為託運 / "marked as
    * checked" (DR-032), or 要帶證明文件 / "bring the documents" for a high-value receipt
    * (DR-016, UJ-020).
    *
@@ -198,7 +198,7 @@ export interface ChecklistRowProps {
 }
 
 export interface ChecklistGroupProps {
-  /** Becomes the `<legend>`, so the traveller's name is part of every row's name. */
+  /** Becomes the `<legend>`, so the traveler's name is part of every row's name. */
   legend: string;
   progress: ProgressBarProps;
   children?: ComponentChildren;

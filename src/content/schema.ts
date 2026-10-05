@@ -82,7 +82,7 @@ export interface ContentBundle {
 
 /**
  * The operator directory as the UI consumes it: shipped facts plus the four operators
- * Taiwanese travellers meet most, pinned first (IA flow H, S52).
+ * Taiwanese travelers meet most, pinned first (IA flow H, S52).
  */
 export interface OperatorDirectory {
   operators: readonly Operator[];

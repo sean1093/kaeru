@@ -30,11 +30,11 @@ export type Jpy = number;
 /** A tax rate as a decimal, e.g. `0.1`. Valid values come from the rate table (DR-023). */
 export type TaxRate = number;
 
-// --- Trip and travellers ---------------------------------------------------
+// --- Trip and travelers ---------------------------------------------------
 
 export interface Trip {
   id: TripId;
-  /** JST calendar date the traveller leaves Japan. */
+  /** JST calendar date the traveler leaves Japan. */
   departureDate: CalendarDate;
   /** The **final** airport they leave Japan from (DR-037). */
   departureAirport: AirportCode;
@@ -47,12 +47,12 @@ export interface Trip {
   /** Days after customs confirmation before a refund is "late" — a preference, not a fact (DR-036). */
   overdueThresholdDays: number;
   /**
-   * What the traveller's own bank takes for one inbound transfer, in yen, as they report
+   * What the traveler's own bank takes for one inbound transfer, in yen, as they report
    * it. Null means unknown and the estimate must say so rather than assume zero.
    *
    * This is the second deduction in `DR-025` and in the evidence it is usually the larger
    * one: pain point PP-03 is a ¥19,805 purchase that arrived as NT$77, where the
-   * operator's 2.2% was the smaller bite. It is a property of the traveller's bank, not of
+   * operator's 2.2% was the smaller bite. It is a property of the traveler's bank, not of
    * a receipt, and it is charged **per transfer**, so it is applied once per operator
    * payout and never once per receipt.
    */

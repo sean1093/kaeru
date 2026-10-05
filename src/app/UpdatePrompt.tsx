@@ -6,7 +6,7 @@ import styles from './UpdatePrompt.module.css';
 import { applyUpdate, needRefresh } from './update-state.ts';
 
 /**
- * A new build never replaces the running one silently: a traveller mid-task at an
+ * A new build never replaces the running one silently: a traveler mid-task at an
  * airport decides when to reload. See ADR 0007.
  */
 export function UpdatePrompt(): JSX.Element | null {

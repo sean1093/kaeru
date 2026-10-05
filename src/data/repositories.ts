@@ -43,8 +43,8 @@ export interface TravelerRepository {
   listByTrip(db: KaeruDatabase, tripId: TripId): Promise<readonly Traveler[]>;
   put(db: KaeruDatabase, traveler: Traveler): Promise<Traveler>;
   /**
-   * Deleting a traveller must not orphan receipts: the caller supplies where they go.
-   * Passing `null` is only valid when the traveller has no receipts.
+   * Deleting a traveler must not orphan receipts: the caller supplies where they go.
+   * Passing `null` is only valid when the traveler has no receipts.
    */
   remove(db: KaeruDatabase, id: TravelerId, reassignTo: TravelerId | null): Promise<void>;
 }
@@ -61,7 +61,7 @@ export interface ReceiptRepository {
   /** Ordered by `purchaseDate` descending, then by insertion order, so lists are stable. */
   list(db: KaeruDatabase, query: ReceiptQuery): Promise<readonly Receipt[]>;
   put(db: KaeruDatabase, receipt: Receipt): Promise<Receipt>;
-  /** One transaction, for the airport flow that confirms a whole traveller at once (S34). */
+  /** One transaction, for the airport flow that confirms a whole traveler at once (S34). */
   putMany(db: KaeruDatabase, receipts: readonly Receipt[]): Promise<readonly Receipt[]>;
   remove(db: KaeruDatabase, id: ReceiptId): Promise<void>;
   /** Shop names seen on this trip, most recent first, for the suggestion list (UJ-005). */
