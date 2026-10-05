@@ -126,9 +126,26 @@ jobs:
           # the service worker and offline (engine), Airport Mode (where a mistake costs a
           # traveller money), app chrome and the UI kit (sticky positioning, focus, inert
           # and dialog semantics all differ by engine), and storage (IndexedDB behaviour is
-          # genuinely engine-divergent and a loss there is unrecoverable). Plus the config
-          # files that decide what any of this means.
-          full='^(e2e/|src/app/|src/features/airport/|src/data/|src/ui/|vite[.]config[.]ts|playwright[.]config[.]ts|[.]github/workflows/)'
+          # genuinely engine-divergent and a loss there is unrecoverable).
+          #
+          # Four more that are not source files and are easy to miss (QALead, #133):
+          #
+          # - **The lockfile and package.json.** A dependency bump - Preact, vite-plugin-pwa,
+          #   Workbox, Playwright itself - is the single most likely cross-engine regression
+          #   we will ever merge, and the one diff whose blast radius nobody can predict by
+          #   reading it.
+          # - **src/styles/**.** tokens.css drives every layout, and the 320 px reflow and
+          #   200% text cases (TC-A11Y-010, TC-A11Y-015) are viewport tests that only the
+          #   three projects run at three widths. A token change is the most layout-relevant
+          #   diff in the repository.
+          # - **index.html and public/**.** The document shell and the manifest: base path,
+          #   scope, icons, meta. Everything the service worker and the install path read.
+          #
+          # And one deliberate omission: `src/domain/**` stays narrow, including
+          # `src/domain/airport.ts`. It is pure logic with no DOM and no engine dependence,
+          # so three browsers would run identical code three times. Do not add it because
+          # the name looks related to Airport Mode.
+          full='^(e2e/|src/app/|src/features/airport/|src/data/|src/ui/|src/styles/|public/|index[.]html|package[.]json|package-lock[.]json|vite[.]config[.]ts|playwright[.]config[.]ts|[.]github/workflows/)'
           gallery='^(src/ui/|src/features/gallery/|e2e/gallery/)'
 
           if printf '%s' "${LABELS}" | grep -q 'full-e2e'; then
