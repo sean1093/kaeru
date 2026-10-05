@@ -100,7 +100,9 @@ describe('airportReadinessOf (DR-030, DR-079, UJ-019)', () => {
       lines: [aLine({ taxExcludedAmount: 1_280_000, maxUnitPriceTaxExcluded: 1_280_000 })],
     });
     const readiness = airportReadinessOf(trip, travelers, [watch], rules, departureDay);
-    expect(readiness.travelers[0]?.requiresDocuments).toBe(true);
+    expect(readiness.travelers[0]?.requiresDocuments.map((receipt) => receipt.id)).toEqual([
+      'watch',
+    ]);
     expect(keysOf(readiness.blockers)).toContain('blocker.documentsNeeded');
   });
 
@@ -138,6 +140,33 @@ describe('airportReadinessOf (DR-030, DR-079, UJ-019)', () => {
       'blocker.itemsNotConfirmed',
       'blocker.consumedGoods',
     ]);
+  });
+
+  it('ranks an expired deadline above every delay, because it is a total loss', () => {
+    // The array's order is load-bearing on S30: the traveller works down it.
+    const lateTrip = aTrip({ departureDate: '2027-03-01' });
+    const readiness = airportReadinessOf(
+      lateTrip,
+      travelers,
+      [
+        ready({
+          id: 'watch',
+          purchaseDate: '2026-11-01',
+          lines: [aLine({ taxExcludedAmount: 1_280_000, maxUnitPriceTaxExcluded: 1_280_000 })],
+        }),
+        ready({ id: 'stale', purchaseDate: '2026-11-01' }),
+        ready({ id: 'bag', purchaseDate: '2026-11-01', packingLocation: 'checked_bag' }),
+      ],
+      rules,
+      fixedClock('2027-02-28T06:00:00+09:00'),
+    );
+    const order = keysOf(readiness.blockers);
+    expect(order.indexOf('blocker.deadlineExpired')).toBeLessThan(
+      order.indexOf('blocker.documentsNeeded'),
+    );
+    // Only a checked bag outranks it, and only because that one is still preventable.
+    expect(order[0]).toBe('blocker.checkedBag');
+    expect(order[1]).toBe('blocker.deadlineExpired');
   });
 
   it('reports an expired deadline, which the machine would otherwise discover', () => {

@@ -293,13 +293,34 @@ export interface TravelerChecklist {
   routedToCounter: readonly Receipt[];
   /** Receipts whose goods are in a checked bag, which is the mistake that costs money (DR-032). */
   inCheckedBag: readonly Receipt[];
-  requiresDocuments: boolean;
+  /**
+   * Receipts customs may ask for a certificate or warranty for (`DR-016`, `UJ-020`).
+   *
+   * A list rather than a boolean, because S17 and S30 both have to say *which* purchase:
+   * "one of your eleven receipts needs documents" is an instruction to search a suitcase.
+   * Emptiness carries the boolean.
+   */
+  requiresDocuments: readonly Receipt[];
 }
+
+/**
+ * Every reason the traveller can be not-ready. Closed, because these are copy identifiers
+ * and the i18n parity test cannot enumerate an open set: a key with no translation would
+ * reach a traveller as a raw identifier, on the screen where attention is scarcest.
+ */
+export type AirportBlockerKey =
+  | 'blocker.checkedBag'
+  | 'blocker.deadlineExpired'
+  | 'blocker.packingUnknown'
+  | 'blocker.itemsNotConfirmed'
+  | 'blocker.itemsMissing'
+  | 'blocker.consumedGoods'
+  | 'blocker.documentsNeeded';
 
 /** One reason the traveller is not ready, and the receipts it is about. */
 export interface AirportBlocker {
   /** Message key in the airport feature's bundle; the copy lives with the screen. */
-  key: string;
+  key: AirportBlockerKey;
   receiptIds: readonly ReceiptId[];
 }
 

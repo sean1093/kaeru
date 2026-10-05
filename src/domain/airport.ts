@@ -14,13 +14,14 @@
  */
 import type {
   AirportBlocker,
+  AirportBlockerKey,
   AirportReadiness,
   AirportReadinessOf,
   TravelerChecklist,
 } from './api.ts';
 import type { Clock } from './clock.ts';
 import { deadlineStatusOf } from './deadlines.ts';
-import type { Receipt, ReceiptId } from './model.ts';
+import type { Receipt, ReceiptId, Trip } from './model.ts';
 import { hasHighValueItemOf, taxExcludedTotalOf } from './money.ts';
 import type { ResolvedRules } from './rules.ts';
 import { isClaimable, isOldSystem } from './status.ts';
@@ -33,13 +34,29 @@ import { isClaimable, isOldSystem } from './status.ts';
  * question is the gate the kiosk run cannot start without (`DR-030`), and a missing
  * certificate is a delay rather than a loss (`DR-016`).
  */
-const BLOCKERS: readonly {
-  key: string;
-  applies: (receipt: Receipt, rules: ResolvedRules) => boolean;
-}[] = [
+interface BlockerContext {
+  rules: ResolvedRules;
+  trip: Trip;
+  clock: Clock;
+}
+
+interface BlockerRule {
+  key: AirportBlockerKey;
+  applies: (receipt: Receipt, context: BlockerContext) => boolean;
+}
+
+const BLOCKERS: readonly BlockerRule[] = [
   // DR-032, DR-077: checked baggage cannot be retrieved for a tax-free procedure. This
-  // is the mistake the whole product exists to prevent.
+  // is the mistake the whole product exists to prevent, and it is still preventable —
+  // which is the only reason it outranks the one below.
   { key: 'blocker.checkedBag', applies: (receipt) => receipt.packingLocation === 'checked_bag' },
+  // DR-031: already lost, and the machine is the worst place to discover it. A total
+  // loss, so it sits above everything that is a delay or an unanswered question.
+  {
+    key: 'blocker.deadlineExpired',
+    applies: (receipt, { rules, trip, clock }) =>
+      deadlineStatusOf(receipt, trip, rules, clock).expired,
+  },
   // Not knowing where the goods are is not evidence that they are in hand (TC-DOM-073).
   { key: 'blocker.packingUnknown', applies: (receipt) => receipt.packingLocation === 'unknown' },
   // DR-030: the question has to be answered before the kiosk, not at it.
@@ -50,8 +67,11 @@ const BLOCKERS: readonly {
   // DR-035: consumed goods must be declared to an officer at the counter, never put
   // through the kiosk.
   { key: 'blocker.consumedGoods', applies: (receipt) => receipt.willUseInJapan === true },
-  // DR-016, DR-078: customs may ask for a certificate or warranty.
-  { key: 'blocker.documentsNeeded', applies: hasHighValueItemOf },
+  // DR-016, DR-078: customs may ask for a certificate or warranty. A delay, not a loss.
+  {
+    key: 'blocker.documentsNeeded',
+    applies: (receipt, { rules }) => hasHighValueItemOf(receipt, rules),
+  },
 ];
 
 export const airportReadinessOf: AirportReadinessOf = (
@@ -75,24 +95,18 @@ export const airportReadinessOf: AirportReadinessOf = (
       taxExcludedTotal: mine.reduce((total, receipt) => total + taxExcludedTotalOf(receipt), 0),
       routedToCounter: mine.filter((receipt) => receipt.willUseInJapan === true),
       inCheckedBag: mine.filter((receipt) => receipt.packingLocation === 'checked_bag'),
-      requiresDocuments: mine.some((receipt) => hasHighValueItemOf(receipt, rules)),
+      requiresDocuments: mine.filter((receipt) => hasHighValueItemOf(receipt, rules)),
     };
   });
 
+  const context: BlockerContext = { rules, trip, clock };
   const blockers: AirportBlocker[] = [];
   for (const { key, applies } of BLOCKERS) {
     const receiptIds: ReceiptId[] = claimable
-      .filter((receipt) => applies(receipt, rules))
+      .filter((receipt) => applies(receipt, context))
       .map((receipt) => receipt.id);
     if (receiptIds.length > 0) blockers.push({ key, receiptIds });
   }
-
-  // DR-031: a receipt past its export deadline cannot be confirmed, and finding that out
-  // at the machine is the worst place to find it out.
-  const expired = claimable
-    .filter((receipt) => deadlineStatusOf(receipt, trip, rules, clock).expired)
-    .map((receipt) => receipt.id);
-  if (expired.length > 0) blockers.push({ key: 'blocker.deadlineExpired', receiptIds: expired });
 
   return {
     travelers: checklists,
