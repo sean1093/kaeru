@@ -24,7 +24,7 @@ import type {
   TravelerId,
   Trip,
 } from './model.ts';
-import type { ResolvedRules } from './rules.ts';
+import type { ResolvedRules, RulesData } from './rules.ts';
 
 // --- Money (DR-020..DR-027) ------------------------------------------------
 
@@ -232,13 +232,43 @@ export type LeaveForAirportBy = (
 // --- Status lifecycle (DR-060..DR-064) -------------------------------------
 
 /**
- * Whether a transition is allowed. Every state is reversible (DR-063); the only hard
- * block is entering `customs_confirmed` with `allItemsPresent === false` (DR-061).
+ * Why a transition was refused. A closed union rather than a message key: the domain has
+ * no opinion about copy, and a reason a screen must switch on exhaustively cannot be
+ * quietly collapsed into a generic sentence the way a reused key can.
  */
-export type CanTransition = (
+export type TransitionBlockReason =
+  /** `allItemsPresent === false`: customs is all-or-nothing per receipt (`DR-061`, `DR-030`). */
+  | 'items_not_present'
+  /** An unknown operator cannot have been registered with (`DR-060b`). */
+  | 'registration_needs_operator'
+  /** An old-system purchase has no customs step to complete (`DR-003`, `DR-064`). */
+  | 'old_system_has_no_customs';
+
+/**
+ * The outcome of asking for a transition: refused with a reason, or allowed **with the
+ * status to write**.
+ *
+ * The status lives inside the allowed branch on purpose. `DR-060d` makes `refund_pending`
+ * automatic on `customs_confirmed`, and a separate "and then also apply this" call leaves
+ * forgetting it a one-line mistake — in the flow where forgetting means a receipt sits in
+ * a state the refund tracker never counts. Here the follow-on cannot be skipped without
+ * deleting code that is obviously load-bearing.
+ */
+export type TransitionOutcome =
+  | { readonly allowed: false; readonly reason: TransitionBlockReason }
+  | { readonly allowed: true; readonly status: ReceiptStatus };
+
+/**
+ * Every state is reversible (`DR-063`) and `not_claiming` is reachable from any pre-refund
+ * state (`DR-060h`), so refusals are few and each one is a rule rather than a tidiness
+ * preference. `rules` is a parameter because the old-system refusal cannot be answered
+ * from the receipt alone.
+ */
+export type ResolveTransition = (
   receipt: Receipt,
   to: ReceiptStatus,
-) => { allowed: true } | { allowed: false; reasonKey: string };
+  rules: ResolvedRules,
+) => TransitionOutcome;
 
 /** Old-system receipts skip customs entirely and never appear in a checklist (DR-003, DR-064). */
 export type IsOldSystem = (receipt: Receipt, rules: ResolvedRules) => boolean;
@@ -308,6 +338,19 @@ export type ValidateReceipt = (
   rules: ResolvedRules,
   clock: Clock,
 ) => readonly ValidationFinding[];
+
+/**
+ * Whether a purchase date is one the rules document can be resolved for.
+ *
+ * Takes **unresolved** `RulesData` on purpose: `ValidateReceipt` only ever sees rules that
+ * resolved successfully, so by the time it runs, a date outside the document's coverage
+ * has already thrown. A validator that cannot run before the failure is not a validator.
+ * This is what a date field calls before it resolves anything (`DR-072`).
+ */
+export type ValidatePurchaseDate = (
+  purchaseDate: CalendarDate,
+  rules: RulesData,
+) => ValidationFinding | null;
 
 // --- Trip phase (IA flow D) ------------------------------------------------
 

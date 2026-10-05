@@ -1,4 +1,13 @@
-export type { LineAmounts, PayoutEstimate, RefundEstimate, ShopDayGroup } from './api.ts';
+export type {
+  LineAmounts,
+  PayoutEstimate,
+  RefundEstimate,
+  ShopDayGroup,
+  TransitionBlockReason,
+  TransitionOutcome,
+  ValidationFinding,
+  ValidationSeverity,
+} from './api.ts';
 export type { Clock } from './clock.ts';
 export { fixedClock, systemClock } from './clock.ts';
 export type { CalendarDate } from './dates.ts';
@@ -60,4 +69,6 @@ export type {
 } from './rules.ts';
 export { kaeruRules, RATE_LABEL_KEYS, RULES_REVIEW_MAX_AGE_DAYS } from './rules-data.ts';
 export { shopKeyOf } from './shop-key.ts';
+export { isClaimable, isOldSystem, registrationStateOf, resolveTransition } from './status.ts';
 export { groupByShopDay } from './threshold.ts';
+export { validatePurchaseDate, validateReceipt } from './validation.ts';
