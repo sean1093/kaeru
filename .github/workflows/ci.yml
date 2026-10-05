@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -59,8 +60,9 @@ jobs:
 
       - run: npm ci
 
+      # Only the engines we actually have projects for; Firefox is not a target.
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Run Playwright tests
         run: npm run e2e

@@ -17,10 +17,15 @@ the same path (ADR 0004, ADR 0007), so the deployment must not alter paths after
 
 ## Decision
 
-`.github/workflows/deploy.yml`, triggered by `push` to `main` and by `workflow_dispatch`:
+`.github/workflows/deploy.yml` is **gated on a green CI run**. It is triggered by
+`workflow_run` when the `CI` workflow completes on `main`, and by `workflow_dispatch`:
 
-- **build** job: checkout, `actions/setup-node@v5` with Node 24 and npm cache, `npm ci`,
-  `npm run build`, then `actions/upload-pages-artifact@v4` with `path: dist`.
+- Both jobs are guarded by
+  `if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'`,
+  so a failed CI run on `main` produces no deployment at all.
+- **build** job: checkout at `github.event.workflow_run.head_sha` (exactly the commit CI
+  verified), `actions/setup-node@v5` with Node 24 and npm cache, `npm ci`, `npm run build`,
+  then `actions/upload-pages-artifact@v4` with `path: dist`.
 - **deploy** job: `needs: build`, environment `github-pages`, `actions/deploy-pages@v4`.
 - Permissions are the minimum the OIDC deployment needs: `contents: read`, `pages: write`,
   `id-token: write`.
@@ -28,10 +33,12 @@ the same path (ADR 0004, ADR 0007), so the deployment must not alter paths after
   running deployment is never cancelled half-way.
 - Manual `workflow_dispatch` exists so the site can be republished without an empty commit.
 
-Correctness of the build is **not** re-verified here. `ci.yml` (ADR 0008) runs on every pull
-request and on every push to `main`, including this one; duplicating typecheck, lint, tests
-and E2E in the deploy workflow would double the cost and halve the deploy speed for no new
-information. A red CI on `main` is a stop-the-line event by the QA strategy.
+Correctness is verified **once**, by `ci.yml` (ADR 0008), and the deploy consumes that
+result rather than repeating it. Re-running typecheck, lint, unit tests and the full browser
+matrix inside the deploy would double the cost and halve the deploy speed for no new
+information; skipping the gate entirely would let a red build reach users, and because the
+service worker pushes new builds to already-installed clients (QA risk R06), a wrong tax
+rule shipped that way is an S1 defect. `workflow_run` gives the gate without the duplication.
 
 ## Consequences
 

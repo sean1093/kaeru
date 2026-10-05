@@ -1,7 +1,12 @@
 name: Deploy to GitHub Pages
 
+# Deploys only a commit whose CI run went green. A red build must never reach Pages:
+# the service worker would push it to already-installed clients (QA risk R06), and a
+# wrong tax rule is an S1 defect by definition.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -18,9 +23,13 @@ concurrency:
 jobs:
   build:
     name: Build
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # workflow_run reports the commit CI verified; a manual run takes main.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - uses: actions/setup-node@v5
         with:

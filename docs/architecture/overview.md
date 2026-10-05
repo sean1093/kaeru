@@ -264,8 +264,10 @@ under test.
 - Tax rules, operators and the receipt model are designed but not implemented (M1).
 - No photo capture or blob store yet; quota handling is designed, not built.
 - Cold-start performance is not yet measured on a real mid-range device.
-- Playwright's WebKit build cannot serve a service-worker response under offline emulation,
-  so the true offline cold start is asserted on Chromium and verified manually on iOS per
-  milestone; the precache contents are asserted on all three engines.
+- Playwright's WebKit build cannot complete a navigation under offline emulation, so the
+  offline *cold start* is asserted on Chromium only. The Cache Storage API does work on
+  WebKit with the network off, so all three engines assert that the app shell and its
+  assets are genuinely available offline; real iOS behaviour is covered by QA's
+  per-milestone device pass.
 - The rules-freshness check (a weekly workflow that opens an issue when the rules data goes
   stale) is agreed with QA and lands in M1.

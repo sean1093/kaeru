@@ -10,7 +10,7 @@ export default defineConfig({
   testMatch: '**/*.spec.ts',
   fullyParallel: true,
   forbidOnly: CI,
-  retries: CI ? 2 : 0,
+  retries: CI ? 1 : 0,
   ...(CI ? { workers: 1 } : {}),
   reporter: CI
     ? [

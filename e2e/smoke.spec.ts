@@ -57,13 +57,18 @@ test.describe('app shell', () => {
     await expect(page.getByTestId('not-found')).toBeVisible();
   });
 
-  test('no third-party requests are made', async ({ page }) => {
+  test('no third-party requests are made on any route', async ({ page }) => {
     const external: string[] = [];
     page.on('request', (request) => {
       if (!request.url().startsWith('http://localhost')) external.push(request.url());
     });
     await page.goto('./');
     await page.getByTestId('language-en').click();
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Settings');
+    await page.getByTestId('export-backup').click();
+    await page.goto('./#/no-such-route');
+    await expect(page.getByTestId('not-found')).toBeVisible();
     expect(external).toEqual([]);
   });
 
@@ -97,27 +102,40 @@ test.describe('offline', () => {
     });
   }
 
-  test('precaches the app shell and its assets', async ({ page }) => {
+  test('serves the app shell and its assets from the precache while offline', async ({
+    page,
+    context,
+  }) => {
     await activateServiceWorker(page);
 
+    // The cache read happens with the network off, so this asserts real offline
+    // availability on every engine, including WebKit where a navigation cannot complete
+    // under Playwright's offline emulation.
+    await context.setOffline(true);
     const cached = await page.evaluate(async () => {
       const urls: string[] = [];
       for (const name of await caches.keys()) {
         const cache = await caches.open(name);
         for (const request of await cache.keys()) urls.push(request.url);
       }
-      return urls;
+      const shell = await caches.match('./index.html', { ignoreSearch: true });
+      return { urls, shellStatus: shell?.status ?? 0 };
     });
+    await context.setOffline(false);
 
-    expect(cached.some((url) => url.includes('/kaeru/index.html'))).toBe(true);
-    expect(cached.some((url) => url.includes('/kaeru/assets/') && url.includes('.js'))).toBe(true);
-    expect(cached.some((url) => url.includes('/kaeru/assets/') && url.includes('.css'))).toBe(true);
+    expect(cached.shellStatus).toBe(200);
+    expect(cached.urls.some((url) => url.includes('/kaeru/assets/') && url.includes('.js'))).toBe(
+      true,
+    );
+    expect(cached.urls.some((url) => url.includes('/kaeru/assets/') && url.includes('.css'))).toBe(
+      true,
+    );
   });
 
   test('cold-starts offline', async ({ page, context, browserName }) => {
-    // Playwright's WebKit build cannot serve a service-worker response while offline
-    // emulation is on; the precache contents are asserted for every engine above, and
-    // real iOS offline behaviour is covered by QA's per-milestone device pass.
+    // Playwright's WebKit build cannot complete a navigation under offline emulation;
+    // offline availability on WebKit is asserted by the cache test above, and real iOS
+    // offline behaviour is covered by QA's per-milestone device pass.
     test.skip(browserName === 'webkit', 'WebKit cannot navigate with offline emulation');
     await activateServiceWorker(page);
 

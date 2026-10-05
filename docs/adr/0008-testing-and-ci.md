@@ -59,6 +59,10 @@ Artifacts: `trace: 'on-first-retry'`, `screenshot: 'only-on-failure'`,
 `video: 'retain-on-failure'`. Reporters are `list` + `html` locally, plus `junit`
 (`test-results/junit.xml`) and `github` in CI.
 
+**One retry in CI, none locally.** A single retry absorbs genuine infrastructure noise while
+still surfacing flake: a test that fails half the time passes a two-attempt run 75% of the
+time, but a three-attempt run 87.5% of the time — enough to hide it until it fails on `main`.
+
 ### Coverage
 
 v8 provider, `text` + `lcov` + `html`. Thresholds, not deltas, so a PR is never blocked by
@@ -81,7 +85,8 @@ browser matrix never hides a fast type error:
 
 1. **verify** — checkout, `setup-node@v5` with Node 24 and npm cache, `npm ci`, typecheck,
    lint, `test:coverage`, build, upload coverage.
-2. **e2e** — `npm ci`, `npx playwright install --with-deps`, `npm run e2e`, and on failure
+2. **e2e** — `npm ci`, `npx playwright install --with-deps chromium webkit` (only the
+   engines we have projects for), `npm run e2e`, and on failure
    upload both `playwright-report/` and `test-results/`.
 
 Concurrency is grouped per ref with `cancel-in-progress`, so pushing twice does not queue
