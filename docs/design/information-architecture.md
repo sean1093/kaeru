@@ -36,7 +36,9 @@ Two structural consequences:
 
 ```
 ┌──────────────────────────────────────────────┐
-│  首頁 Home   收據 Receipts   機場 Airport   指南 Guide  │
+│   首頁      收據       機場      指南        │
+│   Home    Receipts   Airport    Guide        │
+│    ▔▔                                        │
 └──────────────────────────────────────────────┘
 ```
 
