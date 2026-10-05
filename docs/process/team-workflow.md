@@ -60,6 +60,10 @@ The whole team publishes through the maintainer's single GitHub account, and Git
 - Approval: a comment that ends with `LGTM` from the reviewing role.
 - The author answers every point — fixed (with commit) or discussed — before merging.
 
+### Review the branch, not the branch against today's main
+
+With several people merging, `main` is usually ahead of any branch, and `git diff main..branch` shows their merged work as if this branch were reverting it. Review the GitHub diff, which already compares against the merge base, or run `git diff $(git merge-base origin/main HEAD)..HEAD` locally. A pull request that appears to revert a file nobody on it touched is almost always this, not a mistake.
+
 ## Definition of Done
 
 - Acceptance criteria of the issue are met.
