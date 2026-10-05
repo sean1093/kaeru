@@ -1,0 +1,63 @@
+/* components.md section 7. Every size shares font-variant-numeric: tabular-nums so a
+   total that re-renders never shifts. */
+
+.amount {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: flex-start;
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  font-weight: var(--weight-bold);
+}
+
+.tilde {
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+}
+
+.currency {
+  font-weight: var(--weight-regular);
+}
+
+.fee {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Sizes ---- */
+
+.hero .value {
+  font-size: var(--text-3xl);
+}
+
+/* The ¥ symbol is one step smaller and muted in the hero only, so the eye lands on the
+   digits — components.md section 7. */
+.hero .currency {
+  font-size: var(--text-xl);
+  color: var(--color-text-muted);
+}
+
+.large .value {
+  font-size: var(--text-2xl);
+}
+
+.body .value {
+  font-size: var(--text-base);
+}
+
+.small .value {
+  font-size: var(--text-sm);
+}
