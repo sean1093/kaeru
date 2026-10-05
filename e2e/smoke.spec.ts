@@ -147,11 +147,36 @@ test.describe('app shell', () => {
     expect(external).toEqual([]);
   });
 
+  /**
+   * Wait for the page to be *scannable*, not merely loaded.
+   *
+   * axe computes colour contrast from resolved styles. Run it before the first paint has
+   * settled and it cannot resolve an element's background, so it falls back to `#c0c0c0` — a
+   * grey that is in no palette of ours — and reports a contrast violation against a colour
+   * that never ships. The failure is real-looking, intermittent, and lands on the one test
+   * everybody is most tempted to retry past, which is how a genuine contrast regression would
+   * eventually be retried past too (#111).
+   *
+   * So this waits for signals the page actually emits — its own first heading, the font
+   * loading promise, and two animation frames to apply and paint any font-driven relayout —
+   * rather than for a duration, which would only move the race.
+   */
+  async function settleForScan(page: Page): Promise<void> {
+    await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve(undefined)));
+      });
+    });
+  }
+
   test('home and settings have no serious or critical accessibility violations', async ({
     page,
   }, testInfo) => {
     for (const route of ROUTES) {
       await page.goto(route);
+      await settleForScan(page);
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
         .analyze();
