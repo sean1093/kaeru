@@ -67,6 +67,8 @@ The whole team publishes through the maintainer's single GitHub account, and Git
 - Approval: a comment that ends with `LGTM` from the reviewing role.
 - The author answers every point — fixed (with commit) or discussed — before merging.
 - Before merging, the author confirms on the pull request that every change request has been resolved or answered. A squash merge closes the pull request and ends the thread, so an unaddressed point is not recoverable afterwards and is indistinguishable from an addressed one.
+- **An open change request blocks a merge, whatever else is on the pull request.** An LGTM answers "is this good?"; a change request answers "is this finished?". A merge gate that counts approvals cannot tell them apart, and with three or four reviewers on a pull request an outstanding change request is easy to lose in the count.
+- Before reporting a fix as pushed, check the pull request itself: `gh pr view <n> --json state,headRefOid`. A successful branch push and a pull request that carries the change are different facts; they come apart when the pull request is merged while you are mid-fix.
 
 ### Review the branch, not the branch against today's main
 
@@ -79,6 +81,15 @@ With several people merging, `main` is usually ahead of any branch, and `git dif
 - UI works in Traditional Chinese and English, on a phone-sized viewport, and meets WCAG 2.2 AA basics (contrast, labels, focus, target size).
 - Docs updated when behavior, rules, or architecture changed.
 - Reviewed by another role; QA verified for features.
+
+## Team norms
+
+Learned the hard way in M1; each one is checkable in review.
+
+- **When the product has a button, drive the button, not the primitive underneath it.** A test or a measurement that calls the internal API exercises code the traveler never runs (#102, #108).
+- **A conditional branch is unverified until it has run in the condition it exists for.** A filter that matches nothing, a suppression that never fires, a guard nothing tests, and a `test.fixme` all pass every build while protecting nothing (#91, #98). The release gate requires zero `test.fixme`.
+- **Read the artifact, not the message.** "Done", "pushed", and "deployed" are claims; the repository, the pull request state, and the CI run are facts. Two "reported done but not in the repository" incidents and a silently skipped deploy were all found this way (#100, #113, #114).
+- **Measure before forming an opinion; file rather than guess.** When two people disagree about behavior, the cheaper resolution is a probe, not a longer argument.
 
 ## Decisions
 
