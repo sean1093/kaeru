@@ -66,6 +66,7 @@ The whole team publishes through the maintainer's single GitHub account, and Git
 - Change request: list the required changes as a checklist.
 - Approval: a comment that ends with `LGTM` from the reviewing role.
 - The author answers every point — fixed (with commit) or discussed — before merging.
+- Before merging, the author confirms on the pull request that every change request has been resolved or answered. A squash merge closes the pull request and ends the thread, so an unaddressed point is not recoverable afterwards and is indistinguishable from an addressed one.
 
 ### Review the branch, not the branch against today's main
 
