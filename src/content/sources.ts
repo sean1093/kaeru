@@ -69,7 +69,7 @@ const SPECS: readonly SourceSpec[] = [
   },
   {
     id: 'jta-leaflet',
-    research: 'S5',
+    research: 'S26',
     title: {
       'zh-TW': '日本觀光廳．旅客用繁體中文說明單（PDF）',
       en: 'Japan Tourism Agency, traveler leaflet in English (PDF)',
@@ -93,15 +93,31 @@ const SPECS: readonly SourceSpec[] = [
     accessed: ACCESSED,
   },
   {
-    id: 'nta-leaflet',
+    id: 'nta-reform-leaflet',
     research: 'S7',
     title: {
+      'zh-TW': '日本國稅廳．免稅制度改為退款制說明（PDF，英文版）',
+      en: 'National Tax Agency, reform leaflet incl. the 90-day rule (PDF)',
+    },
+    url: {
+      'zh-TW': 'https://www.nta.go.jp/publication/pamph/shohi/menzei/202506/pdf/0025006-106.pdf',
+      en: 'https://www.nta.go.jp/publication/pamph/shohi/menzei/202506/pdf/0025006-106.pdf',
+    },
+    // No Chinese edition exists. A Taiwanese reader is better served the English edition,
+    // honestly marked as English, than a substitute document in their own language.
+    contentLang: 'en',
+    accessed: ACCESSED,
+  },
+  {
+    id: 'nta-caution-leaflet',
+    research: 'S27',
+    title: {
       'zh-TW': '日本國稅廳．給外國旅客的注意事項（繁體中文 PDF）',
-      en: 'National Tax Agency, English leaflet (PDF)',
+      en: 'National Tax Agency, traveler caution leaflet (PDF)',
     },
     url: {
       'zh-TW': 'https://www.nta.go.jp/publication/pamph/shohi/menzei/201805/pdf/caution_ct.pdf',
-      en: 'https://www.nta.go.jp/publication/pamph/shohi/menzei/202506/pdf/0025006-106.pdf',
+      en: 'https://www.nta.go.jp/publication/pamph/shohi/menzei/201805/pdf/caution_en.pdf',
     },
     contentLang: { 'zh-TW': 'zh-TW', en: 'en' },
     accessed: ACCESSED,
