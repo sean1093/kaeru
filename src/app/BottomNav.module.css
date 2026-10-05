@@ -1,6 +1,19 @@
 .nav {
   position: sticky;
   inset-block-end: 0;
+  /*
+   * A deliberate stacking context rather than an accidental one. The nav is a positioned
+   * element and would paint over in-flow content either way; saying so means the order is
+   * a decision someone can read, and it sits below the update prompt (2) and the skip
+   * link (3) on purpose.
+   */
+  z-index: 1;
+  /*
+   * Pinned to the declared floor, never to `--shell-nav-block-size`: that property is
+   * derived from this element's measured height, and a size that reads the measurement
+   * of its own size is a feedback loop.
+   */
+  min-block-size: calc(var(--tap-min) + 2 * var(--space-3) + 1px);
   background: var(--color-surface);
   border-block-start: 1px solid var(--color-border);
   box-shadow: var(--shadow-sheet);

@@ -1,6 +1,55 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 
+const ROUTES = ['./', './#/settings'] as const;
+const LOCALES = ['zh-TW', 'en'] as const;
+
+/**
+ * axe evaluates a page at whatever scroll offset it finds it in, so a persistent bottom
+ * bar makes `target-size` report every control beneath it as obscured. That report is
+ * true about the moment it was taken and says nothing about whether the control is
+ * operable, which is what SC 2.5.8 is about — and operability is asserted directly by
+ * TC-A11Y-017 below, over every control rather than the ones visible at one offset.
+ *
+ * Deliberately narrow: only `target-size`, and only when every node blamed for the
+ * obstruction is the navigation itself. Anything else covering a control is a real
+ * finding and still fails the build.
+ */
+function isChromeOverlapAtOneScrollPosition(violation: {
+  id: string;
+  nodes: readonly unknown[];
+}): boolean {
+  if (violation.id !== 'target-size') return false;
+  const blamed = (violation.nodes as { relatedNodes?: { target?: string[] }[] }[]).flatMap(
+    (node) => node.relatedNodes ?? [],
+  );
+  return (
+    blamed.length > 0 &&
+    blamed.every((node) => (node.target ?? []).some((selector) => selector.includes('bottom-nav')))
+  );
+}
+
+/**
+ * Runs in the page. Brings each interactive control into view the way a user would and
+ * reports the ones still intersecting the navigation afterwards.
+ */
+async function scrollEveryControlClear(): Promise<string[]> {
+  const bar = document.querySelector('[data-testid="bottom-nav"]');
+  if (!bar) return ['no persistent navigation on this route'];
+  const stuck: string[] = [];
+  for (const element of document.querySelectorAll('main button, main a, main [tabindex="0"]')) {
+    element.scrollIntoView({ block: 'center' });
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    const box = element.getBoundingClientRect();
+    const chrome = bar.getBoundingClientRect();
+    if (box.height === 0) continue;
+    if (box.bottom > chrome.top && box.top < chrome.bottom) {
+      stuck.push((element.textContent ?? '').trim().slice(0, 32));
+    }
+  }
+  return stuck;
+}
+
 test.describe('app shell', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('./');
@@ -75,19 +124,101 @@ test.describe('app shell', () => {
   test('home and settings have no serious or critical accessibility violations', async ({
     page,
   }, testInfo) => {
-    for (const route of ['./', './#/settings']) {
+    for (const route of ROUTES) {
       await page.goto(route);
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
         .analyze();
-      const blocking = results.violations.filter((violation) =>
-        ['serious', 'critical'].includes(violation.impact ?? ''),
-      );
+      const blocking = results.violations
+        .filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''))
+        .filter((violation) => !isChromeOverlapAtOneScrollPosition(violation));
       expect(
         blocking,
         `${testInfo.project.name} ${route}: ${JSON.stringify(blocking, null, 2)}`,
       ).toEqual([]);
     }
+  });
+
+  /**
+   * TC-A11Y-017. The gate that replaces axe's obscured-target finding, and the reason
+   * that finding can be set aside: it is strictly stronger. axe judges the controls that
+   * happen to be visible at one scroll offset; this judges every control on the route,
+   * and it still fails when a control genuinely cannot be cleared — a page too short to
+   * scroll past the bar, which is the real defect.
+   */
+  test('every interactive control can be brought clear of the persistent navigation', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 500 });
+    for (const locale of LOCALES) {
+      for (const route of ROUTES) {
+        await page.goto(route);
+        await page.getByRole('banner').getByTestId(`language-${locale}`).click();
+        const stuck = await page.evaluate(scrollEveryControlClear);
+        expect(stuck, `${locale} ${route}`).toEqual([]);
+      }
+    }
+  });
+
+  /**
+   * WCAG 2.2 SC 2.4.11, Focus Not Obscured. Scrolling a control into view is one way to
+   * reach it; tabbing to it is the other, and the two scroll by different machinery —
+   * `scroll-padding-block-end` is what makes the keyboard path land clear.
+   */
+  test('keyboard focus is never left underneath the persistent navigation', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 500 });
+    for (const locale of LOCALES) {
+      for (const route of ROUTES) {
+        await page.goto(route);
+        await page.getByRole('banner').getByTestId(`language-${locale}`).click();
+        await page.evaluate(() => {
+          document.body.focus();
+          window.scrollTo(0, 0);
+        });
+        const obscured: string[] = [];
+        // One pass through the document: the count is bounded by the controls present,
+        // and the loop stops when focus returns to where it started.
+        const total = await page.locator('a[href], button, [tabindex="0"]').count();
+        for (let step = 0; step < total + 2; step += 1) {
+          await page.keyboard.press('Tab');
+          const hit = await page.evaluate(() => {
+            const active = document.activeElement;
+            const bar = document.querySelector('[data-testid="bottom-nav"]');
+            if (!active || !bar || active === document.body) return null;
+            if (bar.contains(active)) return null;
+            const box = active.getBoundingClientRect();
+            const chrome = bar.getBoundingClientRect();
+            if (box.height === 0) return null;
+            return box.bottom > chrome.top && box.top < chrome.bottom
+              ? `${active.tagName}: ${(active.textContent ?? '').trim().slice(0, 32)}`
+              : null;
+          });
+          if (hit) obscured.push(hit);
+        }
+        expect(obscured, `${locale} ${route}`).toEqual([]);
+      }
+    }
+  });
+
+  /**
+   * TC-A11Y-016, as narrowed by the measurement behind this suite's methodology. The nav
+   * does paint over in-flow content mid-scroll — that is what sticky positioning is for —
+   * so the claim worth testing is about the end of the scroll: the content column
+   * reserves the bar's space rather than ending flush beneath it.
+   */
+  test('the content column reserves the navigation space at the end of the scroll', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 500 });
+    await page.goto('./#/settings');
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const gap = await page.evaluate(() => {
+      const last = [...document.querySelectorAll('main button, main a')].at(-1);
+      const bar = document.querySelector('[data-testid="bottom-nav"]');
+      if (!last || !bar) return Number.NaN;
+      return bar.getBoundingClientRect().top - last.getBoundingClientRect().bottom;
+    });
+    expect(gap).toBeGreaterThan(0);
   });
 });
 

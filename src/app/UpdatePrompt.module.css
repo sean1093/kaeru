@@ -1,7 +1,8 @@
 .prompt {
   position: fixed;
   inset-inline: var(--space-5);
-  inset-block-end: calc(var(--tap-min) + var(--space-7) + var(--safe-bottom));
+  /* Offsets from the nav's declared height, never from a hand-computed guess. */
+  inset-block-end: calc(var(--shell-nav-block-size) + var(--space-5) + var(--safe-bottom));
   z-index: 2;
   display: flex;
   flex-wrap: wrap;
