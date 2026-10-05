@@ -58,12 +58,15 @@ Likelihood and Impact on a 1–5 scale. **Risk score = L × I.** Scores ≥ 15 a
 | R18 | **GitHub Pages base-path breakage** — app works locally but 404s on `/kaeru/`, SW scope wrong | 3 | 4 | 12 | Production smoke suite runs against the deployed URL after each deploy to `main`; base-path asserted in build output | QA + Architect |
 | R19 | **Rules change and the shipped data is stale** — the 1% food rate for 2027-04-01 to 2029-03-31 is a cabinet decision whose bill has not passed (`UR-08`), and twelve rules are unsettled (`UR-01`…`UR-12`). Likely, but the blast radius is bounded because the values are dated data | 4 | 3 | 12 | Rules live as versioned, dated data resolved by `purchaseDate`; no rate, threshold or deadline constant appears in a conditional under `src/domain`; `@unconfirmed` tests pin behavior to the data file so a rule change is a data change. **Freshness is a scheduled check, not a PR gate:** a weekly workflow asserts the rules data `lastReviewed` date is within 180 days and opens an issue when it is not, so a stale date never turns a pull request red on a day nobody pushed | QA + Travel expert |
 | R20 | **Flaky test suite erodes trust** | 3 | 3 | 9 | No arbitrary `waitForTimeout`; role-based locators; one retry in CI only; a test that fails twice without a product cause is quarantined with an issue, never silently skipped | QA |
+| R21 | **The reassuring default** — a figure or state whose only purpose is to inform a decision, rendered with a stand-in value when the real one is unknown or does not apply, so the traveler is biased toward the worse decision and has no way to tell. Four instances in one week, in four modules: `feeNote: null` shown as `¥0`; `risk: 'none'` on an old-system receipt shown as a checked, comfortable deadline; an export estimate floored at "about 1 MB" on an empty device; and a tab badge selector that cannot yet compute returning `0`. Never crashes, never blanks, never errors — every existing assertion passes | 4 | 4 | 16 | **For every value that can be unknown or inapplicable, assert the unknown case specifically, and assert it renders distinguishably from a real value** — not that it renders without error. `undefined` means "no badge to show", never "nothing to show a badge about". See section 3.2 | QA + whoever owns the value |
 
-### Top 5 by score
+### Top by score
 
-R01 wrong refund estimate · R02 wrong threshold verdict · R03 wrong deadline · R04 IndexedDB data loss · R05 offline failure at the airport.
+R01 wrong refund estimate (20) · R02 wrong threshold verdict (20) · R03 wrong deadline (20) · **R21 the reassuring default (16)** · then a five-way tie at 15: R04 IndexedDB data loss, R05 offline failure at the airport, R06 stale app served by the service worker, R07 iOS Safari storage eviction, R08 failed import.
 
-These five define the non-negotiable automated coverage for M1 and M2.
+These define the non-negotiable automated coverage for M1 and M2.
+
+R21 entered above the tie on evidence rather than estimate: four instances in one week, none caught by a test, three caught by someone looking at a screenshot. Its likelihood is 4 because the shape is a *habit* — a default written to avoid showing a blank — not a mistake, so it recurs wherever a new value can be unknown.
 
 ---
 
@@ -101,18 +104,26 @@ Automation-first. Manual effort is reserved for what machines are bad at: real i
 - Query by role and accessible name first (`getByRole('button', { name: … })`). `data-testid` is the fallback for non-semantic containers only. This keeps accessibility load-bearing: if the test can't find it, a screen reader can't either.
 - Every component test renders in **both locales**, with a "longest realistic string" fixture per locale.
 - Assert observable output, never internal state or props plumbing.
+- **Any surface that holds a user-facing string in state gets a locale-switch test**: mount it holding the string — an error, a toast, a pending confirmation — switch locale, assert the text changed. `architecture/overview.md` requires state to store the **key** and translate at render, and that rule deliberately has no static guardrail: `setState(t('x'))` is catchable but a local, a helper, a reducer or a rejected promise two frames away is not, so a check would be loudest exactly where the risk is lowest and silent where it is highest. This test fails for every spelling, because it asserts the property (the traveler's language) rather than a syntax correlated with it.
+- **A live region needs the action done twice.** Writing the same string again is not a mutation, so nothing is announced the second time — and the correct text, the correct politeness and the correct position in the tree are all true in the broken version. Doing the thing twice is the only thing that separates them, and it is exactly what a confused person does. Assert that a second press produces a fresh announcement, not merely the right text.
 
 ### Guardrail test conventions
 
 Some domain rules are prohibitions rather than features. `DR-013` says the general-goods / consumables split must not exist; `DR-040`, `DR-044` and `DR-052` say the app must not talk to a network it does not own; `DR-041` caps a stored field at four characters; `DR-075` and `DR-078` say a validation finding must never block a save. There is nothing to build for any of them, so there is nothing a behavioural test can observe — and nothing stopping a later pull request from quietly violating one.
 
-These get **guardrail tests**: a small suite that reads the source tree and the bundled content instead of running the app (`src/guardrails.test.ts`, owned by `M1-5d` / issue #59).
+These get **guardrail tests**: a small suite that reads the source tree and the bundled content instead of running the app (`src/guardrails/`, owned by `M1-5d` / issue #59).
 
 - This is the **one** exception to "assert observable output, never implementation". The rule above exists to stop tests pinning wording or internal structure in place of behaviour. A prohibition has no behaviour to pin: static assertion is the only mechanism available, and the thing being protected is a published contract in `domain-rules.md`, not an implementation detail. Nobody may cite the general rule to delete this suite.
 - Every guardrail names the rule id it protects in its test title, so a failure explains itself to someone who has never read this document.
 - A guardrail asserts a **prohibition or an equality**, never a quality judgement. "No `fetch` outside the outbound-link helper" is a guardrail. "The code is clean" is not.
 - **No wall-clock assertions.** A guardrail that fails because a CI runner was busy is a flaky test, and under R20 a flaky test gets quarantined — which is exactly what must not happen to a guardrail. Keep the suite fast; do not assert that it is fast.
 - Where a guardrail needs exceptions, they live in an **explicit, documented allowlist** in the test file. Adding to the allowlist must be a visible diff that a reviewer can argue with. A guardrail with an implicit escape hatch protects nothing.
+- **When a guardrail fires, check whether something else already claims the opposite.** If it does, the allowlist is the wrong tool: one of the two claims is wrong, and the guardrail has found a **disagreement**, not a false positive. The gallery registered with `screenIds: []` so a development tool would stay out of the published inventory, then wrote `data-screen="DEV-GALLERY"` into the DOM. Allowlisting would have preserved the contradiction permanently, and it would have been an exception for exactly the case the rule describes. The attribute was deleted instead. Contrast the same file's `href` exemption, which is a genuine false positive: a specimen's link is fixture data for a component under glass, and nothing else claims the gallery has no links.
+- **Narrowing the scanned input is not loosening the pattern.** Stripping SVG path data before scanning for rule constants is legitimate, because markup geometry can never be a rule constant — but only as a *closed class*, never as a per-file exemption. An exemption list that grows each time a new icon appears becomes the escape hatch, because every entry arrives as the fix for a failing guardrail.
+- **Every matcher needs a positive control**: assert it fires on a known violation, using the **same pattern object** the rule uses rather than a copy beside the fixture. A pattern that matches nothing is indistinguishable from a codebase that is clean, and a control that re-declares the pattern proves only that the copy works. This is R21 turned on our own instruments (section 3.2).
+- **A gate that watches one spelling of a thing teaches people the other spellings.** `test.fixme` has `describe.fixme` and `skip(true)` beside it; ban the family, not the member. The same argument favours closed unions over strings, and asserting a mechanism over one of its consequences.
+- Prefer the **real enforcement** where one exists. A guardrail duplicating a check the application already performs at boot is weaker than the check and will drift from it: delete the guardrail. One was deleted this way during #59 — the feature registry already validates every route pattern against the published inventory, in the running app.
+- Record what the suite **cannot** cover, in two lists: not machine-checkable (checked in review, say where), and checkable-but-unwritten. Collapsed into one list, the un-checkable rules make the gap look permanent and the gap makes the un-checkable rules look like laziness. Membership of the first list is a claim about our imagination, not a property of the rule.
 
 ### 3.1 What the suite cannot prove
 
@@ -121,6 +132,71 @@ Written down because a known limit is cheaper than rediscovering it under pressu
 - **No real device has run this app, and no screen reader has read it.** This team has no iPhone, no Android handset, no VoiceOver and no TalkBack. Emulation reproduces a viewport, a user agent and an engine; it does not reproduce iOS Safari's storage eviction, PWA install behaviour, camera and HEIC file input, safe-area insets on real hardware, or memory pressure. An accessibility-tree snapshot shows what a screen reader is *handed* — it cannot show what it announces, how gestures navigate, or whether a live region is heard at the moment it matters. `setOffline` is a network emulation, not a radio. `R07` (genuine quota and eviction) and `R14` (iOS install quirks) are therefore **open residual risks carried into launch**, and `R06` has no automated coverage on WebKit at all because Playwright's WebKit does not expose the worker lifecycle. None of this is a reason to withhold the release; it is a reason the release report must say so rather than let a green suite imply otherwise.
 - **A conditional branch is unverified until it has run in the condition it exists for.** Green tests are evidence about the paths those tests take. A branch that exists for a rare case — a filter, a fallback, an error path — is exercised by nothing in a normal run, so an always-false predicate and a working one are indistinguishable in every build we have ever seen. This is not hypothetical: the axe obstruction filter shipped in #91 matched nothing, passed every build, and protected nothing, because `main` produces no `target-size` finding. A rare branch needs a test that **manufactures** the rare case, not a green suite around it.
 - **We cannot reproduce a genuine quota or eviction failure.** `fake-indexeddb` has no quota, so `TC-DATA-006` and `TC-DATA-007` exercise our handling of a simulated error rather than the browser's behaviour when a device actually fills up. `R07` therefore still depends on a real device, and no green suite is evidence about what happens at a real storage ceiling.
+- **`TC-A11Y-016` and `TC-A11Y-017` did not bind between M0 and #141, and `R11` is less covered than a green suite implies.** Both `E2E_ROUTES` entries are shorter than a viewport and a sticky bar stays *in flow*, so at full scroll the content already clears it — with or without the padding either case exists to check. Restoring the original M0 content-padding defect left the whole smoke suite green. This matters more than one gap because `TC-A11Y-017` is the **compensating control** that justified filtering axe's `target-size` finding in #91, argued there as *strictly stronger than the scan it replaces*: a real finding was suppressed and its replacement could never fail. **A new variant of the fixture problem** — the test did not construct the arrangement, the *route inventory* did, and nobody edits route data thinking about an accessibility assertion three files away. Until #141 closes, no release report may present the accessibility suite as evidence about obscured targets.
+
+#### What reads this back?
+
+Six mechanisms this week were **present, correct-looking, commented, green — and inert or false.** Not untested: every one sat inside a passing suite.
+
+| Mechanism | What it was | What read it back |
+|---|---|---|
+| `cancel-in-progress: false` on `main` | a flag stating an intent | nothing — runs on `main` were cancelled for seven weeks |
+| The axe obstruction filter (#91) | a filter over findings | nothing — `main` produces no `target-size` finding, so it matched an empty set |
+| `BottomSheet`'s `inert` loop (#121) | a loop over background nodes | nothing — the sheet rendered inside `#app`, so the filter removed the only candidate |
+| The global `testIgnore` | a config key | nothing — a project-level sibling **replaces** it rather than extending it |
+| `BottomSheet`'s own inert test | an assertion | nothing real — the fixture appended a div to `<body>`, constructing the one DOM shape where the broken code works |
+| #113's blocker-uniqueness assertion | an assertion with teeth | nothing — it was **false**: a high-value receipt in a checked bag belongs under two blockers, and the fixture could not reach the case |
+
+**The question to ask in review is "what reads this back?"** Each of the six answers "nothing", and each answer was available when the code was written rather than after the incident. That is cheap enough to apply every time, which is the only property that matters.
+
+Five things follow, each paid for:
+
+- **A correct comment is evidence about intent and none at all about effect.** Three of the six had comments that accurately described what the code was *for*. A reader checks that the code matches the comment, agrees that it does, and never asks whether the code does anything. The comment is what made them invisible.
+- **When two mechanisms produce the same observable, a test of the observable is not a test of either of them.** The keyboard focus-trap and `inert` both yield "focus stays in the sheet"; writing and re-writing a live region both yield "the region contains the right text". In both cases the broken one was the one serving the population we cannot test — which is not a coincidence, because the mechanism that is easy to observe is the one that exists for the users we can see. **Assert the mechanism**: `expect(document.getElementById('app')?.hasAttribute('inert')).toBe(true)`, not "focus stayed inside".
+- **Mutation proves an assertion has teeth; it says nothing about whether the assertion is true.** These are two independent checks and we have been treating one as sufficient. *Break the code, does the test fail?* establishes that the test catches **this** bug. *Construct the case the assertion forbids but the product should allow, does the test fail?* establishes that the assertion is **right**. #113's uniqueness assertion passed the first and failed the second: reverting the predicate turned it red, and it was still a false claim about the function — a high-value receipt in a checked bag belongs under two blockers, because taking it out of the bag and finding its certificate are different jobs. **A false assertion with teeth is worse than no assertion**, because it is load-bearing and nobody will touch it. Note which of the two needs imagination: mutation is mechanical, the counterexample is the case the author could not see from inside their own fixture — so it is the check that needs **another person**. Both of this week's instances were caught by a reviewer constructing a case the author had not conceived, and both authors had written the warning about it hours earlier. That is the strongest argument available against anything that reduces independent eyes on a change, and it is worth having written down before throughput is the pressure rather than during.
+- **Does this test construct the thing it is testing?** A fixture that manufactures the production condition is worse than no test, and it is a **third** check — it survives both of the others. `BottomSheet`'s inert test asserted `behind.inert === true` on a `<div>` the test itself appended to `document.body`; in production the sheet rendered inside `#app`, body's only element child, so the code marked nothing, ever, in any app, on any route. **Mutation passes it**: break the implementation and it goes red, because it is a faithful test of the code — just not of the situation. **The counterexample finds nothing**: there is no input the assertion forbids and the product allows, because the assertion was true, of its own fixture. The failure is upstream of both, and the harm is not that the test was weak — *its existence is why nobody looked.* A green assertion on a mechanism with no visible output converts an open question into a closed one.
+  - **When to ask it:** a test that passes first time against a mechanism you cannot see — `inert`, focus, a live region, a service worker, an `aria` relationship. If the test had to construct the arrangement, it has tested the arrangement.
+  - **Assert the mechanism, not a specific element**, because which element carries it differs between production and the test environment: `document.querySelectorAll('[inert]').length` rather than `#app.inert`.
+  - **Sometimes the implementation must accommodate the instrument.** `inert` as an attribute rather than a property, because the property does not reflect in jsdom — otherwise the correct fix makes the correct test red, and the natural reaction is to weaken the test, which lands everyone back believing it was checked.
+
+And one convention for the other direction: **a defensive branch that looks redundant must say what breaks when it is removed** — in the imperative, at the line where the removal would happen. Four instances already: the `IGNORED` constant each Playwright project spreads, `playwright.config.ts`'s per-project `testIgnore`, the registry's `undefined` filter, and `BottomSheet` restoring only the nodes it marked. All four read as tidy-up bait, and the comment is the only thing standing between them and a simplification. The `testIgnore` one is the sharpest, because the tidy-up **reintroduces the bug** rather than merely losing a protection: a project-level `testIgnore` *replaces* the global one, so deleting the repetition as redundant is what caused the production smoke to run on pull requests in the first place.
+
+### 3.2 The reassuring default (R21)
+
+The failure class our assertions are worst at, because the wrong value is **inside the range of plausible right values**.
+
+> A figure or state whose only purpose is to inform a decision is rendered with a stand-in value when the real one is unknown or does not apply — so the traveler is biased toward the worse decision and has no way to tell.
+
+Four instances in one week, in four modules:
+
+| Where | Shown | Reads as | Why it is invisible |
+|---|---|---|---|
+| `Operator.feeNote: null` | `¥0` | "no fee will be deducted" | some operators genuinely might not charge |
+| `DeadlineStatus.risk: 'none'` on an old-system receipt | a comfortable deadline | "we checked, you are fine" | most receipts do have comfortable deadlines |
+| Export size estimate floored at 1 MB on an empty device | "about 1 MB" | "photos cost a megabyte" | backups with photos are large |
+| A tab badge selector that cannot yet compute returning `0` | `0 need action` | "nothing is outstanding" | most of the time nothing is |
+
+What makes it one class rather than four bugs:
+
+1. **It never crashes, never blanks, never errors.** Every existing assertion passes. There is nothing for "does it render" or "is it non-empty" to catch.
+2. **The traveler cannot detect it.** `¥0` is a number a fee could be; "about 1 MB" is a size a backup could be.
+3. **It is always a shortcut that looks like politeness** — a default, a floor, a coalesce. Nobody writes it carelessly; they write it to avoid showing a blank.
+4. **The harm direction is consistent**: it biases the traveler toward the action we were trying to inform them about. The reassuring answer is the wrong one, so nothing prompts them to question it.
+
+**The convention.** For every value that can be unknown or inapplicable, assert the unknown case **specifically**, and assert that it renders **distinguishably** from a real value. Not "renders without error" — distinguishable. That is the assertion all four would have failed.
+
+Corollaries, each from a real instance:
+
+- A sentinel means one thing. `undefined` means "no badge to show"; it never also means "nothing to show a badge about". A selector that cannot answer returns `undefined`, never `0`.
+- A floor on an estimate is a lie at the bottom of its range. If the honest answer is "nearly nothing", say nearly nothing.
+- "Does not apply" and "is fine" are different states and must render differently. An old-system receipt has no deadline to be comfortable about.
+- A field that means two things is the same defect wearing a type. So is an inherited setting a child can silently *replace* rather than extend — it reads as additive at every call site and is not.
+- **The structural half, from `architecture/overview.md`:** a value that can be unknown says so in its **type**, and nothing downstream may substitute a plausible one. `DeadlineRisk` carries `not_applicable` as a member distinct from `none`; `fees: []` means unknown, never zero. A type that cannot express "unknown" guarantees someone will encode it as a real value. And the absence is the rendering, not a slot to fill: the correct rendering of a count that cannot be computed is **no badge at all** — not zero, not a dash, not a skeleton that resolves to zero. A dash reads as "none" to every traveler who sees it.
+- **It applies to our own instruments too, and that is the instance most likely to survive.** A guardrail whose pattern matches nothing is indistinguishable from a clean codebase; a smoke test that matched zero cases exits 0. Every other instance of R21 misleads a traveler about money or time; this one misleads *us* about whether we are protected — and it is the one nobody is downstream of, so nothing surprises anyone into checking. The answer is a positive control: assert the matcher fires on a known violation, using the same pattern object the rule uses, never a copy.
+
+**The badge case is the one still preventable, and it is the most severe.** The other three mislead about money; that one can mislead about the airport. A false `0` at first paint on departure day hides `DR-077` (goods still in checked baggage) and `DR-030` (unconfirmed items) — the two failures that are silent and irreversible, because once the bag is handed over the airline will not retrieve it and nothing afterwards recovers the refund. One paint cycle, on the one screen read while walking into a terminal.
+
+**Why a convention and not three test cases.** Three of the four were caught by a person looking at a 390 px capture. That is luck with good people attached, and it does not scale to the fourth. The point of writing the class down is that the next instance is caught by a habit.
 
 ### E2E conventions
 
@@ -132,13 +208,17 @@ Written down because a known limit is cheaper than rediscovering it under pressu
 - No `waitForTimeout`. Wait for a state, not for a duration.
 - **Artifacts:** `trace: 'on-first-retry'`, `screenshot: 'only-on-failure'`, `video: 'retain-on-failure'`. CI uploads `playwright-report/` and `test-results/`. Reporters: `list` + `html` locally; `junit` + `github` added in CI.
 - **Screenshots on PRs:** every UI-affecting PR attaches screenshots in **both** zh-TW and en at a 390 px-wide viewport. Playwright writes them to `test-results/screenshots/`; the author drags them into the PR body.
+- **And the author looks at them before requesting review.** Attaching is not reading. In one week three defects were found this way and by nothing else: an export estimate reading "about 1 MB" on an empty device, a clipped tagline that claimed we *are* the refund service, and a sticky footer covering the "not sure yet" option in the operator list — the one a traveler who cannot find their operator needs most. All three were a value that was **wrong rather than absent**, which is the class an assertion is worst at, because you must already suspect the value to check it (R21, section 3.2). All three were visible in one glance at a capture the PR already had.
+- **Capture the smallest supported width too when a surface is scrollable or has sticky chrome.** 320 px is where a sticky footer eats proportionally the most of a short list, and where font-driven relayout is largest. If a control is reachable there, it is reachable everywhere.
 
 ### Accessibility conventions
 
 - `@axe-core/playwright` on every route and on open dialogs/sheets. **Gate: zero `serious` or `critical` violations.** `moderate`/`minor` are filed as issues with a deadline, not merged away by suppression.
 - Suppressions require a comment with a reason and a linked issue. A naked `.disableRules()` fails review.
+- **A suppression must name the control that replaces it, in the file, so the pair is testable together.** `a11y-filters.ts` says *delete that test and this filter loses its justification; they are meant to fail together* — and that sentence is the only reason the inert `TC-A11Y-017` was findable at all. An undocumented filter leaves nothing to restore and nothing to check against, so the question "is this suppression still justified?" has no procedure and gets answered by whoever finds the filter inconvenient.
 - **Obscured-target findings are measured where the user can be.** A sticky bottom navigation covers whatever is beneath it at a given scroll offset — that is what sticky positioning is for, and what every mobile tab bar does. An axe scan evaluates at one scroll position, so it reports a true statement (*this target is obscured at scroll 0*) about a state the user is never stuck in. The property WCAG 2.5.8 protects is **operability**, so that is what we assert: `TC-A11Y-017` scrolls **every** interactive control on every route into view and requires it to land completely clear of the persistent chrome. That is strictly stronger than the axe scan it replaces for this one rule — it checks every control rather than only those visible at one offset — and it still fails the build, on the real 390 px viewport, when a control genuinely cannot be cleared.
 - **What that is not.** It is not a suppression: no rule is disabled and no selector is scoped out. It is also not "scan at a taller viewport" — inflating the viewport until a finding disappears is a suppression wearing a costume, and it would leave the scan structurally blind to every scroll-dependent problem on the only viewport the product ships to. Nor is it "scan after scrolling to the bottom", which is as arbitrary a single position as scroll 0. Same reasoning as the offline rule above: a test run in a state the user cannot reach tests nothing and fails for the wrong reason.
+- **And the claim above was wrong when it was written, which is why it is still here rather than deleted.** "Strictly stronger than the axe scan it replaces" was argued on #91 and was false: both routes in `E2E_ROUTES` are shorter than a viewport and a sticky bar stays in flow, so `TC-A11Y-017` could not fail on any route the product had. The filter suppressed a real class of finding and its replacement was a tautology — **a compensating control is not a control until it has been watched failing.** Tracked as #141. Before a filter, a suppression or a replacement is accepted anywhere in this suite, restore the defect it is meant to catch and watch the replacement go red; if it cannot be made to, the filter is suppression and must be removed rather than justified.
 - Automated checks catch roughly a third of real barriers. We cover as much of the rest as emulation allows: accessibility-tree snapshots per screen per locale, keyboard-only traversal, visible focus, 200% text and 320 px reflow, and target size ≥ 24 px (WCAG 2.2 AA, 2.5.8). What that leaves uncovered is in §3.1 and it is not small.
 
 ---
@@ -190,6 +270,8 @@ Extends the DoD in [team-workflow.md](../process/team-workflow.md). A PR is done
 
 - [ ] Tests added or updated at the right level (domain logic → unit; UI state → component; journey → E2E). A bug fix includes a test that fails without the fix.
 - [ ] New or changed numeric/date rules have boundary tests on both sides of the boundary.
+- [ ] **The green check ran after the last thing that landed under you.** A check is a claim about the merge base it ran against, not about `main`. Four times in one day a branch was green against a base that `main` had moved past, and one of them squashed green and landed `main` red. Confirm the branch is current — `git merge-base --is-ancestor origin/main HEAD` — and state the SHA you verified at when you stamp.
+- [ ] **Every value that can be unknown or inapplicable has a test for that case, asserting it renders distinguishably from a real value** (R21, section 3.2). "It renders without error" does not satisfy this. If a value can only ever be known, say so in the PR.
 - [ ] CI is green, including the full E2E matrix and axe; no new flaky test introduced.
 - [ ] Coverage gate holds (`src/domain` ≥ 90% lines/branches from M1).
 - [ ] UI changes include screenshots in **zh-TW and en** at a phone viewport.
@@ -210,6 +292,8 @@ Extends the DoD in [team-workflow.md](../process/team-workflow.md). A PR is done
 3. **Fix** on a `fix/…` branch with a regression test that fails before the fix.
 4. **Verify** — QA reproduces the original steps on the merged build and comments the result. Only QA closes a bug.
 5. **Regression** — if a fixed bug returns, it is reopened with the `regression` label and the missing test is treated as the real defect.
+
+**Infrastructure failures are not defects and must never be filed as one.** A saturated runner queue produces a red check with no logs — `"The job was not acquired by Runner of type hosted"` — which presents as an ordinary failure, and a `cancelled` beside a `success` on `main` is a run dropped from its concurrency group rather than anything breaking. **The one-look test: a real failure has logs.** If `gh run view --log-failed` is empty and no step ran, it is the runner. Re-run a *completed, failed* run; never dispatch a second run on a commit whose run is pending or in flight, because the newer run drops the older and you get a `cancelled` that looks like a failure. Filing one of these as a product bug even once starts the register filling with noise, and a register people stop reading is worse than no register.
 
 ### Severity
 
@@ -264,10 +348,13 @@ Run before every release to `main` that users will see. Matrix: **2 languages ×
 - [ ] No truncation or overflow at 320 px and at 200% text size.
 - [ ] Dates, currency, and numbers formatted correctly for the locale.
 
-**Per device class (iPhone Safari, Android Chrome, desktop)**
+**Per emulated device class (`iphone-webkit`, `pixel-chromium`, `desktop-chromium`)**
+
+Emulation, not hardware. These three are Playwright projects: a viewport, a user agent and an engine. Read every box below as "passes under emulation".
+
 - [ ] Core journey: create trip → log receipt → see pending refund → airport checklist → mark refunded.
-- [ ] Install to home screen works; standalone launch keeps the data; safe areas respected.
-- [ ] Photo/file input works, including HEIC on iOS, and failure is graceful.
+- [ ] Install to home screen works; standalone launch keeps the data; safe areas respected. **Emulated only** — real iOS install behaviour is `R14` and is unverified.
+- [ ] Photo/file input works and failure is graceful. **HEIC on real iOS is not covered** (`R15`); the fixture is a file, not a camera.
 
 **Offline**
 - [ ] Airplane mode: cold start, airport checklist, logging a receipt, switching language — all work.
@@ -275,9 +362,21 @@ Run before every release to `main` that users will see. Matrix: **2 languages ×
 
 **Accessibility**
 - [ ] axe: zero serious/critical on every route.
-- [ ] Accessibility-tree snapshot reviewed for every screen in both locales. **State in the report that no screen reader was run**, and that a VoiceOver and TalkBack pass is the first thing a human tester should do.
+- [ ] Accessibility-tree snapshot reviewed for every screen in both locales.
 - [ ] Keyboard-only traversal; visible focus everywhere; target size ≥ 24 px.
 - [ ] Contrast verified against the final palette, including disabled and error states.
+
+**Not performed by this team, and not to be implied**
+
+Every ticked box above is evidence about emulation. These are the gaps, and they are the first work a human tester should do, in this order:
+
+- [ ] **Real iPhone (Safari) and real Android (Chrome).** Nobody here has a device. Emulation does not reproduce iOS Safari storage eviction, PWA install behaviour, the camera and HEIC file input, safe-area insets on hardware, or memory pressure.
+- [ ] **VoiceOver and TalkBack.** An accessibility-tree snapshot shows what a screen reader is *handed*; it cannot show what it announces, how gestures navigate, or whether a live region is heard at the moment it matters.
+- [ ] **Airplane mode on hardware.** `setOffline` is a network emulation, not a radio.
+- [ ] **A real storage ceiling.** `fake-indexeddb` has no quota (`R07`); we exercise our handling of a simulated error, never the browser's behaviour at a real limit.
+- [ ] **Service-worker update on WebKit** (`R06`). Playwright's WebKit does not expose the worker lifecycle, so the update suite is Chromium-only. iOS is unverified.
+
+**The release report repeats this list rather than citing it.** A reader who sees only the ticked boxes would conclude a device pass happened, and nobody would know to look. That is the one failure this document exists to prevent: an honest gap is recoverable by whoever picks it up, a false claim is not.
 
 **Data and privacy**
 - [ ] Export → fresh profile → import restores everything exactly.

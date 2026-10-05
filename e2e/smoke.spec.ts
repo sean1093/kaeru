@@ -1,59 +1,10 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 import type { Result } from 'axe-core';
+import { isChromeOverlapAtOneScrollPosition } from './a11y-filters.ts';
 
 const ROUTES = ['./', './#/settings'] as const;
 const LOCALES = ['zh-TW', 'en'] as const;
-
-/**
- * axe evaluates a page at whatever scroll offset it finds it in, so a persistent bottom
- * bar makes `target-size` report every control beneath it as obscured. That report is
- * true about the moment it was taken and says nothing about whether the control is
- * operable, which is what SC 2.5.8 is about.
- *
- * This filter exists only because something stronger replaces it. TC-A11Y-017 — the test
- * `every interactive control can be brought clear of the persistent navigation` below,
- * specified in docs/qa/test-cases.md and reasoned through in PR #91 — asserts operability
- * over every control on the route rather than the ones visible at one offset, and it still
- * fails the build when a control genuinely cannot be cleared. Delete that test and this
- * filter loses its justification; they are meant to fail together.
- *
- * Deliberately narrow: only `target-size`, and only when every node blamed for the
- * obstruction resolves to an element inside the navigation. Anything else covering a
- * control is a real finding and still fails the build.
- *
- * It asks the DOM rather than reading axe's selector text. The first version of this
- * matched `selector.includes('bottom-nav')` and silently matched nothing: axe generates
- * whatever selector it finds shortest, which for these nodes is `a[data-testid="nav-home"]`
- * and `a[href$="#/settings"]`, and it changed strategy the moment `aria-current` appeared.
- * The selector string is an implementation detail axe never promised; "is this element
- * inside the nav" is a question only the document can answer.
- */
-function nodesBlamedForObstruction(violation: Result): readonly string[] {
-  const related = violation.nodes.flatMap((node) =>
-    [...node.all, ...node.any, ...node.none].flatMap((check) => check.relatedNodes ?? []),
-  );
-  // `target` is one selector per frame; these pages have no cross-frame content, so the
-  // last entry is the one that resolves in the main document.
-  return related.map((node) => {
-    const last = (node.target as unknown as (string | readonly string[])[]).at(-1);
-    return Array.isArray(last) ? (last.at(-1) ?? '') : ((last as string) ?? '');
-  });
-}
-
-async function isChromeOverlapAtOneScrollPosition(page: Page, violation: Result): Promise<boolean> {
-  if (violation.id !== 'target-size') return false;
-  const selectors = nodesBlamedForObstruction(violation);
-  if (selectors.length === 0) return false;
-  return page.evaluate(
-    (list) =>
-      list.every(
-        (selector) =>
-          document.querySelector(selector)?.closest('[data-testid="bottom-nav"]') != null,
-      ),
-    selectors as string[],
-  );
-}
 
 /**
  * Runs in the page. Brings each interactive control into view the way a user would and
@@ -134,6 +85,19 @@ test.describe('app shell', () => {
     await expect(page.getByTestId('not-found')).toBeVisible();
   });
 
+  /**
+   * The gate for the gallery's bundle-absence claim (M1-3a #23, M1-3e #27): the dev-only
+   * gallery route (`src/features/gallery/**`) registers only behind
+   * `import.meta.env.DEV`, so against this production build `/dev/gallery` is simply an
+   * unregistered route and renders the same not-found screen as any other one. Checking
+   * this here, against the real production build the three projects above test, is the
+   * difference between a claim in a PR body and an assertion CI enforces on every change.
+   */
+  test('the dev-only gallery route does not exist in the production build', async ({ page }) => {
+    await page.goto('./#/dev/gallery');
+    await expect(page.getByTestId('not-found')).toBeVisible();
+  });
+
   test('no third-party requests are made on any route', async ({ page }) => {
     const external: string[] = [];
     page.on('request', (request) => {
@@ -149,11 +113,36 @@ test.describe('app shell', () => {
     expect(external).toEqual([]);
   });
 
+  /**
+   * Wait for the page to be *scannable*, not merely loaded.
+   *
+   * axe computes colour contrast from resolved styles. Run it before the first paint has
+   * settled and it cannot resolve an element's background, so it falls back to `#c0c0c0` — a
+   * grey that is in no palette of ours — and reports a contrast violation against a colour
+   * that never ships. The failure is real-looking, intermittent, and lands on the one test
+   * everybody is most tempted to retry past, which is how a genuine contrast regression would
+   * eventually be retried past too (#111).
+   *
+   * So this waits for signals the page actually emits — its own first heading, the font
+   * loading promise, and two animation frames to apply and paint any font-driven relayout —
+   * rather than for a duration, which would only move the race.
+   */
+  async function settleForScan(page: Page): Promise<void> {
+    await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve(undefined)));
+      });
+    });
+  }
+
   test('home and settings have no serious or critical accessibility violations', async ({
     page,
   }, testInfo) => {
     for (const route of ROUTES) {
       await page.goto(route);
+      await settleForScan(page);
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
         .analyze();

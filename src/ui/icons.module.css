@@ -1,0 +1,7 @@
+/* Glyphs size to the text around them, so a 24 px icon becomes a 48 px icon at 200 %
+   text scale instead of shrinking into the layout. */
+.icon {
+  inline-size: 1em;
+  block-size: 1em;
+  flex: none;
+}

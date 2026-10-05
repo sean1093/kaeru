@@ -78,9 +78,18 @@ export function collectFeatures(entries: readonly FeatureV2[]): readonly Feature
       }
       byPattern.set(route.pattern, feature.id);
 
-      // The inventory in `screens.ts` is the published route table (IA section 3.1). A
-      // feature that invents a pattern has forked it, and the fork is invisible until a
-      // cross-track `pathTo` link lands on a route nobody registered.
+      /**
+       * The inventory in `screens.ts` is the published route table — `information-
+       * architecture.md` section 3.1, the product's own 46 screen ids. A `/dev/`-
+       * prefixed pattern is exempt from every check below that consults it: a
+       * development-only harness (the UI kit gallery) is deliberately absent from that
+       * table, not an omission to fix. The exemption is the path prefix, not the feature
+       * id, so a product feature cannot acquire it by naming itself something that
+       * sounds like a tool. Duplicate-pattern and duplicate-screen-id checks above still
+       * apply to it — only the "is this in the published product IA" checks do not.
+       */
+      if (route.pattern.startsWith('/dev/')) continue;
+
       const known = ROUTE_DEFINITIONS[route.pattern];
       if (!known) {
         throw new Error(

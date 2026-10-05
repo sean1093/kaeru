@@ -1,41 +1,110 @@
+/* components.md section 3. Every length is a token or a sum of tokens: the design doc's
+   48 / 56 / 40 px heights are --space-10, --space-10 + --space-3 and --space-9. */
+
 .button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  min-block-size: var(--tap-min);
-  padding: var(--space-3) var(--space-6);
+  min-block-size: var(--space-10);
+  min-inline-size: var(--tap-min);
+  padding: var(--space-4) var(--space-5);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
+  background: none;
+  font: inherit;
   font-size: var(--text-base);
   font-weight: var(--weight-medium);
   line-height: var(--leading-tight);
+  text-align: center;
+  text-decoration: none;
+  /* English labels wrap to two lines; they are never truncated. */
+  overflow-wrap: anywhere;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-instant) var(--ease-standard);
 }
 
-.button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--space-1);
 }
+
+/* ---- Sizes ---- */
+
+.airport {
+  min-block-size: calc(var(--space-10) + var(--space-3));
+}
+
+.inline {
+  min-block-size: var(--space-9);
+  padding-block: var(--space-3);
+}
+
+/* The painted control is smaller than the 44 px minimum, so the hit area is extended
+   rather than the visual (WCAG 2.2 2.5.8). */
+.inline::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block: calc((var(--tap-min) - var(--space-9)) / -2);
+}
+
+/* ---- Variants ---- */
 
 .primary {
   background: var(--color-primary);
   color: var(--color-on-primary);
 }
 
-.primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.quiet {
-  background: var(--color-surface);
-  color: var(--color-text);
+.secondary {
+  color: var(--color-primary);
   border-color: var(--color-border-strong);
 }
 
-.quiet:hover:not(:disabled) {
+.quiet {
+  color: var(--color-primary);
+}
+
+.destructive {
+  background: var(--color-attention);
+  color: var(--color-on-attention);
+}
+
+/* ---- States ---- */
+
+@media (hover: hover) {
+  .primary:hover:not(:disabled, [aria-disabled="true"]) {
+    background: var(--color-primary-hover);
+  }
+
+  .secondary:hover:not(:disabled, [aria-disabled="true"]),
+  .quiet:hover:not(:disabled, [aria-disabled="true"]) {
+    background: var(--color-primary-soft);
+  }
+}
+
+.button:active:not(:disabled, [aria-disabled="true"]) {
+  transform: scale(0.98);
+}
+
+.primary:active:not(:disabled, [aria-disabled="true"]) {
+  background: var(--color-primary-hover);
+}
+
+.secondary:active:not(:disabled, [aria-disabled="true"]),
+.quiet:active:not(:disabled, [aria-disabled="true"]) {
+  background: var(--color-primary-soft);
+}
+
+.button:disabled,
+.button[aria-disabled="true"] {
   background: var(--color-bg-sunken);
+  color: var(--color-text-subtle);
+  border-color: transparent;
+  cursor: not-allowed;
 }
 
 .full {

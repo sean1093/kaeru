@@ -1,0 +1,61 @@
+/* components.md section 1. 56 px is --space-10 + --space-3; the bar grows with the text,
+   so the height is a minimum, never a fixed box. */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: calc(var(--space-10) + var(--space-3));
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  background: var(--color-bg);
+  /* Only the shadow moves between flat and raised: a 1 px, opacity-equivalent change. */
+  transition: box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.elevated {
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-raised);
+}
+
+.title {
+  flex: 1;
+  min-inline-size: 0;
+  margin: 0;
+  padding-inline: var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+  /* Two lines, then clipped — never an ellipsis, which hides the end of a screen name. */
+  max-block-size: calc(var(--leading-tight) * 2em);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  inline-size: var(--tap-min);
+  block-size: var(--tap-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text);
+  font-size: var(--text-xl);
+  cursor: pointer;
+}
+
+.iconButton:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--space-1);
+}
+
+@media (hover: hover) {
+  .iconButton:hover {
+    background: var(--color-bg-sunken);
+  }
+}

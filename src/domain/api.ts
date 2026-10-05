@@ -289,7 +289,16 @@ export interface TravelerChecklist {
   travelerId: TravelerId;
   receipts: readonly Receipt[];
   taxExcludedTotal: Jpy;
-  /** Receipts needing the human counter rather than the kiosk (DR-035, S36). */
+  /**
+   * Receipts that must be declared to a customs officer rather than put through the kiosk
+   * (`DR-035`, S36).
+   *
+   * Derived from the **fact** that the goods are not all present together with the
+   * recorded intention to use them in Japan — never from the intention alone. `UJ-008`
+   * makes `willUseInJapan` a prediction made in a shop that explicitly does not change a
+   * receipt's status: someone who ticked it on day 1 and carried the box home unopened
+   * must not be sent to a counter queue for a refund they are entitled to.
+   */
   routedToCounter: readonly Receipt[];
   /** Receipts whose goods are in a checked bag, which is the mistake that costs money (DR-032). */
   inCheckedBag: readonly Receipt[];
@@ -314,7 +323,7 @@ export type AirportBlockerKey =
   | 'blocker.packingUnknown'
   | 'blocker.itemsNotConfirmed'
   | 'blocker.itemsMissing'
-  | 'blocker.consumedGoods'
+  | 'blocker.usedInJapanUnanswered'
   | 'blocker.documentsNeeded';
 
 /** One reason the traveller is not ready, and the receipts it is about. */

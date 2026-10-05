@@ -57,16 +57,31 @@ const BLOCKERS: readonly BlockerRule[] = [
     applies: (receipt, { rules, trip, clock }) =>
       deadlineStatusOf(receipt, trip, rules, clock).expired,
   },
+  // DR-030: one missing item loses the whole receipt, including the items in the
+  // traveller's hand. A certain loss, so it joins the two above rather than sitting below
+  // the questions — and the receipt has to leave the list before the machine, not at it.
+  { key: 'blocker.itemsMissing', applies: (receipt) => receipt.allItemsPresent === false },
   // Not knowing where the goods are is not evidence that they are in hand (TC-DOM-073).
   { key: 'blocker.packingUnknown', applies: (receipt) => receipt.packingLocation === 'unknown' },
-  // DR-030: the question has to be answered before the kiosk, not at it.
-  { key: 'blocker.itemsNotConfirmed', applies: (receipt) => receipt.allItemsPresent === null },
-  // DR-030 again, the other way: this receipt cannot be confirmed at all and has to come
-  // off the list before the traveller reaches the machine.
-  { key: 'blocker.itemsMissing', applies: (receipt) => receipt.allItemsPresent === false },
-  // DR-035: consumed goods must be declared to an officer at the counter, never put
-  // through the kiosk.
-  { key: 'blocker.consumedGoods', applies: (receipt) => receipt.willUseInJapan === true },
+  // UJ-008, DR-035: a question, never a finding. The traveller predicted in a shop that
+  // they would use this in Japan; whether they did is a different fact, and only they know
+  // it. Answering yes routes the receipt to a customs officer (DR-035); answering no drops
+  // it out silently. Firing on the prediction alone would send someone who carried the box
+  // home unopened into a counter queue for a refund they are entitled to.
+  {
+    key: 'blocker.usedInJapanUnanswered',
+    applies: (receipt) => receipt.willUseInJapan === true && receipt.allItemsPresent === null,
+  },
+  // DR-030: the same question for every other receipt. Scoped so a receipt appears under
+  // exactly one blocker — the two rows ask the same thing with different consequences, and
+  // the one carrying the consequence owns the receipt. Without this, a receipt predicted
+  // for use in Japan and not yet answered for is counted twice on S30, in a list whose
+  // whole job is telling a traveller how much work is left.
+  {
+    key: 'blocker.itemsNotConfirmed',
+    applies: (receipt) => receipt.allItemsPresent === null && receipt.willUseInJapan !== true,
+  },
+
   // DR-016, DR-078: customs may ask for a certificate or warranty. A delay, not a loss.
   {
     key: 'blocker.documentsNeeded',
@@ -93,7 +108,11 @@ export const airportReadinessOf: AirportReadinessOf = (
       travelerId: traveler.id,
       receipts: mine,
       taxExcludedTotal: mine.reduce((total, receipt) => total + taxExcludedTotalOf(receipt), 0),
-      routedToCounter: mine.filter((receipt) => receipt.willUseInJapan === true),
+      // DR-035 applies to goods that were actually consumed: the fact that they are not
+      // all present, plus the recorded reason that they were going to be used here.
+      routedToCounter: mine.filter(
+        (receipt) => receipt.allItemsPresent === false && receipt.willUseInJapan === true,
+      ),
       inCheckedBag: mine.filter((receipt) => receipt.packingLocation === 'checked_bag'),
       requiresDocuments: mine.filter((receipt) => hasHighValueItemOf(receipt, rules)),
     };

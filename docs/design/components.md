@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.2 (M0) |
+| Status | v1.5 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -43,6 +43,11 @@ A single-row header: optional back, title, optional single action.
 States: **default** flat; **scrolled** raised; **modal** variant replaces back with `x` (關閉 / Close).
 
 Transition between flat and raised is `--duration-fast` on `box-shadow` only, which is exempt from the no-shadow-animation rule because it is an opacity-equivalent 1 px change; if it causes jank, swap to a static border.
+
+
+**Shell header vs. this bar.** The persistent shell header — brand mark, tagline, language switcher, settings — renders only on `tabs` chrome. A `fullscreen` or `mode` screen carries no shell header at all, only this App bar, which the screen renders for itself. That is deliberate: a full-screen flow is a considered, focused task, not a place for brand chrome or a settings detour — see `information-architecture.md` section 2 on the bar hiding in full-screen flows, which this generalises to the shell header as well as the bottom navigation.
+
+The one carve-out is this bar's `action` slot during onboarding (S02, S05): it carries a language toggle there, because onboarding is the one `fullscreen` flow a user can enter before ever reaching a `tabs` screen, and therefore the one place a wrong auto-detected locale has no other way out. No other `fullscreen` screen needs it — by the time a user reaches add receipt (S21) or photo capture (S27), Settings has long been reachable from Home.
 
 ---
 
@@ -194,7 +199,7 @@ Rules:
 
 - `font-variant-numeric: tabular-nums` always. A total that re-renders must not shift.
 - Format with `Intl.NumberFormat(locale, { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 })`. Yen has no minor unit: `¥12,345`, never `¥12,345.00`. Money is integer yen end to end; never a float (`DR-071`).
-- In the hero, the `¥` symbol is one step smaller and `--color-text-muted`, so the eye lands on the digits.
+- In the hero, the `¥` symbol is `--text-xl` against `--text-3xl` digits and `--color-text-muted`, so the eye lands on the digits. That is a bigger gap than "one step" on the type scale, found and kept during implementation because it serves the goal at least as well as a smaller gap would.
 - Kaeru's own estimates round **down** per line, then sum (`DR-024`), so Kaeru never promises more than arrives.
 - A derived amount — tax-excluded computed from tax-included — is additionally labelled as calculated at the point of entry (`DR-022`), because shop rounding is the issuer's choice and we cannot reproduce it to the yen.
 - Deductions use a true minus sign: `− ¥550` (U+2212), not a hyphen.

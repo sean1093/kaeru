@@ -1,0 +1,78 @@
+/* components.md section 8. */
+
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.track {
+  flex: 1;
+  min-inline-size: 0;
+  block-size: 6px;
+  background: var(--color-bg-sunken);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.fill {
+  block-size: 100%;
+  inline-size: 100%;
+  transform-origin: left;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  transition: transform var(--duration-normal) var(--ease-standard);
+}
+
+[dir="rtl"] .fill {
+  transform-origin: right;
+}
+
+.fill.complete {
+  background: var(--color-success);
+}
+
+.value {
+  flex: none;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* ---- Step indicator ---- */
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.stepsText {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dot {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+.dotDone {
+  background: var(--color-success);
+}
+
+.dotCurrent {
+  inline-size: 10px;
+  block-size: 10px;
+  background: var(--color-primary);
+}
