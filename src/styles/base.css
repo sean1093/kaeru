@@ -1,0 +1,101 @@
+@import "./tokens.css";
+
+/*
+ * Global base rules. The blocks below "Design-system base" are owned by the UX
+ * designer (docs/design/visual-language.md section 8) and copied verbatim.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-weight: var(--weight-regular);
+}
+
+h1,
+h2,
+h3,
+p,
+figure,
+ul,
+ol {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+#app {
+  min-block-size: 100dvh;
+}
+
+/* ---- Design-system base (docs/design/visual-language.md section 8) ---- */
+
+html {
+  font-family: var(--font-sans);
+  font-size: 100%; /* respect the user's browser text size */
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-text-size-adjust: 100%;
+}
+
+:lang(zh-Hant),
+:lang(zh-TW),
+:lang(ja) {
+  line-height: var(--leading-cjk);
+  letter-spacing: var(--tracking-cjk);
+  line-break: strict;
+  word-break: normal;
+}
+
+:lang(en) {
+  line-height: var(--leading-normal);
+  letter-spacing: 0;
+}
+
+/* Money and any aligned figure. */
+.numeric,
+[data-numeric] {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* One focus ring everywhere, visible on every surface. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+
+/* Minimum target size (WCAG 2.2 AA 2.5.8). */
+button,
+a[role="button"],
+input[type="checkbox"],
+input[type="radio"],
+summary {
+  min-block-size: var(--tap-min);
+  min-inline-size: var(--tap-min);
+}

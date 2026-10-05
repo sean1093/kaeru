@@ -1,0 +1,182 @@
+/* Kaeru design tokens — generated from docs/design/visual-language.md v1.0 (2026-10-05).
+   Edit the design doc first, then mirror the change here. */
+
+:root {
+  color-scheme: light dark;
+
+  /* ---- Color: light theme (kinari paper) ---- */
+  --color-bg: #faf7f2;
+  --color-bg-sunken: #f2ede4;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+
+  --color-text: #1c1a17;
+  --color-text-muted: #5c564c;
+  --color-text-subtle: #857d6f;
+
+  --color-primary: #1b4d73;
+  --color-primary-hover: #143a57;
+  --color-primary-soft: #e7eef4;
+  --color-on-primary: #ffffff;
+
+  --color-attention: #b23b22;
+  --color-on-attention: #ffffff;
+  --color-attention-soft: #fbebe6;
+
+  --color-success: #3f6b3a;
+  --color-on-success: #ffffff;
+  --color-success-soft: #e9f1e6;
+
+  --color-border: #e3dcd0;
+  --color-border-strong: #857d6f;
+  --color-focus: #1b4d73;
+  --color-overlay: rgba(28, 26, 23, 0.48);
+
+  /* ---- Spacing: 4 / 8 scale ---- */
+  --space-0: 0;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 20px;
+  --space-7: 24px;
+  --space-8: 32px;
+  --space-9: 40px;
+  --space-10: 48px;
+  --space-11: 64px;
+  --space-12: 80px;
+
+  /* ---- Radius ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --radius-full: 50%;
+
+  /* ---- Elevation: hairline first, shadow only for lifted surfaces ---- */
+  --shadow-raised: 0 1px 2px rgba(28, 26, 23, 0.06);
+  --shadow-sheet: 0 -8px 24px rgba(28, 26, 23, 0.12);
+
+  /* ---- Typography ---- */
+  --font-sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Hiragino Sans",
+    "Noto Sans JP", "Yu Gothic", Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-numeric: var(--font-sans);
+
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-lg: 1.25rem; /* 20px */
+  --text-xl: 1.5rem; /* 24px */
+  --text-2xl: 1.875rem; /* 30px */
+  --text-3xl: 2.375rem; /* 38px */
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-cjk: 1.75;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+
+  --tracking-cjk: 0.02em;
+
+  /* ---- Motion ---- */
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* ---- Layout ---- */
+  --tap-min: 44px;
+  --content-max: 480px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ---- Color: dark theme (warm charcoal) ---- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #171513;
+    --color-bg-sunken: #100f0e;
+    --color-surface: #201e1b;
+    --color-surface-raised: #2a2724;
+
+    --color-text: #f2ede4;
+    --color-text-muted: #b9b1a4;
+    --color-text-subtle: #948c7f;
+
+    --color-primary: #8fc0e3;
+    --color-primary-hover: #afd4f0;
+    --color-primary-soft: #1b2c38;
+    --color-on-primary: #0d1a23;
+
+    --color-attention: #f0957c;
+    --color-on-attention: #2a0f08;
+    --color-attention-soft: #39211a;
+
+    --color-success: #9cc894;
+    --color-on-success: #10200e;
+    --color-success-soft: #1e2c1c;
+
+    --color-border: #332f2a;
+    --color-border-strong: #847c6e;
+    --color-focus: #8fc0e3;
+    --color-overlay: rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Settings can force a theme regardless of the system preference. */
+:root[data-theme="dark"] {
+  --color-bg: #171513;
+  --color-bg-sunken: #100f0e;
+  --color-surface: #201e1b;
+  --color-surface-raised: #2a2724;
+
+  --color-text: #f2ede4;
+  --color-text-muted: #b9b1a4;
+  --color-text-subtle: #948c7f;
+
+  --color-primary: #8fc0e3;
+  --color-primary-hover: #afd4f0;
+  --color-primary-soft: #1b2c38;
+  --color-on-primary: #0d1a23;
+
+  --color-attention: #f0957c;
+  --color-on-attention: #2a0f08;
+  --color-attention-soft: #39211a;
+
+  --color-success: #9cc894;
+  --color-on-success: #10200e;
+  --color-success-soft: #1e2c1c;
+
+  --color-border: #332f2a;
+  --color-border-strong: #847c6e;
+  --color-focus: #8fc0e3;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+}
+
+/* Reduced motion: one override, because components only reference duration tokens. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 1ms;
+    --duration-fast: 1ms;
+    --duration-normal: 1ms;
+    --duration-slow: 1ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
