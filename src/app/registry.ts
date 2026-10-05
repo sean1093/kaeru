@@ -121,11 +121,12 @@ export function collectFeatures(entries: readonly FeatureV2[]): readonly Feature
       byTabOrder.set(feature.tab.order, feature.id);
 
       // A tab is a permanent destination, so it cannot need a parameter nobody can supply:
-      // there is no receipt id to put in the bar. Checked here rather than left to produce
-      // a link to a literal `/receipts/:receiptId` that matches nothing.
-      const destination = feature.routes[0];
+      // there is no receipt id to put in the bar.
+      const destination = LOCATION_BY_SCREEN[feature.tab.screenId];
       if (!destination) {
-        throw new Error(`Feature "${feature.id}" registers a tab but no route for it to open.`);
+        throw new Error(
+          `Feature "${feature.id}" opens its tab on screen "${feature.tab.screenId}", which is not in the published inventory.`,
+        );
       }
       if (destination.pattern.includes(':')) {
         throw new Error(

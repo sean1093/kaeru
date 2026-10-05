@@ -17,5 +17,5 @@ export const feature = defineFeature({
       screen: HomeScreen,
     },
   ],
-  tab: { order: 10, labelKey: 'home.nav', icon: HomeIcon },
+  tab: { order: 10, screenId: 'S10', labelKey: 'home.nav', icon: HomeIcon },
 });

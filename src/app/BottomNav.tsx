@@ -5,6 +5,16 @@ import styles from './BottomNav.module.css';
 import { messages } from './messages.ts';
 import { tabFeatures } from './registry.ts';
 import { currentRoute, hrefFor } from './router.ts';
+import { SCREEN_LOCATIONS } from './screens.ts';
+
+/**
+ * Widened for a lookup keyed by an id the feature supplied rather than one written here.
+ * `pathTo` would be the better call, but its per-screen typing needs a literal id, and the
+ * registry has already proved this one resolves to a parameterless route.
+ */
+const LOCATION_BY_SCREEN: Readonly<Record<string, { pattern: string } | undefined>> =
+  SCREEN_LOCATIONS;
+
 import { observeShellMetrics } from './shell-metrics.ts';
 
 /**
@@ -28,16 +38,18 @@ export function BottomNav(): JSX.Element {
       <ul class={styles.list}>
         {tabFeatures.map((feature) => {
           const tab = feature.tab;
-          // A tab links to its feature's first route. The registry has already checked that
-          // the route takes no parameters, so the pattern is the path.
-          const destination = feature.routes[0];
-          if (!tab || !destination) return null;
+          if (!tab) return null;
+          // The tab names the screen it opens; the registry has already checked that the
+          // screen exists and that its route takes no parameters.
+          const destination = LOCATION_BY_SCREEN[tab.screenId];
+          if (!destination) return null;
+          const href = hrefFor(destination.pattern);
           const Icon = tab.icon;
           return (
             <li key={feature.id} class={styles.item}>
               <a
                 class={styles.link}
-                href={hrefFor(destination.pattern)}
+                href={href}
                 aria-current={active?.pattern === destination.pattern ? 'page' : undefined}
                 data-testid={`nav-${feature.id}`}
               >

@@ -18,12 +18,17 @@ function route(pattern: string, screenIds: readonly ScreenId[], extra: Partial<S
   return { pattern, screenIds, chrome: 'tabs', screen: noScreen, ...extra } as ScreenRoute;
 }
 
-function featureWith(id: string, routes: readonly ScreenRoute[], tab?: number): FeatureV2 {
+function featureWith(
+  id: string,
+  routes: readonly ScreenRoute[],
+  tab?: number,
+  screenId: ScreenId = 'S10',
+): FeatureV2 {
   return defineFeature({
     id,
     messages,
     routes,
-    ...(tab === undefined ? {} : { tab: { order: tab, labelKey: 'test.nav', icon } }),
+    ...(tab === undefined ? {} : { tab: { order: tab, screenId, labelKey: 'test.nav', icon } }),
   });
 }
 
@@ -55,7 +60,7 @@ describe('registry v2 startup validation', () => {
     expect(() =>
       collectFeatures([
         featureWith('home', [route('/', ['S10'])], 10),
-        featureWith('guide', [route('/guide', ['S50'])], 10),
+        featureWith('guide', [route('/guide', ['S50'])], 10, 'S50'),
       ]),
     ).toThrow(/Tab order 10 is claimed by both "home" and "guide"/);
   });
@@ -90,7 +95,12 @@ describe('registry v2 startup validation', () => {
   it('refuses a tab whose destination needs a parameter nobody can supply', () => {
     expect(() =>
       collectFeatures([
-        featureWith('receipts', [route('/receipts/:receiptId', ['S22'], { sheets: [] })], 20),
+        featureWith(
+          'receipts',
+          [route('/receipts/:receiptId', ['S22'], { sheets: [] })],
+          20,
+          'S22',
+        ),
       ]),
     ).toThrow(/needs a parameter. A tab's destination must be a plain path/);
   });
