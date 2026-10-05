@@ -291,18 +291,25 @@ Run against the production build with the service worker active. Airport Mode ha
 
 ### 7.1 Prohibitions discharged by the guardrail suite
 
-Some cases above protect a rule that says something must **not** exist. A prohibition has no runtime surface, so there is nothing a behavioural test can observe. These are discharged statically by `src/guardrails.test.ts` (issue #59) instead, under the carve-out in [test-strategy.md](./test-strategy.md) section 3:
+Some cases above protect a rule that says something must **not** exist. A prohibition has no runtime surface, so there is often nothing a behavioural test can observe. Those are covered by `src/guardrails.test.ts` (issue #59) under the carve-out in [test-strategy.md](./test-strategy.md) section 3.
 
-(Listed as prose rather than as a table, so each case id still appears exactly once in a case row and the count check stays honest.)
+Each case below says **who owns it**, because a case with two owners is a case nobody notices is missing. Two modes:
 
-- **TC-DOM-021** (`DR-013`) — 一般物品 and 消耗品 appear nowhere in `src/` or the message bundles except where the content says they are abolished.
-- **TC-DOM-053** (`DR-010`, `DR-023`, `DR-031`) — the three linked numbers in the guide match the resolved rules, behind an explicit allowlist.
-- **TC-DOM-106** (`DR-075`, `DR-078`) — no validation finding for these rules carries severity `block`.
-- **TC-DATA-019** (`DR-041`) — no stored entity field can hold more than four characters of a passport reference.
-- **TC-SEC-001** (`DR-040`) — no `fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon` or `EventSource` outside the outbound-link helper and the service-worker registration.
-- **TC-SEC-004** (`DR-044`, `DR-052`) — no credential field in any entity.
+- **Discharged** — the guardrail is the whole test. The owning issue's pinned range excludes the case.
+- **Backstopped** — the behavioural test is authoritative and stays in its owning issue; the guardrail is a static floor that catches a violation the behavioural test cannot see.
 
-The guardrail is the floor, not the ceiling: TC-SEC-001 still runs as a network assertion over the E2E suite, because a static check cannot see a request made by a dependency.
+(Case ids are in backticks here so this table is not a case row: each id still appears exactly once as a definition and the count check stays honest.)
+
+| Case | Rule | Mode | Guardrail | Behavioural owner |
+|---|---|---|---|---|
+| `TC-DOM-021` | `DR-013` | **Discharged** | 一般物品 and 消耗品 appear nowhere in `src/` or the message bundles except where the content says they are abolished | none — #15's range excludes it. There is no behaviour to observe: the assertion is that a field and a vocabulary do not exist |
+| `TC-DOM-053` | `DR-010`, `DR-023`, `DR-031` | **Discharged** | the three linked numbers in the guide match the resolved rules, behind an explicit allowlist | none |
+| `TC-DOM-106` | `DR-080`; guardrail covers `DR-075`, `DR-078` | **Backstopped** | no validation finding for those two rules carries severity `block` | **#17** — `ValidateReceipt` returns `block` for `DR-070` and `DR-071` only. That is the real assertion and it stays; the guardrail covers only two of the rules the case spans |
+| `TC-DATA-019` | `DR-041` | **Backstopped** | no stored entity field can hold more than four characters of a passport reference | **#22** — truncation or rejection on import is runtime behaviour over hostile input, which a shape check cannot see |
+| `TC-SEC-001` | `DR-040` | **Backstopped** | no `fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon` or `EventSource` outside the outbound-link helper and the service-worker registration | **E2E shell suite** — a static check cannot see a request made by a dependency |
+| `TC-SEC-004` | `DR-044`, `DR-052` | **Backstopped** | no credential field in any entity | **E2E** — that links open outward and nothing is submitted is observable, and worth observing |
+
+The rule of thumb: **discharge only when the assertion is "this does not exist"**. The moment a rule has an input, a user, or a hostile file involved, the behavioural test is authoritative and the guardrail is a floor underneath it.
 
 ---
 
