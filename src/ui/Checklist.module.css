@@ -1,0 +1,127 @@
+/* components.md section 10. The 64 px minimum row height is --space-11; the checkbox is
+   24 px painted (--space-7) inside a 44 px target (--tap-min), which the row's own
+   padding already provides. */
+
+.group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  padding: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin-block-start: var(--space-4);
+}
+
+.row {
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+  min-block-size: var(--space-11);
+  padding: var(--space-4) var(--space-2);
+  border-block-end: 1px solid var(--color-border);
+  color: var(--color-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.row:last-child {
+  border-block-end: 0;
+}
+
+.row:active {
+  background: var(--color-bg-sunken);
+}
+
+.checkbox {
+  flex: none;
+  inline-size: var(--space-7);
+  block-size: var(--space-7);
+  /* The painted box is 24 px; the touch target is the whole row, which clears --tap-min
+     by way of the row's own min-block-size. */
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.checkbox:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.primary {
+  font-size: var(--text-lg);
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+}
+
+.secondary {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
+
+/* Not --color-text-muted. See the comment in Checklist.tsx: this line is the reason the
+   traveler stops on the row. */
+.warning {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  margin-block-start: var(--space-1);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.attention {
+  color: var(--color-attention);
+}
+
+.info {
+  color: var(--color-primary);
+}
+
+.warningIcon {
+  flex: none;
+  display: inline-flex;
+  font-size: var(--text-base);
+}
+
+.excluded {
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  background: var(--color-bg-sunken);
+  border-radius: var(--radius-md);
+  border-block-end: 0;
+  margin-block-end: var(--space-3);
+  padding: var(--space-5);
+}
+
+.excludedReason {
+  margin-block-start: var(--space-1);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-attention);
+}
+
+.chevron {
+  flex: none;
+  display: inline-flex;
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+}
