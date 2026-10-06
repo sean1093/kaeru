@@ -126,6 +126,9 @@ test.describe('S62 — your data', () => {
       'Safari tabs to buttons only with Full Keyboard Access, an OS setting the test would measure',
     );
     await page.getByTestId('delete-all').click();
+    // Settled first: the confirmation takes focus when it appears, and a test that moves
+    // focus before then is measuring timing, not the trap.
+    await expect(page.locator('#delete-confirm-title')).toBeFocused();
     // The last control in the confirmation. A trap would send Tab back to its first one.
     await page.getByTestId('cancel-delete').focus();
     await page.keyboard.press('Tab');

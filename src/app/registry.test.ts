@@ -153,6 +153,9 @@ describe('the real registration', () => {
   it('makes settings an app-bar route rather than a fifth tab', () => {
     // IA section 2: four tabs is the maximum that keeps every target >= 64 px wide with
     // English labels un-truncated at 320 px, and settings is visited a handful of times.
-    expect(tabFeatures.map((feature) => feature.id)).toEqual(['home']);
+    // A decision, not a census, so this one is pinned: it must fail if anyone gives
+    // settings a tab, and it must fail if a fifth tab appears.
+    expect(tabFeatures.map((feature) => feature.id)).not.toContain('settings');
+    expect(tabFeatures.length).toBeLessThanOrEqual(4);
   });
 });

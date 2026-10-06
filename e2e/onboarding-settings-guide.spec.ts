@@ -153,40 +153,52 @@ test.describe('Settings (S60, S61, S63)', () => {
 });
 
 test.describe('Guide (S50, S51, S54)', () => {
-  test.fixme(true, 'Enabled by #37 (M2-A4): guide index, article and FAQ.');
-
-  test('S50 lists the four sections and says the guide works offline', async ({ page }) => {
+  test('S50 reaches every section and says the guide works offline', async ({ page }) => {
     await page.goto('./#/guide');
     expect(await currentScreen(page)).toBe('S50');
-    await expect(
-      page.getByRole('link', { name: /新制怎麼運作|How the new system works/ }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('link', { name: /在機場要做什麼|What to do at the airport/ }),
-    ).toBeVisible();
-    await expect(page.getByRole('link', { name: /退稅業者|Refund operators/ })).toBeVisible();
-    await expect(page.getByRole('link', { name: /常見問題|FAQ/ })).toBeVisible();
+    // By destination, not by label. The wireframe's four labels predate the content layer,
+    // which titles its own articles and split "what changed" from the five steps; a second
+    // set of labels written into the screen would drift from the reviewed prose (#140).
+    for (const destination of [
+      '#/guide/articles/guide.steps',
+      '#/guide/articles/guide.airport',
+      '#/guide/operators',
+      '#/guide/faq',
+    ]) {
+      await expect(page.locator(`main a[href$="${destination}"]`)).toBeVisible();
+    }
     await expect(page.getByText(/離線也看得到|works offline/)).toBeVisible();
   });
 
   test('S51 carries its sources with the date they were read', async ({ page }) => {
     // The guide is the only place rule prose lives, and an undated citation is an
     // assertion rather than a source.
-    await page.goto('./#/guide/steps');
+    await page.goto('./#/guide/articles/guide.steps');
     expect(await currentScreen(page)).toBe('S51');
-    await expect(page.getByTestId('source-list')).toContainText('2026-10-05');
+    // Every source, not one of them, and by the machine-readable date rather than a
+    // rendering: the reader sees the date in their own format.
+    const sources = page.getByTestId('source-list').locator('li');
+    const listed = await sources.count();
+    expect(listed).toBeGreaterThan(0);
+    const dates = await sources
+      .locator('time')
+      .evaluateAll((times) => times.map((time) => time.getAttribute('datetime') ?? ''));
+    expect(dates).toHaveLength(listed);
+    for (const date of dates) expect(date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  test('S54 answers the 90-day question with the figure the rules data holds', async ({ page }) => {
-    await page.goto('./#/guide/faq');
+  test('S54 deep-links to one answer, open: the 90-day figure from the rules data', async ({
+    page,
+  }) => {
+    // #37: a deep link opens that entry expanded, through the path route rather than a
+    // fragment (the fragment is spent on the hash route). `q06` is "How long do I have?".
+    await page.goto('./#/guide/faq/q06');
     expect(await currentScreen(page)).toBe('S54');
     await expect(page.getByText(/90/)).toBeVisible();
   });
 });
 
 test.describe('Operators (S52, S53)', () => {
-  test.fixme(true, 'Enabled by #38 (M2-A5): operator directory and operator detail.');
-
   test('S52 carries the association\u2019s own caveat, not an endorsement', async ({ page }) => {
     // DR-053: the list is operators' declarations. Neither Kaeru nor the Japanese state
     // vouches for any of them, and the UI must not imply either.
@@ -200,8 +212,9 @@ test.describe('Operators (S52, S53)', () => {
     // case and a zero would be a claim we are not entitled to make.
     await page.goto('./#/guide/operators/jptaxfree');
     expect(await currentScreen(page)).toBe('S53');
-    await expect(page.getByTestId('operator-fee')).not.toContainText('0');
-    await expect(page.getByTestId('operator-fee')).toContainText(/不確定|Unknown/);
+    // No digit at all, which is stronger than "no zero": any number here would be invented.
+    await expect(page.getByTestId('operator-fee')).not.toContainText(/\d/);
+    await expect(page.getByTestId('operator-fee')).toContainText(/未公布|Not published/);
   });
 
   test('S53 dates every fee figure it does show', async ({ page }) => {
@@ -209,5 +222,23 @@ test.describe('Operators (S52, S53)', () => {
     // four weeks, so an undated figure is worse than none.
     await page.goto('./#/guide/operators/ocean');
     await expect(page.getByTestId('operator-fee-date')).toBeVisible();
+  });
+
+  test('S53 offline: says what needs a connection and what still works, instead of a dead link', async ({
+    page,
+    context,
+  }) => {
+    // #38, wireframes "Offline". The outbound link is one of the few places being offline
+    // changes what a traveller can do, so it is the one place the app says so.
+    await page.goto('./#/guide/operators/ocean');
+    await expect(page.getByTestId('operator-visit')).toBeVisible();
+
+    await context.setOffline(true);
+    await expect(page.getByTestId('operator-offline')).toBeVisible();
+    await expect(page.getByTestId('operator-offline')).toContainText(/機場流程|Airport Mode/);
+    await expect(page.getByTestId('operator-visit')).toHaveCount(0);
+
+    await context.setOffline(false);
+    await expect(page.getByTestId('operator-visit')).toBeVisible();
   });
 });

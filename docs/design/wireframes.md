@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.3 (M0) |
+| Status | v1.4 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -1835,6 +1835,8 @@ Airport Mode takes the whole viewport: no bottom nav, no FAB. Body text is `--te
 │ 首頁    收據    機場    指南                 │
 └──────────────────────────────────────────────┘
 ```
+
+**S50 as built (#140).** The articles are listed under the content layer's own titles, with their own summaries as the second line, not under the labels drawn above. The content layer (M1-4, reviewed by the Travel Expert) titles its articles and split "what changed" (`guide.intro`) out of the five steps, so the index carries five entries rather than four. A second set of labels written into the screen would drift from the reviewed prose the first time either was edited. Operators and FAQ keep the labels above.
 
 **S51** — Guide article
 
