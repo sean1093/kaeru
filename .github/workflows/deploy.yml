@@ -16,6 +16,20 @@ permissions:
   id-token: write
 
 # One deployment at a time; never cancel a running one half-way.
+#
+# Two caveats, both learned the hard way on 2026-10-05 and both silent:
+#
+# 1. `cancel-in-progress: false` governs runs that are **in progress**, not runs that are
+#    queued. A second deploy entering this group discards the older pending one, which
+#    reports `Build: cancelled` and `Deploy: skipped` — nothing red, nothing deployed. Two
+#    runs reach this group whenever one commit has two completed CI runs.
+# 2. **Never fix a missed deploy by re-running an old run.** A re-run deploys the commit
+#    that run was for, so a re-run landing after a newer deploy walks the live site
+#    backwards — and it succeeds while doing it. Dispatch this workflow on `main` instead;
+#    `workflow_dispatch` checks out `github.ref`, which is the current head.
+#
+# The hourly check in `alerts.yml` exists because neither of these is visible from a
+# dashboard: it asks the site which commit it is serving.
 concurrency:
   group: pages
   cancel-in-progress: false

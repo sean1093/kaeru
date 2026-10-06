@@ -13,9 +13,12 @@ on:
     workflows: [CI]
     types: [completed]
     branches: [main]
-  # The rules data going stale is a slow failure that no push will ever surface.
+  # Two slow failures that no push will ever surface: the rules data going stale, and the
+  # live site falling behind `main`. The first is weekly; the second needs to be noticed the
+  # same day, so the schedule runs hourly and each job picks the events it answers to.
   schedule:
     - cron: '0 0 * * 1'
+    - cron: '25 * * * *'
   workflow_dispatch:
     inputs:
       drill:
@@ -67,6 +70,103 @@ jobs:
             green build. Fix forward on `main`; nothing here has reverted or redeployed
             anything.
 
+  # The question every other deploy check approaches sideways: **is the live site the
+  # current main?**
+  #
+  # #113 is why this exists. Five commits reached `main` with a cancelled CI run, the Pages
+  # deploy is gated on CI succeeding (ADR 0009), and so each one silently skipped its deploy
+  # — the live site was behind `main` and every dashboard was green. #114 stopped the
+  # cancellation and #124 made the served build name itself, but neither closes the hole:
+  # the smoke in `deploy.yml` only runs *after* a successful deploy, so a deploy that is
+  # cancelled or never starts is still invisible. A cancelled run does not fail, so the
+  # `ci-failure` job above does not see it either.
+  #
+  # Severity is S1 because of what a stale build serves here. `kaeruRules` is
+  # effective-dated data compiled into the bundle, so behind-main is not missing features —
+  # it is live refund figures computed from superseded rules, with `lastReviewed` shipping
+  # in the same stale bundle, so the stale date agrees with the stale rules and nothing on
+  # screen contradicts anything.
+  deployed-build:
+    name: Live site matches main
+    if: >-
+      (github.event_name == 'workflow_dispatch' && !inputs.drill) ||
+      (github.event_name == 'schedule' && github.event.schedule == '25 * * * *')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Judged against the newest commit that has had a full deploy window to arrive, not
+      # against main's head: the head is usually still in CI, and a head-based check reported
+      # every merge that landed shortly before it ran (measured on #130). The rule and its
+      # cases live in scripts/deployed-build.mjs, with tests.
+      - name: Compare the served build against what should be live
+        id: compare
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { readLiveSite } = await import('${{ github.workspace }}/scripts/deployed-build.mjs');
+            const result = await readLiveSite({ github, context, fetch, now: Date.now(), cacheKey: `${context.runId}-first` });
+            core.info(`${result.reason}: serving ${result.served}, due ${result.due}, head ${result.head}`);
+            core.setOutput('stale', String(result.stale));
+
+      # Confirmed once, five minutes later, before anyone is told: a deploy can finish between
+      # two reads, and an alert that fires on a normal deploy is an alert people learn to
+      # close unread.
+      - name: Confirm it is still behind
+        id: confirm
+        if: steps.compare.outputs.stale == 'true'
+        run: sleep 300
+
+      # Both sides are re-read, not just the site: `main` can move during the wait, and the
+      # judgement must be about the commits as they are now (QALead, #130). Same function as
+      # the first read, so the confirmation cannot drift from it.
+      - name: Re-read both sides
+        id: recheck
+        if: steps.compare.outputs.stale == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { readLiveSite } = await import('${{ github.workspace }}/scripts/deployed-build.mjs');
+            const result = await readLiveSite({ github, context, fetch, now: Date.now(), cacheKey: `${context.runId}-confirm` });
+            core.info(`${result.reason}: serving ${result.served}, due ${result.due}, head ${result.head}`);
+            core.setOutput('stale', String(result.stale));
+            core.setOutput('served', result.served);
+            core.setOutput('due', result.due);
+            core.setOutput('head', result.head);
+
+      - name: File it
+        if: steps.recheck.outputs.stale == 'true'
+        uses: ./.github/actions/file-alert
+        with:
+          key: deployed-build-behind-main
+          title: 'The live site is not the current main'
+          severity: S1
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            The deployed site does not contain a commit that has been on `main` for a full
+            deploy window, and it still did not five minutes later.
+
+            - Serving: `${{ steps.recheck.outputs.served }}`
+            - Should contain at least: `${{ steps.recheck.outputs.due }}`
+            - `main` is at: `${{ steps.recheck.outputs.head }}`
+            - Site: https://sean1093.github.io/kaeru/
+
+            This is the condition #113 was about, and it is silent by construction: a deploy
+            that is cancelled or never starts does not fail, so nothing else reports it.
+
+            **Where to look, in order.** A deploy run for that commit whose `Build` job reads
+            `cancelled` was dropped from the `pages` concurrency group — two runs for one
+            commit, the older pending one discarded. A `Build: success` with
+            `Deploy: cancelled` is runner exhaustion rather than anything breaking. And
+            **there may be no deploy run for that commit at all**, which looks identical from
+            the site's side: do not conclude nothing is wrong because nothing is there.
+
+            Nothing has been reverted or redeployed.
+
+            **Fix it by dispatching the deploy workflow on `main`, not by re-running an old
+            run.** A re-run deploys the commit *that run was for*, so a re-run landing after a
+            newer deploy walks the site backwards — silently, since it succeeds.
+
   # A fire drill. The path from "a job noticed something" to "an issue exists" was broken from
   # #101 to #151 — the shared action did not load — and nobody knew, because it only runs
   # when something is already wrong, and then fails in a run nobody is watching. Dispatch
@@ -93,7 +193,9 @@ jobs:
 
   rules-freshness:
     name: Rules data freshness
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.drill)
+    if: >-
+      (github.event_name == 'workflow_dispatch' && !inputs.drill) ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 0 * * 1')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
