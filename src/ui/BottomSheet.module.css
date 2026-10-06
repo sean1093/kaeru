@@ -25,7 +25,7 @@
   display: flex;
   flex-direction: column;
   max-block-size: 88%;
-  padding: var(--space-4) var(--space-5) var(--space-5);
+  padding: 0 var(--space-5) var(--space-5);
   padding-block-end: calc(var(--space-5) + var(--safe-bottom));
   background: var(--color-surface-raised);
   border-start-start-radius: var(--radius-lg);
@@ -33,6 +33,23 @@
   border-block-start: 1px solid var(--color-border);
   box-shadow: var(--shadow-sheet);
   animation: sheet-in var(--duration-normal) var(--ease-out);
+}
+
+/* The drag handle: grabber, title and the strip around them, edge to edge.
+
+   Left to the default, the browser claims a downward drag as a pan, which ends in
+   `pointercancel` and never reaches the `pointerup` the swipe is decided on — measured on
+   #121, where swipe-to-close did nothing on a touch screen. `pinch-zoom` rather than
+   `none`: panning is checked only up to the nearest scroll container, but zooming is
+   checked all the way to the document, so `none` on the sheet would have switched pinch-zoom
+   off for anything touched inside it. Here it removes panning from the handle alone. */
+.header {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  margin-inline: calc(-1 * var(--space-5));
+  padding: var(--space-4) var(--space-5) 0;
+  touch-action: pinch-zoom;
 }
 
 .grabber {

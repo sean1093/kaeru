@@ -105,24 +105,42 @@ describe('BottomSheet', () => {
     );
     const dialog = screen.getByRole('dialog');
     expect(dialog.closest('[data-testid="app-root"]')).toBeNull();
-    expect(dialog.parentElement?.parentElement).toBe(document.body);
+    // Its own child of `<body>`: the inert sweep marks body's other children, so the sheet
+    // must not share one with the content it covers.
+    const own = [...document.body.children].find((node) => node.contains(dialog));
+    expect(own).toBeDefined();
+    expect(own?.querySelector('[data-testid="app-root"]')).toBeNull();
   });
 
-  it('closes on a downward drag, but not on a tap that happens to move a little', () => {
+  it('closes on a downward drag of the header, but not on a tap that moves a little', () => {
     const onClose = vi.fn();
     render(
       <BottomSheet title="Who bought this?" open onClose={onClose}>
         <button type="button">Yi-chun</button>
       </BottomSheet>,
     );
-    const dialog = screen.getByRole('dialog');
+    const heading = screen.getByRole('heading', { name: 'Who bought this?' });
 
-    fireEvent.pointerDown(dialog, { clientY: 100 });
-    fireEvent.pointerUp(dialog, { clientY: 110 });
+    fireEvent.pointerDown(heading, { clientY: 100 });
+    fireEvent.pointerUp(heading, { clientY: 110 });
     expect(onClose).not.toHaveBeenCalled();
 
-    fireEvent.pointerDown(dialog, { clientY: 100 });
-    fireEvent.pointerUp(dialog, { clientY: 300 });
+    fireEvent.pointerDown(heading, { clientY: 100 });
+    fireEvent.pointerUp(heading, { clientY: 300 });
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('never closes on a drag that starts in the content — that is a scroll or a selection', () => {
+    const onClose = vi.fn();
+    render(
+      <BottomSheet title="Who bought this?" open onClose={onClose}>
+        <button type="button">Yi-chun</button>
+      </BottomSheet>,
+    );
+    const option = screen.getByRole('button', { name: 'Yi-chun' });
+
+    fireEvent.pointerDown(option, { clientY: 100 });
+    fireEvent.pointerUp(option, { clientY: 300 });
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

@@ -70,8 +70,8 @@ export function Stepper({
   const announcementRef = useRef<HTMLParagraphElement>(null);
 
   // Focus lands on the step heading at every step change, so a screen-reader user starts
-  // at the top of the new step rather than wherever the old step's DOM left them.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the step number is the change.
+  // at the top of the new step rather than wherever the old step's DOM left them. The step
+  // number is the trigger, not an input: the body never reads it.
   useEffect(() => {
     headingRef.current?.focus();
   }, [step.current]);
