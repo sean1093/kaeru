@@ -16,7 +16,11 @@ inputs:
     description: Issue body, or the comment body on a recurrence.
     required: true
   severity:
-    description: S1 or S2. Applied as a `severity: <value>` label.
+    # Block scalar, deliberately: a plain scalar containing ": " is a YAML mapping, and that
+    # one line kept this whole action from loading from #101 until #151 — every alert job
+    # failed red and no issue was ever filed.
+    description: >-
+      S1 or S2. Applied as a `severity: <value>` label.
     required: true
   token:
     description: Token with issues:write.
