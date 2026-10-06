@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.3 (M0) |
+| Status | v1.6 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -44,6 +44,11 @@ States: **default** flat; **scrolled** raised; **modal** variant replaces back w
 
 Transition between flat and raised is `--duration-fast` on `box-shadow` only, which is exempt from the no-shadow-animation rule because it is an opacity-equivalent 1 px change; if it causes jank, swap to a static border.
 
+
+**Shell header vs. this bar.** The persistent shell header — brand mark, tagline, language switcher, settings — renders only on `tabs` chrome. A `fullscreen` or `mode` screen carries no shell header at all, only this App bar, which the screen renders for itself. That is deliberate: a full-screen flow is a considered, focused task, not a place for brand chrome or a settings detour — see `information-architecture.md` section 2 on the bar hiding in full-screen flows, which this generalises to the shell header as well as the bottom navigation.
+
+The one carve-out is this bar's `action` slot during onboarding (S02, S05): it carries a language toggle there, because onboarding is the one `fullscreen` flow a user can enter before ever reaching a `tabs` screen, and therefore the one place a wrong auto-detected locale has no other way out. No other `fullscreen` screen needs it — by the time a user reaches add receipt (S21) or photo capture (S27), Settings has long been reachable from Home.
+
 ---
 
 ## 2. Bottom navigation
@@ -58,7 +63,9 @@ Transition between flat and raised is `--duration-fast` on `box-shadow` only, wh
 | Inactive | `--color-text-muted` |
 | Badge | 8 px dot (`--color-attention`) for "needs action", or a pill with a count at `--text-xs` on `--color-attention` / `--color-on-attention` |
 
-Accessibility: `<nav aria-label="主要導覽 / Main">` containing a list of links; the active item carries `aria-current="page"`. The badge is not announced on its own — the link's accessible name includes the count ("收據，3 項待處理" / "Receipts, 3 need action"). Hidden in Airport Mode and in full-screen flows.
+Accessibility: `<nav aria-label="主要導覽 / Main">` containing a list of links; the active item carries `aria-current="page"`. The badge is not announced on its own — the link's accessible name is the visible label immediately followed by the badge's own fragment, joined by the component with no separator of its own: `${item.label}${badge.accessibleName}`. The fragment carries its own leading connector, supplied by the feature that owns the string — zh-TW `，3 項待處理`, en `, 3 need action` — so the composed name reads 收據，3 項待處理 / Receipts, 3 need action. This gives Label in Name (WCAG 2.5.3) as a structural guarantee: the kit always renders the label first and the fragment second, so a caller cannot reverse the order or omit the label, and there is no separator slot inside `src/ui` for a caller to exploit — not even a convention to violate, since the kit chooses no punctuation of any language. The full-width 「，」 is deliberate, not 「、」: this is a clause break before a status, the same role an English comma plays, not an enumeration of parallel items.
+
+**A leading connector is the most fragile shape a translated string can take, and it fails silently.** `.trim()` in a loader or test helper, whitespace collapse, a future i18n lint that flags strings beginning with punctuation, or a reviewer "tidying" what looks like a typo in isolation — any of these turns `，3 項待處理` into `3 項待處理`, and the composed result becomes `收據3 項待處理`: no error, just a sentence a screen reader runs together, heard only by the user least able to notice. This is not hypothetical: `'，'.normalize('NFKC')` returns the ASCII `','` — the full-width comma decomposes under Unicode normalisation, the exact operation `shopKeyOf` already runs elsewhere in this codebase for a good and unrelated reason (collapsing full-width/half-width forms for shop-name grouping). The instinct that is correct for grouping a shop name is silently wrong for this string, and nothing stops someone applying it to a message loader or an export round-trip. Two things protect it: a test that asserts the **composed** name (`收據，3 項待處理`, not the bare fragment) so a stripped or normalised connector fails the test that matters — assert the full-width mark specifically, not merely "contains a comma", since a looser check would still pass after NFKC silently narrowed it — and a comment on `BottomNavItem.badge.accessibleName` in `contracts.ts` stating plainly that the leading mark is significant and must not be trimmed or normalised.
 
 At 320 px the four English labels ("Home", "Receipts", "Airport", "Guide") fit at `--text-sm`; at 200 % text scale labels wrap to two lines and the bar grows. Labels are never hidden in favour of icons alone.
 
@@ -192,7 +199,8 @@ Rules:
 
 - `font-variant-numeric: tabular-nums` always. A total that re-renders must not shift.
 - Format with `Intl.NumberFormat(locale, { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 })`. Yen has no minor unit: `¥12,345`, never `¥12,345.00`. Money is integer yen end to end; never a float (`DR-071`).
-- In the hero, the `¥` symbol is `--text-xl` against `--text-3xl` digits and `--color-text-muted`, so the eye lands on the digits. That is a bigger gap than "one step" on the type scale, found and kept during implementation because it serves the goal at least as well as a smaller gap would.
+- In the hero, the `¥` symbol is `--text-xl` against `--text-3xl` digits and `--color-text-muted`, so the eye lands on the digits. That is a bigger gap than "one step" on the type scale, found and kept during implementation because it serves the goal at least as well as a smaller gap would. It is declared as that ratio (`0.6316em`) rather than as the token, so the symbol keeps its proportion when the cap below applies.
+- Every size grows with the user's text setting up to `--text-amount-max` (13 % of the content column) and stops there. Digits never wrap, so an amount is the one string a 200 % text setting can push off a 320 px screen: unbounded, the hero `~¥24,860` measures 340 px against a 288 px column (#115). The cap sits above `--text-3xl` at every supported width, so at default text size it never binds.
 - Kaeru's own estimates round **down** per line, then sum (`DR-024`), so Kaeru never promises more than arrives.
 - A derived amount — tax-excluded computed from tax-included — is additionally labelled as calculated at the point of entry (`DR-022`), because shop rounding is the issuer's choice and we cannot reproduce it to the yen.
 - Deductions use a true minus sign: `− ¥550` (U+2212), not a hyphen.

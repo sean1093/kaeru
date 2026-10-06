@@ -32,7 +32,7 @@ test.describe('UI kit gallery — M1-3a components (#23)', () => {
   });
 
   test('renders in Traditional Chinese with no raw i18n key visible', async ({ page }) => {
-    await page.getByTestId('language-zh-TW').click();
+    await page.locator(GALLERY_ROOT).getByTestId('language-zh-TW').click();
     await expect(page.getByRole('heading', { level: 1, name: 'UI 元件庫' })).toBeVisible();
     await expect(page.getByText(/^gallery\./)).toHaveCount(0);
   });

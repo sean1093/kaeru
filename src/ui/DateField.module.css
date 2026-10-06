@@ -1,0 +1,41 @@
+/* components.md section 11, "Date". Shared field chrome plus the inline "Today" chip. */
+
+.row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.input {
+  flex: 1;
+  min-inline-size: 0;
+  min-block-size: var(--space-10);
+  padding-inline: var(--space-4);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-base);
+}
+
+.input:focus-visible {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--space-1);
+}
+
+.inputError {
+  border-color: var(--color-attention);
+}
+
+.today {
+  composes: button secondary inline from "./Button.module.css";
+  flex: none;
+}
+
+.deadline {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

@@ -2,9 +2,10 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 import type { Result } from 'axe-core';
 import { isChromeOverlapAtOneScrollPosition } from './a11y-filters.ts';
+import { E2E_LOCALES, E2E_ROUTES } from './support/routes.ts';
 
-const ROUTES = ['./', './#/settings'] as const;
-const LOCALES = ['zh-TW', 'en'] as const;
+const ROUTES = E2E_ROUTES.map((route) => route.path);
+const LOCALES = E2E_LOCALES.map((locale) => locale.id);
 
 /**
  * Runs in the page. Brings each interactive control into view the way a user would and

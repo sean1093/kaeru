@@ -17,6 +17,36 @@ const GALLERY_BASE_URL = `http://localhost:${GALLERY_PORT}/kaeru/`;
 /** Never run on a pull request: the production smoke needs a deployed target. */
 const IGNORED = ['**/production.spec.ts'];
 
+/**
+ * Which device projects this run exercises, and whether the gallery runs at all.
+ *
+ * Unset means everything, so a local `npm run e2e` behaves exactly as it always has —
+ * only CI narrows, and only CI needs to. See `.github/workflows/ci.yml` for which runs
+ * narrow and why; the short version is that **a pull request's green check is evidence
+ * about one project**, deliberately, and `main` runs the full matrix before the deploy
+ * gate so the guarantee moves rather than disappears.
+ */
+const SELECTED = process.env.KAERU_E2E_PROJECT ?? 'all';
+const FULL_MATRIX = SELECTED === 'all';
+
+/**
+ * The gallery is a development harness whose code is `import.meta.env.DEV`-gated and
+ * absent from the production bundle (#27 makes that a CI gate). On a pull request that
+ * touches neither `src/ui/**` nor `src/features/gallery/**` the code under test cannot
+ * have changed and cannot ship, so the run proves nothing and its dev server is started
+ * for nobody (QALead, #130).
+ */
+const RUN_GALLERY = process.env.KAERU_E2E_GALLERY !== 'false';
+
+/**
+ * `true` when the caller has already built `dist/`.
+ *
+ * CI builds once in the `verify` job and hands the artifact to this one, because building
+ * the same commit once per project is duplicated work rather than coverage — the first
+ * throughput fix to try, since it deletes effort instead of evidence.
+ */
+const PREBUILT = process.env.KAERU_E2E_PREBUILT === 'true';
+
 export default defineConfig({
   // Disjoint from Vitest: Playwright owns e2e/**, Vitest owns src/**.
   testDir: 'e2e',
@@ -89,20 +119,33 @@ export default defineConfig({
       testMatch: '**/*.spec.ts',
       use: { ...devices['Desktop Chrome'], baseURL: GALLERY_BASE_URL },
     },
-  ],
+  ].filter((project) =>
+    project.name === 'gallery-dev' ? RUN_GALLERY : FULL_MATRIX || project.name === SELECTED,
+  ),
   // Two servers: production for the three real projects, dev for the gallery only.
   webServer: [
     {
-      command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
+      // `PREBUILT` skips the build, never the preview: the suite must always serve a real
+      // production build with a real service worker (ADR 0007), and the only question here
+      // is whether this process is the one that produced it.
+      command: PREBUILT
+        ? `npm run preview -- --port ${PORT} --strictPort`
+        : `npm run build && npm run preview -- --port ${PORT} --strictPort`,
       url: BASE_URL,
       reuseExistingServer: !CI,
       timeout: 180_000,
     },
-    {
-      command: `npm run dev -- --port ${GALLERY_PORT} --strictPort`,
-      url: GALLERY_BASE_URL,
-      reuseExistingServer: !CI,
-      timeout: 60_000,
-    },
+    // Started only when the gallery project is running. A dev server nobody connects to is
+    // a minute of every run spent on nothing.
+    ...(RUN_GALLERY
+      ? [
+          {
+            command: `npm run dev -- --port ${GALLERY_PORT} --strictPort`,
+            url: GALLERY_BASE_URL,
+            reuseExistingServer: !CI,
+            timeout: 60_000,
+          },
+        ]
+      : []),
   ],
 });

@@ -1,3 +1,5 @@
+export { AmountDisplay } from './AmountDisplay.tsx';
+export { AmountEntry } from './AmountEntry.tsx';
 export { AppBar } from './AppBar.tsx';
 export { Banner } from './Banner.tsx';
 export { BottomNav } from './BottomNav.tsx';
@@ -9,6 +11,9 @@ export type { CardProps } from './Card.tsx';
 export { Card } from './Card.tsx';
 export { ChecklistGroup, ChecklistRow } from './Checklist.tsx';
 export type {
+  AmountDisplayProps,
+  AmountEntryProps,
+  AmountKind,
   AppBarProps,
   BannerProps,
   BottomNavItem,
@@ -22,10 +27,14 @@ export type {
   ChecklistRowProps,
   ChipStatus,
   CountdownProps,
+  DateFieldProps,
   EmptyStateProps,
+  FieldProps,
   Icon,
   ListRowProps,
   ProgressBarProps,
+  SegmentedControlProps,
+  SegmentedOption,
   SelectSheetOption,
   SelectSheetProps,
   StatusChipProps,
@@ -33,7 +42,9 @@ export type {
   StepperProps,
   ToastProps,
 } from './contracts.ts';
+export { DateField } from './DateField.tsx';
 export { EmptyState } from './EmptyState.tsx';
+export { Field } from './Field.tsx';
 export {
   CheckCircleIcon,
   CheckIcon,
@@ -53,6 +64,7 @@ export {
 } from './icons.tsx';
 export { List, ListRow } from './List.tsx';
 export { ProgressBar, StepIndicator } from './ProgressBar.tsx';
+export { SegmentedControl } from './SegmentedControl.tsx';
 export { SelectSheet } from './SelectSheet.tsx';
 export { StatusChip } from './StatusChip.tsx';
 export { Stepper } from './Stepper.tsx';

@@ -143,7 +143,9 @@ export interface AmountDisplayProps {
   fee?: { value: Jpy; label: string };
   /**
    * Reads naturally for a screen reader, e.g. "Estimated net, 24,860 yen". The `~` is
-   * never announced; the word "estimated" carries that meaning.
+   * never announced and does not survive into speech on its own — for `kind: 'estimate'`,
+   * the caller's `accessibleName` must carry the estimated-ness itself (the word
+   * "estimated" / 預估), because nothing else will (Architect review, #115).
    */
   accessibleName: string;
 }
@@ -264,6 +266,13 @@ export interface AmountEntryProps {
   error?: string;
   /** The tax-included toggle's derived figure, always labelled as calculated (DR-022). */
   derivedHint?: string;
+  /**
+   * Already translated, carrying the currency word in full — e.g. "Tax-excluded total,
+   * yen" / "未稅金額，日圓". Falls back to `label` alone when absent; the component never
+   * composes a currency word itself; a component inventing bilingual content is exactly
+   * what "already-translated strings, never message keys" exists to prevent (UX review, #115).
+   */
+  accessibleName?: string;
 }
 
 export interface DateFieldProps {
