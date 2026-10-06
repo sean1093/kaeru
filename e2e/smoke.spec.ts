@@ -16,7 +16,15 @@ async function scrollEveryControlClear(): Promise<string[]> {
   if (!bar) return ['no persistent navigation on this route'];
   const stuck: string[] = [];
   for (const element of document.querySelectorAll('main button, main a, main [tabindex="0"]')) {
-    element.scrollIntoView({ block: 'center' });
+    // `nearest`, deliberately, not `center`. Centring an element puts it in the middle of
+    // the viewport, which is clear of a bottom bar by definition — so a centring test is a
+    // test that `scrollIntoView` centres things, and it passes at every viewport height with
+    // the bar sticky or fixed (measured: 500, 240, 160, 120 px; all green under every
+    // mutation). `nearest` is how the browser scrolls for focus and for a fragment link: it
+    // moves a control just past the fold by the minimum amount, which is exactly the case
+    // `scroll-padding-block-end` exists to correct. The assertion then binds on the real
+    // mechanism rather than on the test's own generosity.
+    element.scrollIntoView({ block: 'nearest' });
     await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
     const box = element.getBoundingClientRect();
     const chrome = bar.getBoundingClientRect();
@@ -284,27 +292,6 @@ test.describe('app shell', () => {
         expect(obscured, `${locale} ${route}`).toEqual([]);
       }
     }
-  });
-
-  /**
-   * TC-A11Y-016, as narrowed by the measurement behind this suite's methodology. The nav
-   * does paint over in-flow content mid-scroll — that is what sticky positioning is for —
-   * so the claim worth testing is about the end of the scroll: the content column
-   * reserves the bar's space rather than ending flush beneath it.
-   */
-  test('the content column reserves the navigation space at the end of the scroll', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 390, height: 500 });
-    await page.goto('./#/settings');
-    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-    const gap = await page.evaluate(() => {
-      const last = [...document.querySelectorAll('main button, main a')].at(-1);
-      const bar = document.querySelector('[data-testid="bottom-nav"]');
-      if (!last || !bar) return Number.NaN;
-      return bar.getBoundingClientRect().top - last.getBoundingClientRect().bottom;
-    });
-    expect(gap).toBeGreaterThan(0);
   });
 });
 
