@@ -17,6 +17,11 @@ on:
   schedule:
     - cron: '0 0 * * 1'
   workflow_dispatch:
+    inputs:
+      drill:
+        description: File a test alert through the shared action, to watch the alert path work
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -62,9 +67,33 @@ jobs:
             green build. Fix forward on `main`; nothing here has reverted or redeployed
             anything.
 
+  # A fire drill. The path from "a job noticed something" to "an issue exists" was broken from
+  # #101 to #151 — the shared action did not load — and nobody knew, because it only runs
+  # when something is already wrong, and then fails in a run nobody is watching. Dispatch
+  # this workflow with `drill` to run that path on purpose: one S2 issue, closed by whoever
+  # ran the drill. Nothing else in this workflow runs during a drill.
+  alert-drill:
+    name: Alert drill
+    if: github.event_name == 'workflow_dispatch' && inputs.drill
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: File the drill
+        uses: ./.github/actions/file-alert
+        with:
+          key: alert-drill
+          title: 'Alert drill: the alert path files issues'
+          severity: S2
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            Filed on purpose by an alert drill (`workflow_dispatch` with `drill`), run
+            ${{ github.run_id }}. The shared alert action loaded and opened this issue, which is
+            the whole of what the drill checks. Close it.
+
   rules-freshness:
     name: Rules data freshness
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.drill)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
