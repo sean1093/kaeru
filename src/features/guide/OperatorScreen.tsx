@@ -1,4 +1,5 @@
 import type { JSX } from 'preact';
+import { online } from '../../app/connectivity.ts';
 import { hrefFor } from '../../app/router.ts';
 import { pathTo, screenAttrs } from '../../app/screens.ts';
 import { getContent, getOperatorDirectory } from '../../content/index.ts';
@@ -104,11 +105,31 @@ export function OperatorScreen({
         </section>
       )}
 
-      <p class={styles.paragraph}>
-        <a href={operator.url} target="_blank" rel="noreferrer noopener">
-          {t('operators.visit', { name: operator.name[locale] })}
-        </a>
-      </p>
+      {/*
+        #38, wireframes "Offline": the outbound link is one of the few places being offline
+        changes what a traveller can do, so it is the one place that says so — and says what
+        still works, because "offline" read alone sounds like the app is broken. A live region,
+        so losing signal while reading is announced rather than discovered on the tap.
+      */}
+      <div role="status">
+        {online.value ? (
+          <p class={styles.paragraph}>
+            <a
+              href={operator.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              data-testid="operator-visit"
+            >
+              {t('operators.visit', { name: operator.name[locale] })}
+            </a>
+          </p>
+        ) : (
+          <div class={styles.caveat} data-testid="operator-offline">
+            <p>{t('operators.offline')}</p>
+            <p>{t('operators.offlineReassurance')}</p>
+          </div>
+        )}
+      </div>
 
       <p class={styles.caveat} data-testid="operator-disclaimer">
         {tc('content.operators.disclaimer')}

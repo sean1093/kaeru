@@ -1,5 +1,5 @@
 import type { JSX } from 'preact';
-import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { hrefFor } from '../../app/router.ts';
 import { pathTo, screenAttrs } from '../../app/screens.ts';
 import {
@@ -87,9 +87,11 @@ export function DataScreen(): JSX.Element {
    * a panel whose page stayed live — a screen reader was told everything else was gone and
    * the keyboard was held inside, while a pointer could reach the whole page. What it does
    * do: take focus when it appears, so it is announced where the user is, and let Escape
-   * step back from the one irreversible action without hunting for a button.
+   * step back from the one irreversible action without hunting for a button. A layout
+   * effect, so focus moves in the frame the confirmation first paints rather than after it
+   * — the same reason as the bottom sheet's (#121).
    */
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!confirmingDelete) return;
     deleteHeading.current?.focus();
     function onKeyDown(event: KeyboardEvent): void {

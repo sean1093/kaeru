@@ -24,7 +24,10 @@ export function FaqScreen({ params }: { params: Readonly<Record<string, string>>
   const t = useMessages(messages);
   const locale = activeLocale.value;
   const bundle = getContent(locale);
-  const wanted = params.entryId;
+  // The route carries the short id `screens.ts` publishes (`pathTo('S54', { entryId: 'q11' })`
+  // → `/guide/faq/q11`); the content's ids are namespaced. Compared directly, the canonical
+  // deep link opened nothing — measured on #140, where `/guide/faq/q06` left every answer shut.
+  const wanted = params.entryId === undefined ? undefined : `guide.faq.${params.entryId}`;
 
   return (
     <div class={styles.screen} {...screenAttrs('S54')}>

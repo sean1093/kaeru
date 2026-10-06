@@ -134,7 +134,9 @@ describe('S54 — the FAQ', () => {
     const entries = getContent('zh-TW').faq;
     const target = entries[1] ?? entries[0];
     if (target === undefined) return;
-    render(<FaqScreen params={{ entryId: target.id }} />);
+    // The route carries the short id `screens.ts` publishes (`/guide/faq/q11`), not the
+    // content's namespaced one.
+    render(<FaqScreen params={{ entryId: target.id.replace('guide.faq.', '') }} />);
     expect(screen.getByTestId(`faq-${target.id}`)).toHaveAttribute('open');
     for (const other of entries.filter((entry) => entry.id !== target.id)) {
       expect(screen.getByTestId(`faq-${other.id}`)).not.toHaveAttribute('open');

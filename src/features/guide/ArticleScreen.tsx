@@ -80,8 +80,11 @@ export function ArticleScreen({
                 {source.lang !== undefined && (
                   <span class={styles.sourceLang}>{t(`guide.sources.lang.${source.lang}`)}</span>
                 )}
+                {/* A `<time>` carrying the ISO date, so the date is machine-readable and
+                    a reader's own format stays a presentation choice. */}
                 <span class={styles.sourceAccessed}>
-                  {t('guide.sources.accessed', { date: formatDate(locale, source.accessed) })}
+                  {t('guide.sources.accessed')}{' '}
+                  <time dateTime={source.accessed}>{formatDate(locale, source.accessed)}</time>
                 </span>
               </li>
             ))}

@@ -18,16 +18,23 @@ import { expect, test } from '@playwright/test';
 const GALLERY_MARKER = 'kaeru-ui-kit-gallery';
 
 /**
- * A regression tripwire, not **the** budget — the ~100 KB figure in
- * `docs/architecture/implementation-plan.md` is that, and it covers the whole app, not
- * just this directory's slice. This number is deliberately a different kind of check: it
- * sums each JS asset's own gzip size rather than the bundle's actual gzip size, and it
- * ignores CSS, so it is not a substitute for the real budget — it exists to fail fast and
- * specifically on an accidental import inside `src/ui/**`/`src/features/gallery/**`,
- * roughly twice today's measured size (23.3 KB at last count), tightened as the baseline
- * moves.
+ * A regression tripwire, not **the** budget — ADR 0003 sets that, initial JS ≤ 100 KB gzip
+ * for the whole app. This number is deliberately a different kind of check: it sums each JS
+ * asset's own gzip size rather than the bundle's actual gzip size, and it ignores CSS, so it
+ * is not a substitute for the real budget — it exists to fail fast on an accidental import,
+ * the gallery's above all, and is re-baselined deliberately when a feature legitimately
+ * moves the floor.
+ *
+ * Baselines: 23.3 KB at #27, when this was "roughly twice today's size". 53.7 KB at #140,
+ * where the guide made the bundled content reachable for the first time — guide, FAQ and
+ * operators in both locales, in the bundle by ADR 0006 so they work offline — plus #122's
+ * backup service. Doubling stopped making sense there (it would pass the budget itself), so
+ * the tripwire is now the baseline plus about 10 KB: room for the next feature to arrive and
+ * be noticed. It is a coarse guard for the gallery — whose source alone gzips to about
+ * 10.6 KB before minification, so a leak lands near this line, not certainly past it — and
+ * the content-marker test above is the gallery's exact one.
  */
-const GZIP_TRIPWIRE_BYTES = 40 * 1024;
+const GZIP_TRIPWIRE_BYTES = 64 * 1024;
 
 test.describe('production bundle (#27 bundle-absence gate)', () => {
   test('contains no gallery content string', () => {
