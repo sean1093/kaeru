@@ -46,6 +46,7 @@ export const messages = defineMessages({
     'data.delete.confirm': '確定刪除',
     'data.delete.cancel': '取消',
     'data.delete.done': '已刪除所有資料。',
+    'data.delete.failed': '沒有刪除任何資料。請再試一次。',
     'settings.data.body':
       '資料只存在這台裝置上。匯出一份備份，換手機或清除瀏覽器資料時才不會遺失。',
     'settings.data.export': '匯出備份',
@@ -102,6 +103,7 @@ export const messages = defineMessages({
     'data.delete.confirm': 'Delete everything',
     'data.delete.cancel': 'Cancel',
     'data.delete.done': 'All data deleted.',
+    'data.delete.failed': 'Nothing was deleted. Please try again.',
     'settings.data.body':
       'Your data lives only on this device. Export a backup so you do not lose it when you change phone or clear browser data.',
     'settings.data.export': 'Export backup',

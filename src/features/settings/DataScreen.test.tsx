@@ -4,6 +4,7 @@ import type { ImportPreview } from '../../data/index.ts';
 import { backupService } from '../../data/index.ts';
 import { setActiveLocale } from '../../i18n/index.ts';
 import { DataScreen } from './DataScreen.tsx';
+import { messages } from './messages.ts';
 
 /**
  * S62 component tests (`M2-A3`, #36).
@@ -157,14 +158,15 @@ describe('S62 delete all (TC-SEC-005)', () => {
     await waitFor(() => expect(erase).toHaveBeenCalledTimes(1));
   });
 
-  it('delivers the modal behaviour the alertdialog role promises', async () => {
-    // Claiming the role and not containing focus is worse than not claiming it: a screen
-    // reader user is told this is modal and then finds it is not.
+  it('is an inline confirmation: it takes focus, claims nothing modal, and Escape steps back', async () => {
+    // S62 draws it inline, and the page around it stays live, so it must not tell a screen
+    // reader that everything else is gone.
     render(<DataScreen />);
     fireEvent.click(screen.getByTestId('delete-all'));
 
-    const dialog = await screen.findByTestId('delete-confirm');
-    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    const confirm = await screen.findByTestId('delete-confirm');
+    expect(confirm).not.toHaveAttribute('aria-modal');
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     await waitFor(() =>
       expect(document.activeElement).toBe(
         screen.getByRole('heading', { name: '確定要刪除所有資料？' }),
@@ -176,5 +178,21 @@ describe('S62 delete all (TC-SEC-005)', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByTestId('delete-confirm')).toBeNull());
     expect(document.activeElement).toBe(screen.getByTestId('delete-all'));
+  });
+
+  it('says nothing was deleted when the delete fails, and keeps the confirmation up', async () => {
+    vi.spyOn(backupService, 'deleteAll').mockRejectedValue(new Error('IndexedDB went away'));
+    render(<DataScreen />);
+    fireEvent.click(screen.getByTestId('delete-all'));
+    fireEvent.click(await screen.findByTestId('confirm-delete'));
+
+    // The delete sentence, not the importer's fallback ("not a Kaeru backup").
+    await waitFor(() =>
+      expect(screen.getByTestId('data-failure')).toHaveTextContent(
+        messages['zh-TW']['data.delete.failed'],
+      ),
+    );
+    expect(screen.getByTestId('delete-confirm')).toBeVisible();
+    expect(screen.getByTestId('data-notice').textContent).toBe('');
   });
 });

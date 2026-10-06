@@ -116,4 +116,23 @@ test.describe('S62 — your data', () => {
     await chooseBackup(page, aBackup(3));
     await expect(page.getByTestId('import-conflicts')).toHaveCount(0);
   });
+
+  test('the delete confirmation is inline, not a trap: Tab moves on past it', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName === 'webkit',
+      'Safari tabs to buttons only with Full Keyboard Access, an OS setting the test would measure',
+    );
+    await page.getByTestId('delete-all').click();
+    // The last control in the confirmation. A trap would send Tab back to its first one.
+    await page.getByTestId('cancel-delete').focus();
+    await page.keyboard.press('Tab');
+
+    const stillInside = await page
+      .getByTestId('delete-confirm')
+      .evaluate((panel) => panel.contains(document.activeElement));
+    expect(stillInside).toBe(false);
+  });
 });

@@ -42,7 +42,6 @@ export function DataScreen(): JSX.Element {
   );
   const [mode, setMode] = useState<ImportMode>('merge');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const deleteDialog = useRef<HTMLElement>(null);
   const deleteCard = useRef<HTMLDivElement>(null);
   const deleteHeading = useRef<HTMLHeadingElement>(null);
   /**
@@ -82,37 +81,20 @@ export function DataScreen(): JSX.Element {
     deleteCard.current?.querySelector<HTMLButtonElement>('[data-testid="delete-all"]')?.focus();
   }, [confirmingDelete]);
 
+  /**
+   * The confirmation is inline, as S62 draws it, so it claims nothing modal: no
+   * `alertdialog`, no `aria-modal`, no focus trap. An earlier version claimed all three on
+   * a panel whose page stayed live — a screen reader was told everything else was gone and
+   * the keyboard was held inside, while a pointer could reach the whole page. What it does
+   * do: take focus when it appears, so it is announced where the user is, and let Escape
+   * step back from the one irreversible action without hunting for a button.
+   */
   useEffect(() => {
     if (!confirmingDelete) return;
     deleteHeading.current?.focus();
-
-    /**
-     * `role="alertdialog"` promises modal behaviour, so it has to be delivered: focus
-     * stays inside while it is open, and Escape is a way out that does not require
-     * finding a button. Promising containment and not providing it is worse than not
-     * claiming the role at all.
-     */
     function onKeyDown(event: KeyboardEvent): void {
-      if (event.key === 'Escape') {
-        closeDelete();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const focusable = deleteDialog.current?.querySelectorAll<HTMLElement>('button, [href]');
-      if (!focusable || focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (!first || !last) return;
-      const active = document.activeElement;
-      if (event.shiftKey && (active === first || active === deleteHeading.current)) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
+      if (event.key === 'Escape') closeDelete();
     }
-
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [confirmingDelete, closeDelete]);
@@ -149,7 +131,11 @@ export function DataScreen(): JSX.Element {
       link.href = url;
       link.download = `kaeru-backup-${document.exportedAt.slice(0, 10)}.json`;
       link.click();
-      URL.revokeObjectURL(url);
+      // Revoked later, not now: WebKit can still be reading the blob after `click()`
+      // returns, and a revoked URL turns the download into an error — the one path off
+      // this phone. FileSaver.js waits 40 s for the same reason; a minute costs one file's
+      // memory.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
       setNotice({ key: 'data.export.done' });
     } catch (error) {
       setFailure(explain(error));
@@ -184,10 +170,18 @@ export function DataScreen(): JSX.Element {
   }
 
   async function deleteEverything(): Promise<void> {
-    await backupService.deleteAll(await getDatabase());
+    try {
+      await backupService.deleteAll(await getDatabase());
+    } catch {
+      // The confirmation stays up and says nothing was deleted. Not `explain()`: its
+      // fallback is "this is not a Kaeru backup", a sentence about a file there is none of.
+      setFailure('data.delete.failed');
+      return;
+    }
     restoreFocus.current = true;
     setConfirmingDelete(false);
     setPreview(null);
+    setFailure(null);
     setNotice({ key: 'data.delete.done' });
   }
 
@@ -314,10 +308,7 @@ export function DataScreen(): JSX.Element {
           <p>{t('data.delete.body')}</p>
           {confirmingDelete ? (
             <section
-              ref={deleteDialog}
               class={styles.preview}
-              role="alertdialog"
-              aria-modal="true"
               aria-labelledby="delete-confirm-title"
               data-testid="delete-confirm"
             >
