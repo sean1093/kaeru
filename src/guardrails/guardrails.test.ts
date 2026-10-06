@@ -283,6 +283,10 @@ describe('guardrails: rule constants live in the rules document (DR-022, R19)', 
       'a five-second dismissal timeout is a duration in milliseconds, not the yen threshold',
     'features/settings/index.ts':
       'a tab order of 90 is a position in a list, not the 90-day export window',
+    'features/gallery/copy.ts':
+      'a sample deadline hint in demo copy for the DateField specimen, not the export window',
+    'features/gallery/sections/forms.tsx':
+      "a sample start date for the DateField specimen's demo state, not an effective date",
   };
 
   for (const { rule, what, pattern } of FORBIDDEN_CONSTANTS) {
@@ -528,6 +532,7 @@ describe('guardrails: no end-to-end case is left switched off by accident (M3-2)
    */
   const EXPECTED_FIXMES: Readonly<Record<string, readonly string[]>> = {
     'airport.spec.ts': ['#48', '#48', '#49', '#50', '#51'],
+    'onboarding-settings-guide.spec.ts': ['#34', '#34', '#35', '#37', '#38'],
   };
 
   function issuesIn(code: string): readonly string[] {

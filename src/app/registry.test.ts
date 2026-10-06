@@ -136,10 +136,9 @@ describe('the real registration', () => {
     //
     // A census, not a decision: every track adds routes, so pinning the list would make
     // this file a merge-conflict generator in the one place #33 exists to keep
-    // conflict-free (FrontendEngE's call). The property that matters is that nothing
-    // registers a route the inventory does not know about — and `/dev/gallery` is
-    // deliberately absent from it, which is why the development tool is skipped here
-    // rather than exempted there.
+    // conflict-free. The property that matters is that nothing registers a route the
+    // published inventory does not know about — and `/dev/gallery` is deliberately not in
+    // it, which is why the development tool is excluded here rather than exempted there.
     expect(features.length).toBeGreaterThan(0);
     expect(routes.length).toBeGreaterThan(0);
     for (const entry of routes) {

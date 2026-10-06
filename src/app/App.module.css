@@ -40,3 +40,14 @@
   flex-direction: column;
   gap: var(--space-6);
 }
+
+/*
+ * A screen with no bottom bar reserves no space for one. `shell-metrics.ts` resets the
+ * property when the bar unmounts, but the declared floor in `:root` would otherwise still
+ * apply, so fullscreen and mode chrome zero it explicitly rather than inherit a reservation
+ * for a bar that is not there.
+ */
+.app[data-chrome="fullscreen"],
+.app[data-chrome="mode"] {
+  --shell-nav-block-size: 0px;
+}

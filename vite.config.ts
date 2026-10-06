@@ -23,7 +23,12 @@ const BASE = '/kaeru/';
  * the stale date agrees with the stale rules and nothing on screen contradicts anything.
  */
 function buildIdentity(): { name: string; transformIndexHtml: (html: string) => string } {
-  const sha = process.env.GITHUB_SHA ?? 'dev';
+  // Not `GITHUB_SHA`. In the deploy, a `workflow_run` job, `GITHUB_SHA` is main's head when
+  // the run was created, not the commit CI verified and the job checked out: a commit that
+  // merged while CI ran made the build name the wrong commit — measured when #143's verified
+  // build was stamped as #148's, and the smoke failed against its own deploy. The deploy
+  // sets this from the commit it builds; GitHub refuses overrides of `GITHUB_*` variables.
+  const sha = process.env.KAERU_BUILD_SHA ?? 'dev';
   return {
     name: 'kaeru-build-identity',
     transformIndexHtml: (html) =>

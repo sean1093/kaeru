@@ -179,7 +179,7 @@ export const FAQ_ENTRIES: readonly FaqEntry[] = [
         kind: 'callout',
         tone: 'attention',
         body: [
-          'Refund companies typically deduct around 1.5% to 3%. The bigger risk is on your side: receiving an international bank transfer can cost you NT$200-400 or more, which on a small refund can wipe it out entirely. Travelers have reported receiving almost nothing after both charges.',
+          "Few companies publish what the fee is charged on: Tourego's 1.5% is of the tax-free sale amount. For most others there is only a traveler-reported figure (around 3%) with no stated basis, so ask the company before you register. The bigger risk is on your side: receiving an international bank transfer can cost you NT$200-400 or more, which on a small refund can wipe it out entirely. Travelers have reported receiving almost nothing after both charges.",
         ],
         sourceIds: ['ptt-refund-reports'],
       },

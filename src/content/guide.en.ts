@@ -167,7 +167,7 @@ const steps: ArticleSeed = {
           kind: 'callout',
           tone: 'attention',
           body: [
-            'There is no legal deadline for this and no legal limit on fees. Most companies deduct a handling fee, usually in the range of 1.5% to 3% of the purchase. If the money is sent as an international bank transfer, your own bank may also charge you to receive it, and on a small refund that charge can be larger than the refund itself.',
+            "There is no legal deadline for this and no legal limit on fees. Most companies deduct a handling fee, but few say what it is charged on: Tourego's 1.5% is of the tax-free sale amount (the tax-excluded price). For most others there is only a traveler-reported figure (around 3%) with no published basis, so treat that as an order of magnitude rather than a rate. If the money is sent as an international bank transfer, your own bank may also charge you to receive it, and on a small refund that charge can be larger than the refund itself.",
           ],
           sourceIds: ['nta-refund-method', 'ptt-refund-reports'],
         },
