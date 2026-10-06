@@ -40,9 +40,22 @@ export function startsDeploy(files) {
 }
 
 /**
+ * The CI conclusions the `ci-failure` alert in `alerts.yml` reports. A commit whose CI
+ * concluded this way never deploys, by design, and has already been filed as red CI — so it
+ * is never due here, or one root cause would be filed twice, once as S1 "CI failed" and
+ * again twenty minutes later as S1 "the live site is behind" (#117).
+ *
+ * `cancelled` is deliberately absent. A cancelled run is also alerted on, but a cancelled
+ * commit is exactly the #113 condition: nothing failed, nothing deployed, and the site
+ * really is behind. It stays due, and the staleness alert names the cancellation.
+ */
+export const OWNED_BY_CI_ALERT = ['failure'];
+
+/**
  * The commit the site must already contain: the newest commit on `main` that has been
- * there for a full deploy window **and** starts a deploy. `null` when there is none —
- * nothing is due yet.
+ * there for a full deploy window, starts a deploy, and whose CI did not fail. `null` when
+ * there is none — nothing is due yet. `ci` is that commit's CI conclusion, for the alert
+ * body: `success`, `cancelled`, `in progress`, `none` (no run at all), and so on.
  *
  * Judging against this rather than against `main`'s head is what keeps an ordinary merge
  * from being reported: the head is usually still in CI, and a head-based check fires on
@@ -54,21 +67,43 @@ export function startsDeploy(files) {
  * be reported as an S1 twenty minutes later — found by running this against the real
  * repository on #130, where `main`'s head was a docs-only merge.
  *
+ * A commit whose CI failed is skipped for the same reason — it can never be live — and
+ * because the red-CI alert already owns it (see {@link OWNED_BY_CI_ALERT}). The commit
+ * before it is then the one the site must contain, which it does while main is red.
+ *
  * `main` only receives squash merges, so a commit's committer date is the moment it
  * landed. A commit pushed long after it was made would look older than it is.
  *
  * @param {readonly { sha: string, committedAt: string }[]} commits newest first
  * @param {number} now epoch milliseconds
  * @param {(sha: string) => Promise<readonly string[]>} filesOf asked only for candidates
- * @returns {Promise<string | null>}
+ * @param {(sha: string) => Promise<string>} ciOf a commit's CI conclusion, asked only for
+ *   candidates that start a deploy
+ * @returns {Promise<{ sha: string, ci: string } | null>}
  */
-export async function dueCommit(commits, now, filesOf) {
+export async function dueCommit(commits, now, filesOf, ciOf) {
   const cutoff = now - DEPLOY_WINDOW_MINUTES * 60_000;
   for (const commit of commits) {
     if (Date.parse(commit.committedAt) > cutoff) continue;
-    if (startsDeploy(await filesOf(commit.sha))) return commit.sha;
+    if (!startsDeploy(await filesOf(commit.sha))) continue;
+    const ci = await ciOf(commit.sha);
+    if (OWNED_BY_CI_ALERT.includes(ci)) continue;
+    return { sha: commit.sha, ci };
   }
   return null;
+}
+
+/**
+ * Summarises a commit's push-triggered CI runs, newest first, as one conclusion. The
+ * newest run decides: a failed run that was re-run green is green.
+ *
+ * @param {readonly { status: string, conclusion: string | null }[]} runs
+ */
+export function ciConclusion(runs) {
+  const [latest] = runs;
+  if (!latest) return 'none';
+  if (latest.status !== 'completed') return 'in progress';
+  return latest.conclusion ?? 'unknown';
 }
 
 /**
@@ -135,14 +170,25 @@ export async function readLiveSite({ github, context, fetch, now, cacheKey }) {
     per_page: 50,
   });
   const head = commits[0]?.sha ?? '';
-  const due = await dueCommit(
+  const found = await dueCommit(
     commits.map((commit) => ({ sha: commit.sha, committedAt: commit.commit.committer.date })),
     now,
     async (ref) => {
       const { data } = await github.rest.repos.getCommit({ ...context.repo, ref });
       return (data.files ?? []).map((file) => file.filename);
     },
+    async (sha) => {
+      const { data } = await github.rest.actions.listWorkflowRuns({
+        ...context.repo,
+        workflow_id: 'ci.yml',
+        head_sha: sha,
+        event: 'push',
+        per_page: 5,
+      });
+      return ciConclusion(data.workflow_runs ?? []);
+    },
   );
+  const due = found?.sha ?? null;
 
   const response = await fetch(`${SITE}?build-check=${encodeURIComponent(cacheKey)}`);
   const served = response.ok ? servedBuild(await response.text()) : '';
@@ -163,5 +209,6 @@ export async function readLiveSite({ github, context, fetch, now, cacheKey }) {
     }),
     head,
     due: due ?? 'none yet',
+    dueCi: found?.ci ?? 'n/a',
   };
 }

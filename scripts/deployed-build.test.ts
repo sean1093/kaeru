@@ -2,10 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  ciConclusion,
   DEPLOY_WINDOW_MINUTES,
   decide,
   dueCommit,
   IGNORED_BY_CI,
+  OWNED_BY_CI_ALERT,
   readLiveSite,
   STAMPING_COMMIT,
   servedBuild,
@@ -44,8 +46,9 @@ describe('which commits start a deploy (#130)', () => {
   });
 });
 
-describe('which commit the site must already contain (#130)', () => {
+describe('which commit the site must already contain (#130, #117)', () => {
   const code = async () => ['src/app/App.tsx'];
+  const green = async () => 'success';
   const commits = [
     { sha: 'head', committedAt: ago(5) },
     { sha: 'prev', committedAt: ago(DEPLOY_WINDOW_MINUTES) },
@@ -54,17 +57,49 @@ describe('which commit the site must already contain (#130)', () => {
 
   it('is the newest commit that has been on main for a whole deploy window', async () => {
     // Exactly at the window counts as due: the boundary belongs to "should be live".
-    expect(await dueCommit(commits, NOW, code)).toBe('prev');
+    expect(await dueCommit(commits, NOW, code, green)).toEqual({ sha: 'prev', ci: 'success' });
   });
 
   it('is nothing at all while every commit is still inside the window', async () => {
-    expect(await dueCommit([{ sha: 'head', committedAt: ago(5) }], NOW, code)).toBeNull();
+    expect(await dueCommit([{ sha: 'head', committedAt: ago(5) }], NOW, code, green)).toBeNull();
   });
 
   it('skips a docs-only commit, which no deploy will ever follow', async () => {
     const filesOf = async (sha: string) =>
       sha === 'prev' ? ['docs/qa/test-cases.md'] : ['src/x.ts'];
-    expect(await dueCommit(commits, NOW, filesOf)).toBe('older');
+    expect(await dueCommit(commits, NOW, filesOf, green)).toMatchObject({ sha: 'older' });
+  });
+
+  it('skips a commit whose CI failed: the red-CI alert owns it, and it can never be live', async () => {
+    // Without this, main staying red past the window files a second S1 for the root cause
+    // the CI alert already filed (#117).
+    const ciOf = async (sha: string) => (sha === 'prev' ? 'failure' : 'success');
+    expect(await dueCommit(commits, NOW, code, ciOf)).toEqual({ sha: 'older', ci: 'success' });
+    expect(OWNED_BY_CI_ALERT).toEqual(['failure']);
+  });
+
+  it('keeps a cancelled commit due, because a cancellation is the #113 condition itself', async () => {
+    const ciOf = async (sha: string) => (sha === 'prev' ? 'cancelled' : 'success');
+    expect(await dueCommit(commits, NOW, code, ciOf)).toEqual({ sha: 'prev', ci: 'cancelled' });
+  });
+
+  it('keeps a commit due when no CI run exists for it at all, and says so', async () => {
+    expect(await dueCommit(commits, NOW, code, async () => 'none')).toEqual({
+      sha: 'prev',
+      ci: 'none',
+    });
+  });
+
+  it("summarises a commit's CI runs by the newest one", () => {
+    expect(ciConclusion([])).toBe('none');
+    expect(ciConclusion([{ status: 'in_progress', conclusion: null }])).toBe('in progress');
+    expect(
+      ciConclusion([
+        { status: 'completed', conclusion: 'success' },
+        { status: 'completed', conclusion: 'failure' },
+      ]),
+    ).toBe('success');
+    expect(ciConclusion([{ status: 'completed', conclusion: 'cancelled' }])).toBe('cancelled');
   });
 });
 
@@ -152,6 +187,17 @@ describe('reading both sides (#130)', () => {
     },
   };
   const context = { repo: { owner: 'sean1093', repo: 'kaeru' } };
+  const withCi = (conclusionOf: (sha: string) => string) => ({
+    rest: {
+      ...github.rest,
+      actions: {
+        listWorkflowRuns: async ({ head_sha }: { head_sha: string }) => ({
+          data: { workflow_runs: [{ status: 'completed', conclusion: conclusionOf(head_sha) }] },
+        }),
+      },
+    },
+  });
+  const allGreen = withCi(() => 'success');
   const serving = (sha: string) => async () => ({
     ok: true,
     status: 200,
@@ -162,7 +208,7 @@ describe('reading both sides (#130)', () => {
     // The false S1 this replaces: main's head landed five minutes ago and is in CI, the
     // site serves the commit before it, and comparing against the head called that stale.
     const result = await readLiveSite({
-      github,
+      github: allGreen,
       context,
       fetch: serving('prev'),
       now: NOW,
@@ -173,12 +219,34 @@ describe('reading both sides (#130)', () => {
 
   it('reports a site that is behind a commit that has had time to deploy', async () => {
     const result = await readLiveSite({
-      github,
+      github: allGreen,
       context,
       fetch: serving('older'),
       now: NOW,
       cacheKey: '1',
     });
-    expect(result).toMatchObject({ stale: true, served: 'older', due: 'prev' });
+    expect(result).toMatchObject({ stale: true, served: 'older', due: 'prev', dueCi: 'success' });
+  });
+
+  it('does not report a red main twice: the site serving the last green commit is current', async () => {
+    const result = await readLiveSite({
+      github: withCi((sha) => (sha === 'prev' ? 'failure' : 'success')),
+      context,
+      fetch: serving('older'),
+      now: NOW,
+      cacheKey: '1',
+    });
+    expect(result).toMatchObject({ stale: false, reason: 'current', due: 'older' });
+  });
+
+  it('reports a cancelled commit as stale, naming the cancellation for the alert body', async () => {
+    const result = await readLiveSite({
+      github: withCi((sha) => (sha === 'prev' ? 'cancelled' : 'success')),
+      context,
+      fetch: serving('older'),
+      now: NOW,
+      cacheKey: '1',
+    });
+    expect(result).toMatchObject({ stale: true, due: 'prev', dueCi: 'cancelled' });
   });
 });

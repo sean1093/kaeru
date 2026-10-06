@@ -70,6 +70,44 @@ jobs:
             green build. Fix forward on `main`; nothing here has reverted or redeployed
             anything.
 
+  # A CI run on main that was **cancelled**. Since #114 a run on main is never cancelled by a
+  # newer push, so a cancellation means an outage, runner loss or a person pressing cancel —
+  # and every one of those silently skips the deploy (ADR 0009). This is the #113 condition
+  # at the moment it happens, rather than twenty minutes later from the site's side (#117).
+  #
+  # Its own key, not `ci-main-failure`: nothing failed, the remedy is different, and a red
+  # build and a dropped one are two conditions someone may be working at the same time. The
+  # staleness job below deliberately still treats a cancelled commit as due, so if nobody
+  # acts, the site falling behind is reported too, naming the cancellation.
+  ci-cancelled:
+    name: Cancelled CI on main
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: File it
+        uses: ./.github/actions/file-alert
+        with:
+          key: ci-main-cancelled
+          title: 'CI was cancelled on main'
+          severity: S1
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            A CI run on `main` was cancelled, so the commit it was verifying will not deploy
+            (ADR 0009). Nothing failed, which is why nothing else turned red.
+
+            - Commit: ${{ github.event.workflow_run.head_sha }}
+            - Run: ${{ github.event.workflow_run.html_url }}
+
+            **If that commit is still `main`'s head**, re-run this CI run; the deploy follows
+            it. **If `main` has moved on, do not re-run it**: a green re-run deploys the
+            commit that run was for, which walks the live site backwards. Check instead that
+            a newer commit's deploy reached the site, and if none did, dispatch the deploy
+            workflow on `main`.
+
+            Nothing has been reverted or redeployed.
+
   # The question every other deploy check approaches sideways: **is the live site the
   # current main?**
   #
@@ -106,7 +144,7 @@ jobs:
           script: |
             const { readLiveSite } = await import('${{ github.workspace }}/scripts/deployed-build.mjs');
             const result = await readLiveSite({ github, context, fetch, now: Date.now(), cacheKey: `${context.runId}-first` });
-            core.info(`${result.reason}: serving ${result.served}, due ${result.due}, head ${result.head}`);
+            core.info(`${result.reason}: serving ${result.served}, due ${result.due} (CI ${result.dueCi}), head ${result.head}`);
             core.setOutput('stale', String(result.stale));
 
       # Confirmed once, five minutes later, before anyone is told: a deploy can finish between
@@ -128,10 +166,11 @@ jobs:
           script: |
             const { readLiveSite } = await import('${{ github.workspace }}/scripts/deployed-build.mjs');
             const result = await readLiveSite({ github, context, fetch, now: Date.now(), cacheKey: `${context.runId}-confirm` });
-            core.info(`${result.reason}: serving ${result.served}, due ${result.due}, head ${result.head}`);
+            core.info(`${result.reason}: serving ${result.served}, due ${result.due} (CI ${result.dueCi}), head ${result.head}`);
             core.setOutput('stale', String(result.stale));
             core.setOutput('served', result.served);
             core.setOutput('due', result.due);
+            core.setOutput('due-ci', result.dueCi);
             core.setOutput('head', result.head);
 
       - name: File it
@@ -148,13 +187,18 @@ jobs:
 
             - Serving: `${{ steps.recheck.outputs.served }}`
             - Should contain at least: `${{ steps.recheck.outputs.due }}`
+            - CI for that commit: `${{ steps.recheck.outputs.due-ci }}`
             - `main` is at: `${{ steps.recheck.outputs.head }}`
             - Site: https://sean1093.github.io/kaeru/
 
             This is the condition #113 was about, and it is silent by construction: a deploy
             that is cancelled or never starts does not fail, so nothing else reports it.
 
-            **Where to look, in order.** A deploy run for that commit whose `Build` job reads
+            **Where to look, in order.** CI for the due commit first: `cancelled` means its
+            deploy never started and a `CI was cancelled on main` issue should exist; `none`
+            means no CI run exists for it at all; `in progress` means CI has run past the
+            deploy window. A commit whose CI *failed* is never reported here — the red-CI
+            alert owns it. Then the deploy: a run for that commit whose `Build` job reads
             `cancelled` was dropped from the `pages` concurrency group — two runs for one
             commit, the older pending one discarded. A `Build: success` with
             `Deploy: cancelled` is runner exhaustion rather than anything breaking. And
