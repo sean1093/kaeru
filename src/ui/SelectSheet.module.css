@@ -1,0 +1,119 @@
+/* components.md section 11, "Select sheet". Option rows are 56 px tall:
+   --space-10 + --space-3, the same composition the airport button size uses. */
+
+.search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-block-end: var(--space-4);
+}
+
+.searchLabel {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.searchInput {
+  min-block-size: var(--space-10);
+  padding: 0 var(--space-4);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.searchInput:focus-visible {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* The bottom padding clears the sticky footer. Without it the last row — which is the
+   pinned "not sure yet" sentinel, the option a traveler who cannot find their operator
+   needs most — renders underneath the Done button and cannot be tapped. */
+.options {
+  display: flex;
+  flex-direction: column;
+  padding-block-end: calc(var(--space-10) + var(--space-5));
+}
+
+.group + .group,
+.sentinels {
+  margin-block-start: var(--space-5);
+}
+
+.sentinels {
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--color-border);
+}
+
+.groupHeading {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+}
+
+.option {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  min-block-size: calc(var(--space-10) + var(--space-3));
+  padding: var(--space-3) var(--space-2);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.option:active {
+  background: var(--color-bg-sunken);
+}
+
+.radio {
+  flex: none;
+  inline-size: var(--space-6);
+  block-size: var(--space-6);
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.radio:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.optionText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+  flex: 1;
+}
+
+.optionLabel {
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.optionSecondary {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
+
+/* Both the filled radio and a check, per the spec: two signals because this is read at
+   arm's length by someone who has just been handed a receipt. */
+.check {
+  flex: none;
+  display: inline-flex;
+  font-size: var(--text-lg);
+  color: var(--color-primary);
+}
+
+.footer {
+  position: sticky;
+  inset-block-end: 0;
+  padding-block-start: var(--space-4);
+  background: var(--color-surface-raised);
+}
