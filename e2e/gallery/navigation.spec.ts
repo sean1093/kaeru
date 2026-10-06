@@ -53,7 +53,7 @@ test.describe('UI kit gallery — M1-3b components (#24)', () => {
   }) => {
     await expect(page.getByText('Step 2 of 5')).toBeVisible();
     await expect(page.getByText('步驟 2/5')).toHaveCount(0);
-    await page.getByTestId('language-zh-TW').click();
+    await page.locator(GALLERY_ROOT).getByTestId('language-zh-TW').click();
     await expect(page.getByText('步驟 2/5')).toBeVisible();
     await expect(page.getByText('Step 2 of 5')).toHaveCount(0);
   });

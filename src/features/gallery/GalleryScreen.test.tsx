@@ -4,7 +4,7 @@ import { setActiveLocale } from '../../i18n/index.ts';
 import { GalleryScreen } from './GalleryScreen.tsx';
 
 describe('GalleryScreen', () => {
-  it('renders every M1-3a and M1-3b component section', () => {
+  it('renders every M1-3a, M1-3b and M1-3c component section', () => {
     setActiveLocale('en');
     render(<GalleryScreen />);
     expect(screen.getByRole('heading', { level: 1, name: 'UI kit gallery' })).toBeVisible();
@@ -18,6 +18,8 @@ describe('GalleryScreen', () => {
       'Progress',
       'Banner',
       'Toast',
+      'Amount display',
+      'Form fields',
     ]) {
       expect(screen.getByRole('heading', { level: 2, name: new RegExp(section) })).toBeVisible();
     }

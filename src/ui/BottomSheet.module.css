@@ -1,0 +1,94 @@
+/* components.md section 12. The grabber is 36x4: --space-8 + --space-2 wide,
+   --space-2 tall. Max height 88% of the viewport, with the content scrolling inside, so
+   a long select sheet never pushes its Done button off the screen. */
+
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: var(--color-overlay);
+  animation: scrim-in var(--duration-fast) var(--ease-out);
+}
+
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-block-size: 88%;
+  padding: 0 var(--space-5) var(--space-5);
+  padding-block-end: calc(var(--space-5) + var(--safe-bottom));
+  background: var(--color-surface-raised);
+  border-start-start-radius: var(--radius-lg);
+  border-start-end-radius: var(--radius-lg);
+  border-block-start: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sheet);
+  animation: sheet-in var(--duration-normal) var(--ease-out);
+}
+
+/* The drag handle: grabber, title and the strip around them, edge to edge.
+
+   Left to the default, the browser claims a downward drag as a pan, which ends in
+   `pointercancel` and never reaches the `pointerup` the swipe is decided on — measured on
+   #121, where swipe-to-close did nothing on a touch screen. `pinch-zoom` rather than
+   `none`: panning is checked only up to the nearest scroll container, but zooming is
+   checked all the way to the document, so `none` on the sheet would have switched pinch-zoom
+   off for anything touched inside it. Here it removes panning from the handle alone. */
+.header {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  margin-inline: calc(-1 * var(--space-5));
+  padding: var(--space-4) var(--space-5) 0;
+  touch-action: pinch-zoom;
+}
+
+.grabber {
+  flex: none;
+  align-self: center;
+  inline-size: calc(var(--space-8) + var(--space-2));
+  block-size: var(--space-2);
+  margin-block-end: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+}
+
+.title {
+  flex: none;
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+}
+
+/* `flex: 1` matters: without it the content takes its natural height, the sheet grows
+   past its own 88% cap and the overflow never engages — so a long list's last options,
+   including the pinned "not sure yet" sentinel, are in the DOM and unreachable. */
+.content {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}

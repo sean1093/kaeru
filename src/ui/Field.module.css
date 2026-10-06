@@ -1,0 +1,38 @@
+/* components.md section 11, shared anatomy. */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.required {
+  color: var(--color-attention);
+}
+
+.helper {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-attention);
+}
+
+.errorIcon {
+  flex: none;
+  display: inline-flex;
+  font-size: var(--text-base);
+  margin-block-start: 1px;
+}
