@@ -5,6 +5,7 @@ import { BottomNav, type BottomNavItem } from '../ui/index.ts';
 import { messages } from './messages.ts';
 import { tabFeatures } from './registry.ts';
 import { currentRoute, hrefFor } from './router.ts';
+import styles from './ShellNav.module.css';
 import { SCREEN_LOCATIONS } from './screens.ts';
 import { observeShellMetrics } from './shell-metrics.ts';
 
@@ -64,7 +65,7 @@ export function ShellNav(): JSX.Element | null {
   if (items.length === 0) return null;
 
   return (
-    <div ref={nav}>
+    <div ref={nav} class={styles.nav}>
       <BottomNav label={t('app.navLabel')} items={items} />
     </div>
   );

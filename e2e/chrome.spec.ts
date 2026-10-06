@@ -42,6 +42,41 @@ test.describe('shell chrome', () => {
     });
   }
 
+  /**
+   * The bar is persistent navigation: on a page taller than the viewport it is at the
+   * bottom of the viewport from the first frame and stays there while the page scrolls.
+   *
+   * #135 replaced the shell's own bar with the kit's `BottomNav`, which is deliberately
+   * position-agnostic so the gallery can show it in place, and the shell never re-applied
+   * `position: sticky`. The bar then sat at the end of the document, reachable only by
+   * scrolling to it, and every check built on a pinned bar went on passing vacuously — the
+   * obscuring checks cannot find a control under a bar that is never over content. So this
+   * asserts the pinning itself, and first that the page is long enough for it to be tested.
+   */
+  test('the navigation stays pinned to the bottom of the viewport while the page scrolls', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 500 });
+    for (const route of E2E_ROUTES.filter((candidate) => candidate.chrome === 'tabs')) {
+      await page.goto(route.path);
+      await page.getByTestId('bottom-nav').waitFor({ state: 'visible' });
+      const room = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+      expect(
+        room,
+        `${route.name} must be taller than the viewport to test pinning`,
+      ).toBeGreaterThan(0);
+
+      for (const at of [0, Math.round(room / 2)]) {
+        await page.evaluate((y) => window.scrollTo(0, y), at);
+        const gap = await page.evaluate(() => {
+          const nav = document.querySelector('[data-testid="bottom-nav"]');
+          return nav ? innerHeight - nav.getBoundingClientRect().bottom : Number.NaN;
+        });
+        expect(Math.abs(gap), `${route.name} scrolled to ${at}px`).toBeLessThan(1);
+      }
+    }
+  });
+
   test('the navigation clears the safe area at the bottom of the viewport', async ({
     page,
   }, testInfo) => {
@@ -53,15 +88,6 @@ test.describe('shell chrome', () => {
 
     const bar = page.getByTestId('bottom-nav');
     await expect(bar).toBeVisible();
-
-    // `position: sticky` holds an element within its flow position; it does not pull one
-    // that sits below the fold up into view. So scroll to where the bar is actually pinned
-    // before measuring, which is also where a user meets it.
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForFunction(() => {
-      const nav = document.querySelector('[data-testid="bottom-nav"]');
-      return nav ? Math.abs(nav.getBoundingClientRect().bottom - window.innerHeight) < 2 : false;
-    });
 
     const metrics = await page.evaluate(() => {
       const nav = document.querySelector('[data-testid="bottom-nav"]');
