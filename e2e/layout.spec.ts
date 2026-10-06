@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { E2E_LOCALES, E2E_ROUTES } from './support/routes.ts';
 
 /**
  * Reflow at the narrowest viewport we support (WCAG 2.2 SC 1.4.10).
@@ -10,15 +11,8 @@ import { expect, test } from '@playwright/test';
 
 const NARROW = { width: 320, height: 640 };
 
-const ROUTES = [
-  { name: 'home', path: './' },
-  { name: 'settings', path: './#/settings' },
-];
-
-const LOCALES = [
-  { id: 'zh-TW', testId: 'language-zh-TW' },
-  { id: 'en', testId: 'language-en' },
-];
+const ROUTES = E2E_ROUTES;
+const LOCALES = E2E_LOCALES;
 
 test.describe('320 px reflow', () => {
   test.use({ viewport: NARROW });

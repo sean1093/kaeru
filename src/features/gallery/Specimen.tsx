@@ -22,7 +22,13 @@ export function Specimen({
     <div class={styles.specimen} data-gallery={id}>
       <code class={styles.state}>{state}</code>
       {note ? <code class={styles.note}>{note}</code> : null}
-      <div class={styles.stage}>{children}</div>
+      {/* `data-gallery-stage` is a structural hook for the capture matrix's overlap
+          check (M1-3e, #27) — explicit rather than matching the hashed CSS-module class
+          by substring, which only works because the module name happens to survive
+          into Vite's generated class name today. */}
+      <div class={styles.stage} data-gallery-stage>
+        {children}
+      </div>
     </div>
   );
 }

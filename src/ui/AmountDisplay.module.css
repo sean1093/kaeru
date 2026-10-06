@@ -1,0 +1,67 @@
+/* components.md section 7. Every size shares font-variant-numeric: tabular-nums so a
+   total that re-renders never shifts. */
+
+.amount {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: flex-start;
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  font-weight: var(--weight-bold);
+  /* Digits never wrap, so an amount is the one string 200 % text can push off a 320 px
+     screen. Each size grows with the user's text setting until --text-amount-max. */
+  font-size: min(var(--amount-size), var(--text-amount-max));
+}
+
+.tilde {
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+}
+
+.currency {
+  font-weight: var(--weight-regular);
+}
+
+.fee {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Sizes ---- */
+
+.hero {
+  --amount-size: var(--text-3xl);
+}
+
+/* The ¥ symbol is muted and smaller in the hero only, so the eye lands on the digits —
+   components.md section 7. 0.6316em is --text-xl / --text-3xl, written as a ratio so the
+   symbol keeps its proportion when --text-amount-max caps the digits. */
+.hero .currency {
+  font-size: 0.6316em;
+  color: var(--color-text-muted);
+}
+
+.large {
+  --amount-size: var(--text-2xl);
+}
+
+.body {
+  --amount-size: var(--text-base);
+}
+
+.small {
+  --amount-size: var(--text-sm);
+}
