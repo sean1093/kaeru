@@ -1,0 +1,16 @@
+/*
+ * The shell pins the kit's bar; the kit's `BottomNav` stays position-agnostic so the
+ * gallery can show it in place. Sticky, on this wrapper rather than on the bar inside it:
+ * a sticky element moves only within its containing block, and this wrapper's is the
+ * full-height `.app` column, so the bar holds the bottom of the viewport across the whole
+ * page while still being in flow at its end — which is why content never ends beneath it.
+ */
+.nav {
+  position: sticky;
+  inset-block-end: 0;
+  /*
+   * A deliberate stacking context: the bar paints over in-flow content mid-scroll, below
+   * the update prompt (2), the toast and the skip link (3).
+   */
+  z-index: 1;
+}
