@@ -255,7 +255,14 @@ test.describe('UI kit gallery capture matrix (#27)', () => {
     for (let i = 0; i < count; i += 1) {
       const control = controls.nth(i);
       await control.focus();
-      const outline = await control.evaluate((el) => getComputedStyle(el).outlineStyle);
+      // A composite field (`AmountEntry`: ¥ prefix + input) draws its ring on the field box
+      // via `:focus-within`, so the ring surrounds everything the user reads as the field.
+      // The box is the input's own parent; a ring further up would not mark this control.
+      const outline = await control.evaluate((el) => {
+        const own = getComputedStyle(el).outlineStyle;
+        if (own !== 'none' || !el.parentElement) return own;
+        return getComputedStyle(el.parentElement).outlineStyle;
+      });
       if (outline === 'none') {
         const label = await control.evaluate(
           (el) =>

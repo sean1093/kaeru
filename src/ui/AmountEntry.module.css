@@ -1,0 +1,51 @@
+/* components.md section 11. Shared field chrome (48 px, bg-sunken, border-strong) plus
+   the amount entry's own --text-xl tabular numerals and the ¥ prefix adornment. */
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--space-10);
+  padding-inline: var(--space-4);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.control:focus-within {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--space-1);
+}
+
+.controlError {
+  border-color: var(--color-attention);
+}
+
+.prefix {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xl);
+}
+
+.input {
+  flex: 1;
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.derived {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
