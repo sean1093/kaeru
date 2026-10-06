@@ -26,6 +26,15 @@ import { describe, expect, it } from 'vitest';
  */
 const CSS_DIR = join(import.meta.dirname, '.');
 
+/**
+ * Comments are stripped before scanning: a comment cannot style anything, and read raw,
+ * every issue reference in one is a "hex colour" — `#121` is three hex digits, and so is
+ * any issue number — which is how this suite failed a comment citing the PR it was in.
+ */
+function declarations(file: string): string {
+  return readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
 function cssFiles(): readonly string[] {
   return readdirSync(CSS_DIR)
     .filter((name) => name.endsWith('.module.css'))
@@ -43,18 +52,15 @@ const RAW_MS = /(?<![\w-])-?\d*\.?\d+m?s(?![a-zA-Z])/g;
 describe('UI kit stylesheets reference tokens only (components.md, "every value is a token")', () => {
   for (const file of cssFiles()) {
     it(`${file.split('/').pop()} has no raw hex color`, () => {
-      const css = readFileSync(file, 'utf8');
-      expect(css.match(HEX)).toBeNull();
+      expect(declarations(file).match(HEX)).toBeNull();
     });
 
     it(`${file.split('/').pop()} has no raw px length`, () => {
-      const css = readFileSync(file, 'utf8');
-      expect(css.match(RAW_PX)).toBeNull();
+      expect(declarations(file).match(RAW_PX)).toBeNull();
     });
 
     it(`${file.split('/').pop()} has no raw duration`, () => {
-      const css = readFileSync(file, 'utf8');
-      expect(css.match(RAW_MS)).toBeNull();
+      expect(declarations(file).match(RAW_MS)).toBeNull();
     });
   }
 

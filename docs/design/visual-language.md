@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.1 (M0) |
+| Status | v1.2 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -93,7 +93,7 @@ Same roles, re-pointed. The dark theme is warm charcoal, not blue-black, and the
 
 **Dark mode ships in the MVP.** Reasons: the two highest-stakes moments (hotel evening, 6 a.m. airport) happen in dim light; iOS and Android both expose a system preference that users expect to be honoured; and because every colour is already a semantic token, the cost is one extra block in `tokens.css` plus one setting.
 
-Implementation: `@media (prefers-color-scheme: dark)` for the system default, plus `[data-theme="dark"]` / `[data-theme="light"]` on `<html>` so Settings can force a theme. `color-scheme: light dark` is set on `:root` so native form controls and scrollbars follow. Airport Mode does **not** force a theme — forcing light at 6 a.m. would be hostile.
+Implementation: `@media (prefers-color-scheme: dark)` for the system default, plus `[data-theme="dark"]` / `[data-theme="light"]` on `<html>` so Settings can force a theme. `color-scheme: light dark` is set on `:root` so native form controls and scrollbars follow the system theme, and each forced theme sets `color-scheme` to its own single value — otherwise a forced dark theme on a light system draws native fields light under dark-theme text (contrast 1.16, found by the gallery matrix on #115). Airport Mode does **not** force a theme — forcing light at 6 a.m. would be hostile.
 
 ### Contrast — light theme
 
@@ -212,6 +212,8 @@ A 1.25-ish scale, rounded to even pixels. All sizes are declared in `rem` so bro
 | `--text-xl` | 24 | 1.5 | medium | `--leading-tight` | Screen title, Airport Mode step heading. |
 | `--text-2xl` | 30 | 1.875 | bold | `--leading-tight` | Secondary amounts. |
 | `--text-3xl` | 38 | 2.375 | bold | `--leading-tight` | The hero number on Home: tax waiting to come back. |
+
+Amounts additionally stop growing at `--text-amount-max`: `calc(min(100vw, var(--content-max)) * 0.13)`, 41.6 px on a 320 px screen. Digits never wrap, so without a ceiling a 200 % text setting pushes a hero figure off the narrowest screen (WCAG 1.4.10). It is above `--text-3xl` at every supported width, so it binds only when text has been scaled up.
 
 ### Line height and CJK
 
@@ -413,6 +415,11 @@ Copy verbatim into `src/styles/tokens.css`. No component may declare a raw hex, 
   --text-xl: 1.5rem;     /* 24px */
   --text-2xl: 1.875rem;  /* 30px */
   --text-3xl: 2.375rem;  /* 38px */
+  /* The largest any amount renders. Digits never wrap, so past this a 200 % text setting
+     pushes a seven-digit figure off a 320 px screen (WCAG 1.4.10). 13 % of the content
+     column is above --text-3xl at every width the app supports, so it binds only when the
+     user has scaled text up. */
+  --text-amount-max: calc(min(100vw, var(--content-max)) * 0.13);
 
   --leading-tight: 1.25;
   --leading-normal: 1.5;
@@ -471,8 +478,16 @@ Copy verbatim into `src/styles/tokens.css`. No component may declare a raw hex, 
   }
 }
 
-/* Settings can force a theme regardless of the system preference. */
+/* Settings can force a theme regardless of the system preference. A forced theme also
+   forces color-scheme, or native controls and scrollbars keep following the system and
+   render light-scheme fields under dark-theme text. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
 :root[data-theme="dark"] {
+  color-scheme: dark;
+
   --color-bg: #171513;
   --color-bg-sunken: #100f0e;
   --color-surface: #201e1b;
