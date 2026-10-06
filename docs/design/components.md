@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.6 (M0) |
+| Status | v1.7 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -356,10 +356,11 @@ For operator (10 options), traveler (4+), and airport.
 | Scrim | `--color-overlay` |
 | Max height | 88 % of viewport; content scrolls inside |
 | Grabber | 36x4 px `--color-border-strong`, `--radius-pill`, centred, `aria-hidden` |
+| Drag handle | The header — grabber, title and the strip around them, edge to edge — and nothing else. `touch-action: pinch-zoom` on it alone, so a downward drag reaches the script instead of becoming a pan, while pinch-zoom keeps working everywhere in the sheet |
 | Enter | Translate from 100 % to 0 over `--duration-normal`, `--ease-out`; scrim fades over `--duration-fast` |
 | Exit | `--duration-slow`, `--ease-in` |
 
-Behaviour: focus is trapped while open and restored to the trigger on close; `Escape`, scrim tap, swipe-down, and browser back all close it. `role="dialog" aria-modal="true"` with `aria-labelledby` pointing at the sheet heading. Background content gets `inert`. Sheet state lives in the URL as `?sheet=<id>` on the current route, so back closes the sheet rather than leaving the screen, and a screen only honours sheet ids it declares — an unknown one opens nothing.
+Behaviour: focus is trapped while open and restored to the trigger on close; `Escape`, scrim tap, a downward drag of the header past 72 px, and browser back all close it. A drag that starts in the content is a scroll or a text selection and never closes the sheet. `role="dialog" aria-modal="true"` with `aria-labelledby` pointing at the sheet heading. Background content gets `inert`. Sheet state lives in the URL as `?sheet=<id>` on the current route, so back closes the sheet rather than leaving the screen, and a screen only honours sheet ids it declares — an unknown one opens nothing.
 
 ---
 

@@ -3,6 +3,7 @@ import { LanguageSwitcher } from '../../app/LanguageSwitcher.tsx';
 import { useMessages } from '../../i18n/index.ts';
 import { galleryCopy } from './copy.ts';
 import styles from './Gallery.module.css';
+import { AirportSection } from './sections/airport.tsx';
 import { CoreSection } from './sections/core.tsx';
 import { FormsSection } from './sections/forms.tsx';
 import { NavigationSection } from './sections/navigation.tsx';
@@ -38,6 +39,7 @@ export function GalleryScreen(): JSX.Element {
       <CoreSection />
       <NavigationSection />
       <FormsSection />
+      <AirportSection />
     </div>
   );
 }

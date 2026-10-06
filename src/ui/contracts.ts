@@ -185,11 +185,26 @@ export interface StepperProps {
   onClose: () => void;
   closeLabel: string;
   /**
-   * Stays enabled even when the step is not satisfied. `onAdvance` returns the id of the
-   * first unresolved row and the shell scrolls to it and announces the count — friction,
-   * never a cage (IA flow F).
+   * Stays enabled even when the step is not satisfied. `onAdvance` returns the first
+   * unresolved row and how many remain; the stepper scrolls there, moves focus and
+   * announces the count — friction, never a cage (IA flow F). A disabled button in a
+   * queue is a dead end.
+   *
+   * `blockedBy` is a free-form DOM identifier: the stepper finds the row with
+   * `[data-row-id]` and scrolls to it, and the ids are whatever the feature gave its own
+   * rows (`ChecklistRowProps.id`). It is deliberately not a closed union — it names an
+   * element on screen, not a state anything switches on.
+   *
+   * `blockedAnnouncement` is a formatter rather than a string because the kit never
+   * assembles a sentence: the count is pluralised and counted differently in the two
+   * languages, and the feature already holds the bound locale. A plain string cannot work
+   * — the caller does not know the count until `onAdvance` has run.
    */
-  primary: { label: string; onAdvance: () => { blockedBy: string; count: number } | null };
+  primary: {
+    label: string;
+    onAdvance: () => { blockedBy: string; count: number } | null;
+    blockedAnnouncement: (count: number) => string;
+  };
   secondary?: { label: string; onActivate: () => void };
   /** Rendered by the shell, not by a step, and cleared only at step 4 (UJ-026, UJ-031). */
   banner?: BannerProps;
