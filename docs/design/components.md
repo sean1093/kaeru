@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | v1.5 (M0) |
+| Status | v1.6 (M0) |
 | Date | 2026-10-05 |
 | Owner | UX designer |
 | Tracking | Issue #3 |
@@ -199,7 +199,8 @@ Rules:
 
 - `font-variant-numeric: tabular-nums` always. A total that re-renders must not shift.
 - Format with `Intl.NumberFormat(locale, { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 })`. Yen has no minor unit: `¥12,345`, never `¥12,345.00`. Money is integer yen end to end; never a float (`DR-071`).
-- In the hero, the `¥` symbol is `--text-xl` against `--text-3xl` digits and `--color-text-muted`, so the eye lands on the digits. That is a bigger gap than "one step" on the type scale, found and kept during implementation because it serves the goal at least as well as a smaller gap would.
+- In the hero, the `¥` symbol is `--text-xl` against `--text-3xl` digits and `--color-text-muted`, so the eye lands on the digits. That is a bigger gap than "one step" on the type scale, found and kept during implementation because it serves the goal at least as well as a smaller gap would. It is declared as that ratio (`0.6316em`) rather than as the token, so the symbol keeps its proportion when the cap below applies.
+- Every size grows with the user's text setting up to `--text-amount-max` (13 % of the content column) and stops there. Digits never wrap, so an amount is the one string a 200 % text setting can push off a 320 px screen: unbounded, the hero `~¥24,860` measures 340 px against a 288 px column (#115). The cap sits above `--text-3xl` at every supported width, so at default text size it never binds.
 - Kaeru's own estimates round **down** per line, then sum (`DR-024`), so Kaeru never promises more than arrives.
 - A derived amount — tax-excluded computed from tax-included — is additionally labelled as calculated at the point of entry (`DR-022`), because shop rounding is the issuer's choice and we cannot reproduce it to the yen.
 - Deductions use a true minus sign: `− ¥550` (U+2212), not a hyphen.
