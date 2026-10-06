@@ -25,6 +25,8 @@ jobs:
     name: Build
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.stamp.outputs.sha }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -38,7 +40,17 @@ jobs:
 
       - run: npm ci
 
+      # The build names the commit this job checked out, read from the checkout itself, and
+      # the smoke expects that same value. Not `GITHUB_SHA`, which in a workflow_run job is
+      # main's head when the run was created: #143's verified build was stamped as #148's,
+      # and the smoke failed against its own deploy.
+      - name: Name the build
+        id: stamp
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Build
+        env:
+          KAERU_BUILD_SHA: ${{ steps.stamp.outputs.sha }}
         run: npm run build
 
       - uses: actions/upload-pages-artifact@v4
@@ -67,7 +79,7 @@ jobs:
   # too. See docs/architecture/implementation-plan.md section 6.
   smoke:
     name: Production smoke
-    needs: deploy
+    needs: [build, deploy]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -95,9 +107,10 @@ jobs:
         continue-on-error: true
         env:
           KAERU_SMOKE_URL: ${{ needs.deploy.outputs.page_url || 'https://sean1093.github.io/kaeru/' }}
-          # The commit this deploy built. The smoke reads the served document's build-sha and
-          # refuses to agree that the site is current when it is not (#113).
-          KAERU_EXPECTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # The commit this deploy built, as the build job named it. The smoke reads the
+          # served document's build-sha and refuses to agree that the site is current when it
+          # is not (#113).
+          KAERU_EXPECTED_SHA: ${{ needs.build.outputs.sha }}
         run: npm run e2e:smoke
 
       # Reads the report rather than the exit code: a suite that matched zero tests exits 0,
