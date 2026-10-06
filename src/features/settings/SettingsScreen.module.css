@@ -38,6 +38,13 @@
   font-size: var(--text-sm);
 }
 
+.dataLink {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--tap-min);
+  color: var(--color-primary);
+}
+
 .fileInput {
   position: absolute;
   inline-size: 1px;

@@ -4,6 +4,7 @@ import type { Icon } from '../ui/contracts.ts';
 import { defineFeature } from './feature.ts';
 import type { FeatureV2, ScreenId, ScreenRoute } from './navigation.ts';
 import { collectFeatures, features, featuresFromModules, routes, tabFeatures } from './registry.ts';
+import { ROUTE_DEFINITIONS } from './screens.ts';
 
 const messages = defineMessages({
   'zh-TW': { 'test.nav': '測試' },
@@ -128,12 +129,25 @@ describe('feature modules', () => {
 });
 
 describe('the real registration', () => {
-  it('registers home, settings and the dev-only gallery through the v2 contract', () => {
+  it('registers every route against the published inventory', () => {
     // Vitest runs with import.meta.env.DEV = true, so the gallery (M1-3, #65) registers
     // here same as it would in `npm run dev`; its absence from a production build is
     // proved separately in `e2e/production-bundle.spec.ts` (#27), where DEV is false.
-    expect(features.map((feature) => feature.id)).toEqual(['gallery', 'home', 'settings']);
-    expect(routes.map((entry) => entry.pattern)).toEqual(['/dev/gallery', '/', '/settings']);
+    //
+    // A census, not a decision: every track adds routes, so pinning the list would make
+    // this file a merge-conflict generator in the one place #33 exists to keep
+    // conflict-free. The property that matters is that nothing registers a route the
+    // published inventory does not know about — and `/dev/gallery` is deliberately not in
+    // it, which is why the development tool is excluded here rather than exempted there.
+    expect(features.length).toBeGreaterThan(0);
+    expect(routes.length).toBeGreaterThan(0);
+    for (const entry of routes) {
+      if (entry.pattern.startsWith('/dev/')) continue;
+      expect(
+        ROUTE_DEFINITIONS[entry.pattern],
+        `"${entry.pattern}" is not in the published inventory`,
+      ).toBeDefined();
+    }
   });
 
   it('makes settings an app-bar route rather than a fifth tab', () => {

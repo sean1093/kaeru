@@ -1,4 +1,5 @@
 import { defineFeature } from '../../app/feature.ts';
+import { DataScreen } from './DataScreen.tsx';
 import { messages } from './messages.ts';
 import { SettingsScreen } from './SettingsScreen.tsx';
 
@@ -16,6 +17,12 @@ export const feature = defineFeature({
       screenIds: ['S60'],
       chrome: 'tabs',
       screen: SettingsScreen,
+    },
+    {
+      pattern: '/settings/data',
+      screenIds: ['S62'],
+      chrome: 'tabs',
+      screen: DataScreen,
     },
   ],
 });
